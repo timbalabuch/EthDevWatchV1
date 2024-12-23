@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Ethereum Weekly Updates{% endblock %}</title>
+    <title>{% block title %}EthDevWatch{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="/">Ethereum Weekly</a>
+            <a class="navbar-brand" href="/">EthDevWatch</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -21,7 +21,7 @@
                     </li>
                 </ul>
                 <form class="d-flex ms-auto" id="searchForm">
-                    <input class="form-control me-2" type="search" placeholder="Search articles..." id="searchInput">
+                    <input class="form-control me-2" type="search" placeholder="Search updates..." id="searchInput">
                 </form>
             </div>
         </div>
@@ -31,9 +31,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer mt-auto py-3 bg-dark">
+    <footer class="footer mt-auto py-3">
         <div class="container text-center">
-            <span class="text-muted">Ethereum Weekly Updates © {{ now('utc', '%Y') }}</span>
+            <span class="text-muted">EthDevWatch © {{ now('utc', '%Y') }}</span>
         </div>
     </footer>
 

@@ -2,41 +2,41 @@
 
 {% block content %}
 <div class="hero-section text-center">
-    <h1>Flexibility & Security</h1>
-    <p class="subtitle">Maximize your understanding of Ethereum ecosystem developments with ease</p>
+    <h1>EthDevWatch</h1>
+    <p class="subtitle">Maximise your understanding of Ethereum ecosystem developments with ease</p>
 </div>
 
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <div id="articles">
             {% for article in articles %}
-            <article class="card mb-4">
+            <article class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
                         <h2 class="card-title">{{ article.title }}</h2>
                         <span class="article-status">Active</span>
                     </div>
 
-                    <p class="text-muted mb-3">
+                    <p class="text-muted mb-4">
                         Published on {{ article.publication_date.strftime('%B %d, %Y') }}
                     </p>
 
-                    <div class="card-text text-secondary mb-3">
+                    <div class="card-text text-secondary mb-4">
                         {{ article.content[:300] }}...
                     </div>
 
-                    <div class="progress-bar">
+                    <div class="progress-bar mb-4">
                         <div class="progress-bar-fill" style="width: 85%"></div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="source-tags">
+                        <div class="areas">
                             {% for source in article.sources[:3] %}
                             <span class="badge bg-secondary me-2">{{ source.type }}</span>
                             {% endfor %}
                         </div>
                         <a href="{{ url_for('article', article_id=article.id) }}" 
-                           class="btn btn-outline-light">Read More</a>
+                           class="btn btn-outline-light btn-sm">Read More</a>
                     </div>
                 </div>
             </article>
