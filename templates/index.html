@@ -21,7 +21,7 @@
                     </p>
 
                     <div class="card-text text-secondary mb-4">
-                        {{ article.content[:300] }}...
+                        {{ article.content[:300]|safe }}...
                     </div>
 
                     <div class="progress-bar mb-4">
