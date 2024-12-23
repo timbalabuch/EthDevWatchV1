@@ -73,7 +73,7 @@ def generate_sample_articles():
         cleanup_existing_data()
 
         # Calculate all weeks up to current date
-        start_date = datetime(2024, 11, 1)
+        start_date = datetime(2024, 11, 1)  # Start from November 1st, 2024
         current_date = datetime.utcnow()
 
         # Get all Monday dates up to current date
