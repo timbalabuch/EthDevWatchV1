@@ -17,29 +17,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Sample Data Generator"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "EthDevWatch Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Sample Data Generator"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/generate_sample_data.py"
 
 [[workflows.workflow]]
 name = "EthDevWatch Server"
@@ -53,22 +31,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scripts/generate_sample_data.py && python main.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+args = "cd $(dirname $0) && python scripts/create_admin.py && python scripts/generate_sample_data.py && python main.py"
 waitForPort = 5000
 
 [[ports]]

@@ -1,7 +1,8 @@
 import logging
 import os
+import time
 from datetime import datetime
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 import json
 from app import db
 from models import Article, Source
@@ -19,10 +20,29 @@ class ContentService:
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
             # do not change this unless explicitly requested by the user
             self.model = "gpt-4o"
+            self.max_retries = 5
+            self.base_delay = 1  # Base delay in seconds
             logger.info("ContentService initialized with OpenAI client")
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {str(e)}")
             raise
+
+    def _retry_with_exponential_backoff(self, func, *args, **kwargs):
+        """Execute a function with exponential backoff retry logic"""
+        for attempt in range(self.max_retries):
+            try:
+                return func(*args, **kwargs)
+            except RateLimitError as e:
+                if attempt == self.max_retries - 1:
+                    logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
+                    raise
+
+                delay = min(300, self.base_delay * (2 ** attempt))  # Cap at 5 minutes
+                logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"Unexpected error: {str(e)}")
+                raise
 
     def _find_existing_image_url(self, title):
         """Check if we have a similar article with an image we can reuse"""
@@ -57,7 +77,8 @@ class ContentService:
                 "in the design, creating a high-tech, futuristic aesthetic."
             )
 
-            response = self.openai.images.generate(
+            response = self._retry_with_exponential_backoff(
+                self.openai.images.generate,
                 model="dall-e-3",
                 prompt=prompt,
                 n=1,
@@ -79,6 +100,9 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
+            # Add delay between article generations to avoid rate limits
+            time.sleep(2)
+
             # Prepare content for GPT
             logger.info("Preparing content for GPT processing")
             week_str = publication_date.strftime("%Y-%m-%d") if publication_date else "current week"
@@ -127,7 +151,8 @@ class ContentService:
             ]
 
             logger.info(f"Sending request to OpenAI API for week of {week_str}")
-            response = self.openai.chat.completions.create(
+            response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
                 model=self.model,
                 messages=messages,
                 response_format={"type": "json_object"},

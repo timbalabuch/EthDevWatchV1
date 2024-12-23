@@ -3,9 +3,13 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+from flask_login import LoginManager
 
-# Setup logging
-logging.basicConfig(level=logging.DEBUG)
+# Setup logging with more detailed format
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class Base(DeclarativeBase):
@@ -31,18 +35,32 @@ try:
 
     # Initialize extensions
     db.init_app(app)
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'login'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from models import User
+        return User.query.get(int(user_id))
 
     # Import routes after app initialization to avoid circular imports
-    from routes import *  # noqa: E402, F403
-
     with app.app_context():
         logger.info("Creating database tables...")
         db.create_all()
         logger.info("Database tables created successfully")
 
-        from services.scheduler import init_scheduler
-        init_scheduler()
-        logger.info("Scheduler initialized successfully")
+        # Import routes after db initialization
+        from routes import *  # noqa: E402, F403
+
+        # Initialize scheduler only after database is ready
+        try:
+            from services.scheduler import init_scheduler
+            init_scheduler()
+            logger.info("Scheduler initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize scheduler: {str(e)}")
+            # Continue running even if scheduler fails
 
 except Exception as e:
     logger.error(f"Failed to initialize application: {str(e)}")
