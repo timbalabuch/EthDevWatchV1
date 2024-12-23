@@ -47,14 +47,14 @@ def get_weeks_in_range(start_date, end_date):
     return weeks
 
 def generate_sample_articles():
-    """Generate sample articles for November and December 2024"""
+    """Generate sample articles up to current date"""
     try:
         logger.info("=== Starting Sample Data Generation ===")
         logger.info("Initializing services...")
         github_service = GitHubService()
         content_service = ContentService()
 
-        # Get real GitHub content
+        # Get real GitHub content for reference
         logger.info("Fetching GitHub content...")
         github_content = github_service.fetch_recent_content()
 
@@ -67,10 +67,15 @@ def generate_sample_articles():
         # Clean up existing data
         cleanup_existing_data()
 
-        # Calculate all weeks in November and December 2024
+        # Calculate all weeks up to current date
         start_date = datetime(2024, 11, 1)
-        end_date = datetime(2024, 12, 31)
-        weeks = get_weeks_in_range(start_date, end_date)
+        current_date = datetime.utcnow()
+        # Ensure we don't generate articles for future dates
+        end_date = min(datetime(2024, 12, 31), current_date)
+
+        # Get all Monday dates up to current date
+        weeks = [date for date in get_weeks_in_range(start_date, end_date) 
+                if date <= current_date]
 
         # Generate articles for each week
         success_count = 0
@@ -79,8 +84,12 @@ def generate_sample_articles():
                 try:
                     publication_date = monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
+                    if publication_date > current_date:
+                        logger.info(f"Skipping future date: {publication_date.strftime('%Y-%m-%d')}")
+                        continue
+
                     logger.info(f"=== Generating article for week starting {publication_date.strftime('%Y-%m-%d')} ===")
-                    article = content_service.generate_weekly_summary(github_content)
+                    article = content_service.generate_weekly_summary(github_content, publication_date)
 
                     # Set the publication date for the article
                     article.publication_date = publication_date
