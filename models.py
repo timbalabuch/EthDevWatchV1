@@ -6,6 +6,7 @@ class Article(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     publication_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    image_url = db.Column(db.String(500))  # New field for storing the image URL
     sources = db.relationship('Source', backref='article', lazy=True)
 
 class Source(db.Model):

@@ -24,6 +24,26 @@ class ContentService:
             logger.error(f"Failed to initialize OpenAI client: {str(e)}")
             raise
 
+    def generate_image_for_title(self, title):
+        """Generate an image using DALL-E based on the article title"""
+        try:
+            prompt = f"Create a horizontal technology-themed illustration for an article titled: {title}. Style: modern, professional, tech-focused. Must be in landscape orientation with a 16:9 aspect ratio. Theme: Ethereum blockchain, technological advancement, digital innovation."
+
+            response = self.openai.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                n=1,
+                size="1792x1024",
+                quality="standard",
+                style="vivid"
+            )
+
+            logger.info("Successfully generated image for article")
+            return response.data[0].url
+        except Exception as e:
+            logger.error(f"Failed to generate image: {str(e)}")
+            return None
+
     def generate_weekly_summary(self, github_content, publication_date=None):
         """Generate a weekly summary using ChatGPT"""
         if not github_content:
@@ -137,11 +157,15 @@ class ContentService:
             """
 
             logger.info("Creating new article with generated content")
+            # Generate an image based on the title
+            image_url = self.generate_image_for_title(summary_data["title"])
+
             # Create new article
             article = Article(
                 title=summary_data["title"],
                 content=content,
-                publication_date=publication_date or datetime.utcnow()
+                publication_date=publication_date or datetime.utcnow(),
+                image_url=image_url
             )
 
             # Add sources
