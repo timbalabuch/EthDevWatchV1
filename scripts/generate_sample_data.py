@@ -37,8 +37,17 @@ def get_monday_of_week(date):
     """Get the Monday of the week for a given date"""
     return date - timedelta(days=date.weekday())
 
+def get_weeks_in_range(start_date, end_date):
+    """Get all Mondays between start_date and end_date"""
+    current = get_monday_of_week(start_date)
+    weeks = []
+    while current <= end_date:
+        weeks.append(current)
+        current += timedelta(days=7)
+    return weeks
+
 def generate_sample_articles():
-    """Generate sample articles for the past 5 weeks"""
+    """Generate sample articles for November and December 2024"""
     try:
         logger.info("=== Starting Sample Data Generation ===")
         logger.info("Initializing services...")
@@ -58,16 +67,16 @@ def generate_sample_articles():
         # Clean up existing data
         cleanup_existing_data()
 
-        # Generate articles for past weeks
+        # Calculate all weeks in November and December 2024
+        start_date = datetime(2024, 11, 1)
+        end_date = datetime(2024, 12, 31)
+        weeks = get_weeks_in_range(start_date, end_date)
+
+        # Generate articles for each week
         success_count = 0
         with app.app_context():
-            # Start from 4 weeks ago (to generate 5 weeks including current week)
-            current_date = datetime.utcnow()
-            for weeks_ago in range(4, -1, -1):
+            for monday in weeks:
                 try:
-                    # Calculate the Monday of each week
-                    week_date = current_date - timedelta(weeks=weeks_ago)
-                    monday = get_monday_of_week(week_date)
                     publication_date = monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
                     logger.info(f"=== Generating article for week starting {publication_date.strftime('%Y-%m-%d')} ===")
@@ -78,15 +87,16 @@ def generate_sample_articles():
                     db.session.commit()
 
                     success_count += 1
-                    logger.info(f"Generated article for week {weeks_ago+1}: {article.title}")
+                    logger.info(f"Generated article for week of {publication_date.strftime('%Y-%m-%d')}: {article.title}")
 
                 except Exception as e:
-                    logger.error(f"Error generating article for week {weeks_ago+1}: {str(e)}")
+                    logger.error(f"Error generating article for week of {publication_date.strftime('%Y-%m-%d')}: {str(e)}")
                     db.session.rollback()
                     continue
 
+        total_weeks = len(weeks)
         logger.info(f"=== Sample Data Generation Complete ===")
-        logger.info(f"Successfully generated {success_count} out of 5 articles.")
+        logger.info(f"Successfully generated {success_count} out of {total_weeks} articles.")
         return success_count > 0
 
     except Exception as e:
