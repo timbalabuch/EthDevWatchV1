@@ -20,8 +20,8 @@
                         Week of {{ article.publication_date.strftime('%B %d') }} - {{ (article.publication_date + timedelta(days=6)).strftime('%B %d, %Y') }}
                     </p>
 
-                    <div class="card-text text-secondary mb-4">
-                        {{ article.content[:300]|safe }}...
+                    <div class="article-summary mb-4">
+                        {{ article.content | truncate(300) | safe }}
                     </div>
 
                     <div class="progress-bar mb-4">

@@ -40,10 +40,11 @@ class ContentService:
                 {
                     "role": "system",
                     "content": """You are an expert in Ethereum ecosystem development. Create a weekly summary of development activities 
-                    focused on meetings and technical updates. Format the response as JSON with this structure:
+                    focused on meetings and technical updates. The title should be engaging and highlight the most important development 
+                    of the week. Include a concise 2-3 sentence summary that captures the key developments. Format the response as JSON with this structure:
                     {
-                        "title": "Weekly Ethereum Development Update - [Date]",
-                        "summary": "Brief overview",
+                        "title": "Engaging title highlighting key development",
+                        "brief_summary": "2-3 sentence summary of key developments",
                         "meetings": [
                             {
                                 "title": "Meeting name",
@@ -87,7 +88,7 @@ class ContentService:
             # Format the content with improved HTML structure
             content = f"""
             <div class="article-summary mb-4">
-                <p class="lead">{summary_data['summary']}</p>
+                <p class="lead">{summary_data['brief_summary']}</p>
             </div>
 
             <div class="meetings-section mb-4">
