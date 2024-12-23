@@ -8,13 +8,20 @@ from app import app, db
 from services.github_service import GitHubService
 from services.content_service import ContentService
 
-# Setup logging
-logging.basicConfig(level=logging.DEBUG)
+# Setup logging with more detailed format
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def generate_sample_articles():
     """Generate sample articles for the past 5 weeks"""
     try:
+        logger.info("=== Starting Sample Data Generation ===")
         logger.info("Initializing services...")
         github_service = GitHubService()
         content_service = ContentService()
@@ -37,7 +44,7 @@ def generate_sample_articles():
                 publication_date = datetime.utcnow() - timedelta(weeks=week+1)
 
                 try:
-                    logger.info(f"Generating article for week {week+1}...")
+                    logger.info(f"=== Generating article for week {week+1} ===")
                     article = content_service.generate_weekly_summary(github_content)
                     # Update the publication date
                     article.publication_date = publication_date
@@ -48,7 +55,8 @@ def generate_sample_articles():
                     logger.error(f"Error generating article for week {week+1}: {str(e)}")
                     db.session.rollback()
 
-        logger.info(f"Sample data generation completed. Generated {success_count} out of 5 articles.")
+        logger.info(f"=== Sample Data Generation Complete ===")
+        logger.info(f"Successfully generated {success_count} out of 5 articles.")
         return success_count > 0
 
     except Exception as e:
@@ -56,5 +64,8 @@ def generate_sample_articles():
         return False
 
 if __name__ == "__main__":
+    print("\n=== Starting Sample Data Generation Script ===\n")
     success = generate_sample_articles()
-    sys.exit(0 if success else 1)
+    exit_code = 0 if success else 1
+    print(f"\n=== Sample Data Generation {'Succeeded' if success else 'Failed'} ===\n")
+    sys.exit(exit_code)

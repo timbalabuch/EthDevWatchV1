@@ -19,6 +19,12 @@ class ContentService:
             logger.error(f"Failed to initialize OpenAI client: {str(e)}")
             raise
 
+    def _datetime_handler(self, obj):
+        """Handle datetime serialization for JSON"""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
     def generate_weekly_summary(self, github_content):
         """Generate a weekly summary using ChatGPT"""
         if not github_content:
@@ -28,7 +34,7 @@ class ContentService:
         try:
             # Prepare content for GPT
             logger.info("Preparing content for GPT processing")
-            content_text = json.dumps(github_content, indent=2)
+            content_text = json.dumps(github_content, indent=2, default=self._datetime_handler)
 
             prompt = f"""
             Generate a comprehensive weekly summary of Ethereum ecosystem developments based on the following data:
