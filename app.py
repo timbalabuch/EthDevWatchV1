@@ -44,16 +44,16 @@ try:
         from models import User
         return User.query.get(int(user_id))
 
-    # Import routes after app initialization to avoid circular imports
+    # Create all tables and import routes after db initialization
     with app.app_context():
         logger.info("Creating database tables...")
         db.create_all()
         logger.info("Database tables created successfully")
 
         # Import routes after db initialization
-        from routes import *  # noqa: E402, F403
+        from routes import *  # noqa: F403
 
-        # Initialize scheduler only after database is ready
+        # Initialize scheduler
         try:
             from services.scheduler import init_scheduler
             init_scheduler()
@@ -62,8 +62,8 @@ try:
             logger.error(f"Failed to initialize scheduler: {str(e)}")
             # Continue running even if scheduler fails
 
+    logger.info("Application initialized successfully")
+
 except Exception as e:
     logger.error(f"Failed to initialize application: {str(e)}")
     raise
-
-logger.info("Application initialized successfully")

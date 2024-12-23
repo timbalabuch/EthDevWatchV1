@@ -67,13 +67,20 @@ class ContentService:
     def generate_image_for_title(self, title):
         """Generate an image using DALL-E based on the article title"""
         try:
+            # First check if we can reuse an existing image
+            existing_url = self._find_existing_image_url(title)
+            if existing_url:
+                logger.info("Reusing existing image")
+                return existing_url
+
             prompt = (
-                f"Create a horizontal technology-themed illustration for an article titled: {title}. "
-                "Style: modern, professional, tech-focused with prominent green and blue color scheme. "
+                f"Create a sophisticated horizontal technology-themed illustration for an article titled: {title}. "
+                "Style: modern, professional, tech-focused with dominant green and blue color scheme. "
                 "Must be in landscape orientation with a 16:9 aspect ratio. "
                 "Theme: Ethereum blockchain, technological advancement, digital innovation. "
-                "Color requirement: Use vibrant emerald greens and electric blues as the dominant colors "
-                "in the design, creating a high-tech, futuristic aesthetic."
+                "Color requirement: Use vibrant emerald greens (#00FF7F) and electric blues (#0000FF) as the dominant colors "
+                "in the design, creating a high-tech, futuristic aesthetic. The image should have a dark background "
+                "with glowing green and blue elements to represent blockchain technology."
             )
 
             response = self._retry_with_exponential_backoff(

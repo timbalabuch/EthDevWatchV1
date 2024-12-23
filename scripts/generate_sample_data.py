@@ -19,20 +19,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def cleanup_existing_data():
-    """Remove existing articles and sources"""
-    try:
-        with app.app_context():
-            # First delete sources due to foreign key constraint
-            Source.query.delete()
-            Article.query.delete()
-            db.session.commit()
-            logger.info("Cleaned up existing articles and sources")
-    except Exception as e:
-        logger.error(f"Error cleaning up data: {str(e)}")
-        db.session.rollback()
-        raise
-
 def get_monday_of_week(date):
     """Get the Monday of the week for a given date"""
     return date - timedelta(days=date.weekday())
@@ -51,10 +37,26 @@ def get_weeks_in_range(start_date, end_date):
         current += timedelta(days=7)
     return weeks
 
+def check_existing_articles():
+    """Check if we already have articles generated"""
+    try:
+        with app.app_context():
+            article_count = Article.query.count()
+            logger.info(f"Found {article_count} existing articles")
+            return article_count > 0
+    except Exception as e:
+        logger.error(f"Error checking existing articles: {str(e)}")
+        return False
+
 def generate_sample_articles():
-    """Generate sample articles up to current date"""
+    """Generate sample articles if they don't exist"""
     try:
         logger.info("=== Starting Sample Data Generation ===")
+
+        # Check if articles already exist
+        if check_existing_articles():
+            logger.info("Articles already exist, skipping generation")
+            return True
 
         # Initialize services
         logger.info("Initializing services...")
@@ -70,9 +72,6 @@ def generate_sample_articles():
             return False
 
         logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
-
-        # Clean up existing data
-        cleanup_existing_data()
 
         # Calculate all weeks up to current date
         start_date = datetime(2024, 11, 1)  # Start from November 1st, 2024
@@ -97,6 +96,17 @@ def generate_sample_articles():
                         continue
 
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')} ===")
+
+                    # Check if article already exists for this week
+                    existing_article = Article.query.filter(
+                        Article.publication_date >= monday,
+                        Article.publication_date <= week_end
+                    ).first()
+
+                    if existing_article:
+                        logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
+                        success_count += 1
+                        continue
 
                     # Generate article with the stored image URL
                     article = content_service.generate_weekly_summary(github_content, monday)
