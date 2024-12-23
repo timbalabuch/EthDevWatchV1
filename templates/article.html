@@ -6,8 +6,12 @@
         <article class="card">
             <div class="card-body">
                 {% if article.image_url %}
-                <div class="article-image mb-4">
-                    <img src="{{ article.image_url }}" class="img-fluid rounded w-100" alt="{{ article.title }}">
+                <div class="article-image loading">
+                    <img src="{{ article.image_url }}" 
+                         class="img-fluid rounded"
+                         alt="{{ article.title }}"
+                         loading="lazy"
+                         onload="this.parentElement.classList.remove('loading')">
                 </div>
                 {% endif %}
 
