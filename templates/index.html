@@ -17,7 +17,7 @@
                     </div>
 
                     <p class="text-muted mb-4">
-                        Published on {{ article.publication_date.strftime('%B %d, %Y') }}
+                        Week of {{ article.publication_date.strftime('%B %d') }} - {{ (article.publication_date + timedelta(days=6)).strftime('%B %d, %Y') }}
                     </p>
 
                     <div class="card-text text-secondary mb-4">

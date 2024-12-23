@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import render_template, abort
 from app import app
 from models import Article
@@ -22,4 +23,6 @@ def utility_processor():
         from datetime import datetime
         from pytz import timezone as tz
         return datetime.now(tz(timezone)).strftime(format)
-    return dict(now=now)
+
+    # Add timedelta to template context
+    return dict(now=now, timedelta=timedelta)
