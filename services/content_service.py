@@ -29,20 +29,25 @@ class ContentService:
 
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
         """Execute a function with exponential backoff retry logic"""
+        last_exception = None
         for attempt in range(self.max_retries):
             try:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                return result
             except RateLimitError as e:
+                last_exception = e
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-
                 delay = min(300, self.base_delay * (2 ** attempt))  # Cap at 5 minutes
                 logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
                 time.sleep(delay)
             except Exception as e:
-                logger.error(f"Unexpected error: {str(e)}")
-                raise
+                logger.error(f"Unexpected error in attempt {attempt + 1}: {str(e)}")
+                last_exception = e
+                if attempt == self.max_retries - 1:
+                    raise last_exception
+                time.sleep(self.base_delay)
 
     def _find_existing_image_url(self, title):
         """Check if we have a similar article with an image we can reuse"""
@@ -60,14 +65,8 @@ class ContentService:
             return None
 
     def generate_image_for_title(self, title):
-        """Generate an image using DALL-E based on the article title or reuse existing"""
+        """Generate an image using DALL-E based on the article title"""
         try:
-            # First check if we have a similar image we can reuse
-            existing_url = self._find_existing_image_url(title)
-            if existing_url:
-                logger.info("Reusing existing image URL")
-                return existing_url
-
             prompt = (
                 f"Create a horizontal technology-themed illustration for an article titled: {title}. "
                 "Style: modern, professional, tech-focused with prominent green and blue color scheme. "
@@ -87,8 +86,13 @@ class ContentService:
                 style="vivid"
             )
 
-            logger.info("Successfully generated image for article")
-            return response.data[0].url
+            if response and hasattr(response, 'data') and len(response.data) > 0:
+                logger.info("Successfully generated image for article")
+                return response.data[0].url
+            else:
+                logger.error("Invalid response format from DALL-E API")
+                return None
+
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             return None
@@ -159,6 +163,9 @@ class ContentService:
                 temperature=0.7,
                 max_tokens=2000
             )
+
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                raise ValueError("Invalid response from OpenAI API")
 
             logger.debug(f"Received response from OpenAI API: {response.choices[0].message.content[:200]}...")
 

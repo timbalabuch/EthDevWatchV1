@@ -55,6 +55,8 @@ def generate_sample_articles():
     """Generate sample articles up to current date"""
     try:
         logger.info("=== Starting Sample Data Generation ===")
+
+        # Initialize services
         logger.info("Initializing services...")
         github_service = GitHubService()
         content_service = ContentService()
@@ -81,6 +83,8 @@ def generate_sample_articles():
 
         # Generate articles for each completed week
         success_count = 0
+        image_url = None  # Store the first generated image URL for reuse
+
         with app.app_context():
             for monday in weeks:
                 try:
@@ -93,14 +97,24 @@ def generate_sample_articles():
                         continue
 
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')} ===")
+
+                    # Generate article with the stored image URL
                     article = content_service.generate_weekly_summary(github_content, monday)
 
-                    # Set the publication date to the end of the week
-                    article.publication_date = week_end
-                    db.session.commit()
+                    # If this is the first successful article, store its image URL for reuse
+                    if success_count == 0 and article and article.image_url:
+                        image_url = article.image_url
+                    elif image_url and article:
+                        # Reuse the stored image URL for subsequent articles
+                        article.image_url = image_url
+                        db.session.commit()
 
-                    success_count += 1
-                    logger.info(f"Generated article for week of {monday.strftime('%Y-%m-%d')}: {article.title}")
+                    # Set the publication date to the end of the week
+                    if article:
+                        article.publication_date = week_end
+                        db.session.commit()
+                        success_count += 1
+                        logger.info(f"Generated article for week of {monday.strftime('%Y-%m-%d')}: {article.title}")
 
                 except Exception as e:
                     logger.error(f"Error generating article for week of {monday.strftime('%Y-%m-%d')}: {str(e)}")

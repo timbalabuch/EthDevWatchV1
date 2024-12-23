@@ -5,7 +5,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["python", "main.py"]
+run = ["sh", "-c", "python scripts/create_admin.py && python scripts/generate_sample_data.py"]
 
 [workflows]
 runButton = "Project"
@@ -17,10 +17,14 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "EthDevWatch Server"
+args = "Initialize Database"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Server"
 
 [[workflows.workflow]]
-name = "EthDevWatch Server"
+name = "Initialize Database"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -31,7 +35,21 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd $(dirname $0) && python scripts/create_admin.py && python scripts/generate_sample_data.py && python main.py"
+args = "python scripts/create_admin.py && python scripts/generate_sample_data.py"
+
+[[workflows.workflow]]
+name = "Flask Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 waitForPort = 5000
 
 [[ports]]
