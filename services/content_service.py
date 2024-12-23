@@ -48,7 +48,14 @@ class ContentService:
                 logger.info("Reusing existing image URL")
                 return existing_url
 
-            prompt = f"Create a horizontal technology-themed illustration for an article titled: {title}. Style: modern, professional, tech-focused. Must be in landscape orientation with a 16:9 aspect ratio. Theme: Ethereum blockchain, technological advancement, digital innovation."
+            prompt = (
+                f"Create a horizontal technology-themed illustration for an article titled: {title}. "
+                "Style: modern, professional, tech-focused with prominent green and blue color scheme. "
+                "Must be in landscape orientation with a 16:9 aspect ratio. "
+                "Theme: Ethereum blockchain, technological advancement, digital innovation. "
+                "Color requirement: Use vibrant emerald greens and electric blues as the dominant colors "
+                "in the design, creating a high-tech, futuristic aesthetic."
+            )
 
             response = self.openai.images.generate(
                 model="dall-e-3",
