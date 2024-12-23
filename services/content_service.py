@@ -24,9 +24,30 @@ class ContentService:
             logger.error(f"Failed to initialize OpenAI client: {str(e)}")
             raise
 
-    def generate_image_for_title(self, title):
-        """Generate an image using DALL-E based on the article title"""
+    def _find_existing_image_url(self, title):
+        """Check if we have a similar article with an image we can reuse"""
         try:
+            existing_article = Article.query.filter(
+                Article.title.ilike(f"%{title.split(':')[0]}%")
+            ).filter(Article.image_url.isnot(None)).first()
+
+            if existing_article and existing_article.image_url:
+                logger.info(f"Found existing image for similar title: {existing_article.title}")
+                return existing_article.image_url
+            return None
+        except Exception as e:
+            logger.error(f"Error finding existing image: {str(e)}")
+            return None
+
+    def generate_image_for_title(self, title):
+        """Generate an image using DALL-E based on the article title or reuse existing"""
+        try:
+            # First check if we have a similar image we can reuse
+            existing_url = self._find_existing_image_url(title)
+            if existing_url:
+                logger.info("Reusing existing image URL")
+                return existing_url
+
             prompt = f"Create a horizontal technology-themed illustration for an article titled: {title}. Style: modern, professional, tech-focused. Must be in landscape orientation with a 16:9 aspect ratio. Theme: Ethereum blockchain, technological advancement, digital innovation."
 
             response = self.openai.images.generate(
