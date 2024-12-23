@@ -1,0 +1,31 @@
+.article-content {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.sources-section {
+    background: var(--bs-dark);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.card {
+    border: none;
+    background: var(--bs-dark);
+}
+
+.navbar {
+    margin-bottom: 2rem;
+}
+
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .article-content {
+        font-size: 1rem;
+    }
+}

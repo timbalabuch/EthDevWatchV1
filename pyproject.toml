@@ -1,0 +1,17 @@
+[project]
+name = "repl-nix-ethereumweekly-1"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.1.0",
+    "flask-sqlalchemy>=3.1.1",
+    "openai>=1.58.1",
+    "sqlalchemy>=2.0.36",
+    "trafilatura>=2.0.0",
+    "psycopg2-binary>=2.9.10",
+    "email-validator>=2.2.0",
+    "apscheduler>=3.11.0",
+    "pygithub>=2.5.0",
+    "pytz>=2024.2",
+]

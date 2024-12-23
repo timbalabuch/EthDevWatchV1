@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="mb-4">
+            <img src="https://images.unsplash.com/photo-1660836709439-c5c70751988f" 
+                 alt="Ethereum Blockchain" 
+                 class="img-fluid rounded">
+        </div>
+        
+        <h1 class="mb-4">Latest Ethereum Updates</h1>
+        
+        <div id="articles">
+            {% for article in articles %}
+            <article class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ article.title }}</h2>
+                    <p class="text-muted">
+                        Published on {{ article.publication_date.strftime('%B %d, %Y') }}
+                    </p>
+                    <div class="card-text">
+                        {{ article.content[:300] }}...
+                    </div>
+                    <a href="{{ url_for('article', article_id=article.id) }}" 
+                       class="btn btn-secondary mt-3">Read More</a>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        Sources: 
+                        {% for source in article.sources %}
+                        <a href="{{ source.url }}" target="_blank" class="me-2">
+                            {{ source.title[:50] }}...
+                        </a>
+                        {% endfor %}
+                    </small>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

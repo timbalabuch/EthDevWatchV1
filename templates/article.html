@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <article>
+            <h1 class="mb-3">{{ article.title }}</h1>
+            
+            <div class="mb-4">
+                <img src="https://images.unsplash.com/photo-1531297484001-80022131f5a1" 
+                     alt="Tech Network" 
+                     class="img-fluid rounded">
+            </div>
+            
+            <p class="text-muted">
+                Published on {{ article.publication_date.strftime('%B %d, %Y') }}
+            </p>
+            
+            <div class="article-content">
+                {{ article.content | safe }}
+            </div>
+            
+            <div class="sources-section mt-5">
+                <h3>Sources</h3>
+                <ul class="list-unstyled">
+                    {% for source in article.sources %}
+                    <li class="mb-2">
+                        <a href="{{ source.url }}" target="_blank" class="text-info">
+                            {{ source.title }}
+                        </a>
+                        <small class="text-muted">
+                            ({{ source.type }})
+                        </small>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </article>
+    </div>
+</div>
+{% endblock %}
