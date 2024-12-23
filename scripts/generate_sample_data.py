@@ -37,6 +37,11 @@ def get_monday_of_week(date):
     """Get the Monday of the week for a given date"""
     return date - timedelta(days=date.weekday())
 
+def get_sunday_of_week(date):
+    """Get the Sunday of the week (end of week) for a given date"""
+    monday = get_monday_of_week(date)
+    return monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
 def get_weeks_in_range(start_date, end_date):
     """Get all Mondays between start_date and end_date"""
     current = get_monday_of_week(start_date)
@@ -70,40 +75,39 @@ def generate_sample_articles():
         # Calculate all weeks up to current date
         start_date = datetime(2024, 11, 1)
         current_date = datetime.utcnow()
-        # Ensure we don't generate articles for future dates
-        end_date = min(datetime(2024, 12, 31), current_date)
 
         # Get all Monday dates up to current date
-        weeks = [date for date in get_weeks_in_range(start_date, end_date) 
-                if date <= current_date]
+        weeks = get_weeks_in_range(start_date, current_date)
 
-        # Generate articles for each week
+        # Generate articles for each completed week
         success_count = 0
         with app.app_context():
             for monday in weeks:
                 try:
-                    publication_date = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+                    # Calculate the end of the week (Sunday at 23:59:59)
+                    week_end = get_sunday_of_week(monday)
 
-                    if publication_date > current_date:
-                        logger.info(f"Skipping future date: {publication_date.strftime('%Y-%m-%d')}")
+                    # Skip if week hasn't ended yet
+                    if week_end > current_date:
+                        logger.info(f"Skipping incomplete week: {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}")
                         continue
 
-                    logger.info(f"=== Generating article for week starting {publication_date.strftime('%Y-%m-%d')} ===")
-                    article = content_service.generate_weekly_summary(github_content, publication_date)
+                    logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')} ===")
+                    article = content_service.generate_weekly_summary(github_content, monday)
 
-                    # Set the publication date for the article
-                    article.publication_date = publication_date
+                    # Set the publication date to the end of the week
+                    article.publication_date = week_end
                     db.session.commit()
 
                     success_count += 1
-                    logger.info(f"Generated article for week of {publication_date.strftime('%Y-%m-%d')}: {article.title}")
+                    logger.info(f"Generated article for week of {monday.strftime('%Y-%m-%d')}: {article.title}")
 
                 except Exception as e:
-                    logger.error(f"Error generating article for week of {publication_date.strftime('%Y-%m-%d')}: {str(e)}")
+                    logger.error(f"Error generating article for week of {monday.strftime('%Y-%m-%d')}: {str(e)}")
                     db.session.rollback()
                     continue
 
-        total_weeks = len(weeks)
+        total_weeks = len([w for w in weeks if get_sunday_of_week(w) <= current_date])
         logger.info(f"=== Sample Data Generation Complete ===")
         logger.info(f"Successfully generated {success_count} out of {total_weeks} articles.")
         return success_count > 0
