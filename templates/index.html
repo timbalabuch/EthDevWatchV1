@@ -1,39 +1,43 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="hero-section text-center">
+    <h1>Flexibility & Security</h1>
+    <p class="subtitle">Maximize your understanding of Ethereum ecosystem developments with ease</p>
+</div>
+
 <div class="row">
     <div class="col-lg-8 mx-auto">
-        <div class="mb-4">
-            <img src="https://images.unsplash.com/photo-1660836709439-c5c70751988f" 
-                 alt="Ethereum Blockchain" 
-                 class="img-fluid rounded">
-        </div>
-        
-        <h1 class="mb-4">Latest Ethereum Updates</h1>
-        
         <div id="articles">
             {% for article in articles %}
             <article class="card mb-4">
                 <div class="card-body">
-                    <h2 class="card-title">{{ article.title }}</h2>
-                    <p class="text-muted">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="card-title">{{ article.title }}</h2>
+                        <span class="article-status">Active</span>
+                    </div>
+
+                    <p class="text-muted mb-3">
                         Published on {{ article.publication_date.strftime('%B %d, %Y') }}
                     </p>
-                    <div class="card-text">
+
+                    <div class="card-text text-secondary mb-3">
                         {{ article.content[:300] }}...
                     </div>
-                    <a href="{{ url_for('article', article_id=article.id) }}" 
-                       class="btn btn-secondary mt-3">Read More</a>
-                </div>
-                <div class="card-footer">
-                    <small class="text-muted">
-                        Sources: 
-                        {% for source in article.sources %}
-                        <a href="{{ source.url }}" target="_blank" class="me-2">
-                            {{ source.title[:50] }}...
-                        </a>
-                        {% endfor %}
-                    </small>
+
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: 85%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="source-tags">
+                            {% for source in article.sources[:3] %}
+                            <span class="badge bg-secondary me-2">{{ source.type }}</span>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('article', article_id=article.id) }}" 
+                           class="btn btn-outline-light">Read More</a>
+                    </div>
                 </div>
             </article>
             {% endfor %}
