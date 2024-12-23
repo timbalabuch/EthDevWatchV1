@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from openai import OpenAI
 import json
@@ -10,7 +11,11 @@ logger = logging.getLogger(__name__)
 class ContentService:
     def __init__(self):
         try:
-            self.openai = OpenAI()
+            api_key = os.environ.get('OPENAI_API_KEY')
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+            self.openai = OpenAI(api_key=api_key)
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
             # do not change this unless explicitly requested by the user
             self.model = "gpt-4o"
@@ -30,26 +35,44 @@ class ContentService:
             logger.info("Preparing content for GPT processing")
             content_json = json.dumps(github_content, default=str)
 
-            prompt = f"""
-            Generate a comprehensive weekly summary of Ethereum ecosystem developments based on the following data:
-
-            {content_json}
-
-            Format the response as a JSON object with the following structure:
-            {{
-                "title": "Weekly Ethereum Ecosystem Update - [Current Date]",
-                "summary": "Main summary text with key points and developments",
-                "highlights": ["Array of key highlights"]
-            }}
-
-            Make the content accessible to a general audience while maintaining technical accuracy.
-            """
+            # System prompt for consistent formatting
+            messages = [
+                {
+                    "role": "system",
+                    "content": """You are an expert in Ethereum ecosystem development. Create a weekly summary of development activities 
+                    focused on meetings and technical updates. Format the response as JSON with this structure:
+                    {
+                        "title": "Weekly Ethereum Development Update - [Date]",
+                        "summary": "Brief overview",
+                        "meetings": [
+                            {
+                                "title": "Meeting name",
+                                "key_points": ["point 1", "point 2"],
+                                "decisions": "Key decisions made"
+                            }
+                        ],
+                        "technical_updates": [
+                            {
+                                "area": "Component/Area name",
+                                "changes": "Technical changes and progress",
+                                "impact": "Impact on ecosystem"
+                            }
+                        ]
+                    }"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Analyze and summarize this GitHub content:\n\n{content_json}"
+                }
+            ]
 
             logger.info("Sending request to OpenAI API")
             response = self.openai.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.7,
+                max_tokens=2000
             )
 
             logger.debug(f"Received response from OpenAI API: {response.choices[0].message.content[:200]}...")
@@ -61,11 +84,51 @@ class ContentService:
                 logger.debug(f"Raw response content: {response.choices[0].message.content}")
                 raise ValueError("Invalid JSON response from OpenAI")
 
+            # Format the content with improved HTML structure
+            content = f"""
+            <div class="article-summary mb-4">
+                <p class="lead">{summary_data['summary']}</p>
+            </div>
+
+            <div class="meetings-section mb-4">
+                <h2 class="section-title">Meeting Summaries</h2>
+                {''.join(f'''
+                <div class="meeting-card mb-3">
+                    <h3>{meeting['title']}</h3>
+                    <ul class="key-points list-unstyled">
+                        {''.join(f'<li class="mb-2"><i class="fas fa-check text-success me-2"></i>{point}</li>' for point in meeting['key_points'])}
+                    </ul>
+                    <div class="decisions">
+                        <strong>Key Decisions:</strong>
+                        <p>{meeting['decisions']}</p>
+                    </div>
+                </div>
+                ''' for meeting in summary_data.get('meetings', []))}
+            </div>
+
+            <div class="technical-section">
+                <h2 class="section-title">Technical Updates</h2>
+                {''.join(f'''
+                <div class="technical-card mb-3">
+                    <h3>{update['area']}</h3>
+                    <div class="changes">
+                        <strong>Changes:</strong>
+                        <p>{update['changes']}</p>
+                    </div>
+                    <div class="impact">
+                        <strong>Impact:</strong>
+                        <p>{update['impact']}</p>
+                    </div>
+                </div>
+                ''' for update in summary_data.get('technical_updates', []))}
+            </div>
+            """
+
             logger.info("Creating new article with generated content")
             # Create new article
             article = Article(
                 title=summary_data["title"],
-                content=summary_data["summary"],
+                content=content,
                 publication_date=datetime.utcnow()
             )
 

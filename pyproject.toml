@@ -15,4 +15,6 @@ dependencies = [
     "pygithub>=2.5.0",
     "pytz>=2024.2",
     "twilio>=9.4.1",
+    "flask-login>=0.6.3",
+    "oauthlib>=3.2.2",
 ]
