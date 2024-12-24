@@ -182,6 +182,11 @@ class ContentService:
                 # Extract sections from the content
                 parts = content.split('\n\n')
                 title = parts[0].strip()
+                # Clean up the title by removing any "Title:" prefix
+                title = title.replace('Title:', '').strip()
+                if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
+                    title = title.split(':', 1)[1].strip()
+
                 brief_summary = ''
                 repo_updates = []
                 tech_highlights = []
@@ -223,6 +228,9 @@ class ContentService:
                     # Re-parse the content...
                     parts = content.split('\n\n')
                     title = parts[0].strip()
+                    title = title.replace('Title:', '').strip()
+                    if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
+                        title = title.split(':', 1)[1].strip()
                     brief_summary = ' '.join(p.strip() for p in parts[1:] if not any(p.lower().startswith(s) for s in ['repository updates', 'technical highlights', 'next steps']))
 
                 logger.info(f"Generated content - Title: {title[:50]}...")
