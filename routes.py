@@ -16,7 +16,7 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    # Only show articles from past weeks
+    # Only show articles from past weeks and up to current date
     current_date = datetime.utcnow()
     articles = Article.query.filter(
         Article.publication_date <= current_date
@@ -88,7 +88,8 @@ def edit_article(article_id):
 def article(article_id):
     article = Article.query.get_or_404(article_id)
     # Don't show future articles
-    if article.publication_date > datetime.utcnow():
+    current_date = datetime.utcnow()
+    if article.publication_date > current_date:
         abort(404)
     return render_template('article.html', article=article)
 
