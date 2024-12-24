@@ -203,12 +203,22 @@ class ForumService:
 
         try:
             logger.info("Starting forum discussions summarization")
-            formatted_discussions = []
+            # Group discussions by source
+            discussions_by_source = {}
             for disc in discussions:
-                formatted_discussions.append(
-                    f"Title: {disc['title']}\nDate: {disc['date'].strftime('%Y-%m-%d')}\n"
-                    f"Source: {disc['source']}\nURL: {disc['url']}\nContent: {disc['content'][:1000]}..."
-                )
+                source = disc['source']
+                if source not in discussions_by_source:
+                    discussions_by_source[source] = []
+                discussions_by_source[source].append(disc)
+
+            formatted_discussions = []
+            for source, source_discussions in discussions_by_source.items():
+                formatted_discussions.append(f"=== {source.title()} Discussions ===\n")
+                for disc in source_discussions:
+                    formatted_discussions.append(
+                        f"Title: {disc['title']}\nDate: {disc['date'].strftime('%Y-%m-%d')}\n"
+                        f"URL: {disc['url']}\nContent: {disc['content'][:1000]}..."
+                    )
 
             combined_text = "\n\n---\n\n".join(formatted_discussions)
 
@@ -217,13 +227,14 @@ class ForumService:
                     "role": "system",
                     "content": """You are an expert in Ethereum protocol discussions. 
                     Summarize the key points from Ethereum forum discussions in a clear, 
-                    accessible way. Focus on:
-                    1. Main topics discussed
-                    2. Important decisions or consensus reached
-                    3. Notable technical proposals
+                    accessible way. Format the output in sections by forum source.
+                    For each forum source (Ethereum Magicians, Ethereum Research):
+                    1. Create an <h3> header with the forum name
+                    2. List the main topics discussed
+                    3. Important decisions or consensus reached
+                    4. Notable technical proposals
                     Keep the summary concise and use plain language.
-
-                    Format the output in HTML, using appropriate tags for structure."""
+                    Use HTML formatting for structure."""
                 },
                 {
                     "role": "user",
