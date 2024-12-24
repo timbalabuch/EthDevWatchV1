@@ -84,11 +84,12 @@ body {
 .navbar-brand {
     font-family: 'Titillium Web', sans-serif;
     font-weight: 600;
+    color: #ffffff !important;
 }
 
 .eth-logo {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
 }
 
@@ -128,12 +129,6 @@ body {
     background: var(--bs-btn-hover-bg);
 }
 
-@media (max-width: 768px) {
-    .hero-section h1 {
-        font-size: 2.5rem;
-    }
-
-    .hero-section .subtitle {
-        font-size: 1.25rem;
-    }
+.gap-2 {
+    gap: 0.5rem !important;
 }
