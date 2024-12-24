@@ -24,6 +24,7 @@ class Article(db.Model):
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
+    metrics = db.relationship('WeeklyMetrics', backref='article', lazy=True, uselist=False)
 
     # Publishing workflow columns
     status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
@@ -56,3 +57,21 @@ class Source(db.Model):
     repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+
+class WeeklyMetrics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+
+    # Store daily metrics as JSON strings
+    active_addresses = db.Column(db.JSON)  # Daily numbers for the week
+    transaction_count = db.Column(db.JSON)  # Daily numbers for the week
+    contracts_deployed = db.Column(db.JSON)  # Daily numbers for the week
+    dex_volume = db.Column(db.JSON)  # Daily numbers for the week
+
+    # Weekly total
+    eth_burned = db.Column(db.Float)  # Total for the week
+
+    # Metadata
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))

@@ -9,7 +9,8 @@ import pytz
 from openai import OpenAI, RateLimitError
 
 from app import db
-from models import Article, Source
+from models import Article, Source, WeeklyMetrics # Assumed to exist
+from services.dune_service import DuneService
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
-            logger.info("ContentService initialized with OpenAI client")
+            self.dune_service = DuneService()
+            logger.info("ContentService initialized with OpenAI and Dune clients")
         except Exception as e:
             logger.error(f"Failed to initialize services: {str(e)}")
             raise
@@ -238,10 +240,23 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
+            # Calculate week's end date
+            end_date = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+            # Fetch metrics from Dune
+            try:
+                metrics_data = self.dune_service.get_weekly_metrics(
+                    start_date=publication_date,
+                    end_date=end_date
+                )
+                logger.info("Successfully fetched metrics from Dune")
+            except Exception as e:
+                logger.error(f"Failed to fetch Dune metrics: {str(e)}")
+                metrics_data = None
+
             week_str = publication_date.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
-            # Organize content by repository
             repo_content = self.organize_content_by_repository(github_content)
             if not repo_content:
                 logger.warning("No content found to summarize")
@@ -368,6 +383,18 @@ class ContentService:
                     article=article
                 )
                 db.session.add(source)
+
+            # Add metrics if available
+            if metrics_data:
+                metrics = WeeklyMetrics(
+                    article=article,
+                    active_addresses=metrics_data.get('active_addresses'),
+                    contracts_deployed=metrics_data.get('contract_deployments'),
+                    eth_burned=metrics_data.get('eth_burned'),
+                    start_date=publication_date,
+                    end_date=end_date,
+                )
+                db.session.add(metrics)
 
             db.session.add(article)
             db.session.commit()
