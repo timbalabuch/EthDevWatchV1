@@ -4,10 +4,10 @@
 <article class="ethereum-article">
     <div class="card">
         <div class="card-body">
-            <header class="article-header mb-4">
-                <h1 class="card-title">{{ article.title }}</h1>
+            <header class="article-header mb-5">
+                <h1 class="card-title display-5 mb-3">{{ article.title }}</h1>
                 <div class="d-flex justify-content-between align-items-center">
-                    <p class="text-muted mb-0">
+                    <p class="text-muted mb-0 fs-5">
                         {{ format_date(article.publication_date) }}
                     </p>
                     <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
@@ -23,23 +23,25 @@
 
             <!-- Overview Section -->
             <section class="overview-section mb-5">
-                <h2 class="h4 mb-4">Overview</h2>
-                <div class="overview-content">
-                    {{ article.content | safe }}
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h3 mb-4">Overview</h2>
+                    <div class="overview-content">
+                        {{ article.content | safe }}
+                    </div>
                 </div>
             </section>
 
             <!-- Community Discussions Section -->
             <section class="community-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h4 mb-4">Community Discussions</h2>
+                    <h2 class="h3 mb-4">Community Discussions</h2>
                     {% if article.forum_summary %}
                         <div class="forum-content">
                             {{ article.forum_summary | safe }}
                         </div>
                     {% else %}
                         <div class="alert alert-info" role="alert">
-                            <h4 class="alert-heading">Community Discussions Processing</h4>
+                            <h4 class="alert-heading h5 mb-3">Community Discussions Processing</h4>
                             <div class="mb-3">
                                 <div class="spinner-border spinner-border-sm text-info me-2" role="status">
                                     <span class="visually-hidden">Loading...</span>
@@ -58,7 +60,7 @@
                                 <li>Processing each topic: ~5-10 seconds per topic</li>
                                 <li>Content summarization: ~30-45 seconds</li>
                             </ul>
-                            <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly. If the content doesn't appear after 5 minutes, try refreshing the page.</p>
+                            <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -67,7 +69,7 @@
             <!-- Repository Updates Section -->
             <section class="repository-section">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h4 mb-4">Repository Updates</h2>
+                    <h2 class="h3 mb-4">Repository Updates</h2>
                     {% if article.sources %}
                         {% set repo_sources = {} %}
                         {% for source in article.sources %}
@@ -134,7 +136,12 @@
 /* Overview section styling */
 .overview-content {
     font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.8;
+    color: var(--bs-light);
+}
+
+.overview-content p {
+    margin-bottom: 1.5rem;
 }
 
 /* Repository section styling */
@@ -183,8 +190,21 @@
 
 /* Community section styling */
 .forum-content {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.forum-content p {
+    margin-bottom: 1.5rem;
+}
+
+.forum-content ul {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.forum-content li {
+    margin-bottom: 0.75rem;
 }
 
 /* Alert styling */
