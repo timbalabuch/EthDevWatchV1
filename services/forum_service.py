@@ -2,7 +2,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any, Union
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 import time
 import requests
 import pytz
@@ -50,7 +50,7 @@ class ForumService:
             start_date, end_date = self._get_week_boundaries(week_date)
             logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
-            # Use the JSON API endpoint instead of scraping HTML
+            # Use the JSON API endpoint
             response = self._retry_with_backoff(
                 self.session.get,
                 self.forum_base_url,
@@ -70,14 +70,23 @@ class ForumService:
                         # Extract date from the created_at field
                         created_at = topic.get('created_at')
                         if not created_at:
+                            logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
                             continue
 
-                        post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
+                        try:
+                            post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
+                        except ValueError:
+                            try:
+                                post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
+                            except ValueError as e:
+                                logger.error(f"Error parsing date {created_at}: {str(e)}")
+                                continue
 
                         if start_date <= post_date <= end_date:
                             # Fetch full topic content using topic id
                             topic_id = topic.get('id')
-                            topic_url = f"https://ethereum-magicians.org/t/{topic.get('slug')}/{topic_id}.json"
+                            slug = topic.get('slug', str(topic_id))
+                            topic_url = f"https://ethereum-magicians.org/t/{slug}/{topic_id}.json"
 
                             topic_response = self._retry_with_backoff(
                                 self.session.get,
@@ -96,10 +105,14 @@ class ForumService:
                                 content_soup = BeautifulSoup(content, 'lxml')
                                 clean_content = content_soup.get_text(strip=True)
 
+                                # Truncate content if it's too long
+                                if len(clean_content) > 5000:
+                                    clean_content = clean_content[:5000] + "..."
+
                                 discussions.append({
                                     'title': topic.get('title', ''),
                                     'content': clean_content,
-                                    'url': f"https://ethereum-magicians.org/t/{topic.get('slug')}/{topic_id}",
+                                    'url': f"https://ethereum-magicians.org/t/{slug}/{topic_id}",
                                     'date': post_date
                                 })
                                 logger.info(f"Successfully added discussion: {topic.get('title', '')}")
@@ -177,22 +190,31 @@ class ForumService:
             ]
 
             logger.info("Sending request to OpenAI for forum discussion summary")
-            # Generate summary
-            response = self.openai.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=1000
-            )
+            # Generate summary with retries
+            for attempt in range(3):  # 3 retries for OpenAI
+                try:
+                    response = self.openai.chat.completions.create(
+                        model=self.model,
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=1000
+                    )
 
-            summary = response.choices[0].message.content.strip()
-            logger.info("Successfully generated forum discussion summary")
+                    summary = response.choices[0].message.content.strip()
+                    logger.info("Successfully generated forum discussion summary")
 
-            # If the summary doesn't include HTML tags, wrap it
-            if not summary.startswith('<'):
-                summary = f'<div class="forum-discussion-summary">{summary}</div>'
+                    # If the summary doesn't include HTML tags, wrap it
+                    if not summary.startswith('<'):
+                        summary = f'<div class="forum-discussion-summary">{summary}</div>'
 
-            return summary
+                    return summary
+
+                except Exception as e:
+                    if attempt == 2:  # Last attempt
+                        logger.error(f"Error generating forum discussion summary: {str(e)}")
+                        return None
+                    logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
+                    time.sleep(20)  # Wait longer between OpenAI retries
 
         except Exception as e:
             logger.error(f"Error generating forum discussion summary: {str(e)}")

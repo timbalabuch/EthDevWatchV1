@@ -14,32 +14,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def update_missing_forum_summaries():
-    """Update forum summaries for articles that don't have them."""
+def update_forum_summaries(force_update=True):
+    """Update forum summaries for articles."""
     try:
         with app.app_context():
-            # Get articles without forum summaries
-            articles = Article.query.filter(Article.forum_summary.is_(None)).all()
-            logger.info(f"Found {len(articles)} articles without forum summaries")
+            # Get all articles if force_update is True, otherwise only those without summaries
+            if force_update:
+                articles = Article.query.order_by(Article.publication_date.desc()).all()
+            else:
+                articles = Article.query.filter(Article.forum_summary.is_(None)).all()
+
+            logger.info(f"Found {len(articles)} articles to process")
 
             if not articles:
                 logger.info("No articles found needing forum summaries")
                 return
 
             forum_service = ForumService()
-            
+
             for article in articles:
                 logger.info(f"Processing article from {article.publication_date}")
                 try:
                     # Get forum summary for the week
                     summary = forum_service.get_weekly_forum_summary(article.publication_date)
-                    
+
                     if summary:
                         article.forum_summary = summary
                         logger.info(f"Successfully added forum summary for article dated {article.publication_date}")
                     else:
                         logger.warning(f"No forum summary generated for article dated {article.publication_date}")
-                
+
                 except Exception as e:
                     logger.error(f"Error processing article {article.id}: {str(e)}")
                     continue
@@ -54,4 +58,4 @@ def update_missing_forum_summaries():
 
 if __name__ == '__main__':
     logger.info("Starting forum summaries update")
-    update_missing_forum_summaries()
+    update_forum_summaries(force_update=True)
