@@ -28,27 +28,25 @@ class ContentService:
             self.openai = OpenAI(api_key=api_key)
             self.model = "gpt-4"
             self.max_retries = 5
-            self.base_delay = 1
-            self.forum_service = ForumService()  # Initialize forum service
+            self.base_delay = 2  # Increased base delay
+            self.max_delay = 60  # Maximum delay in seconds
+            self.jitter = 0.1    # Add randomness to delay
+            self.forum_service = ForumService()
             logger.info("ContentService initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ContentService: {str(e)}")
             raise
 
+    def _get_delay(self, attempt: int) -> float:
+        """Calculate delay with exponential backoff and jitter."""
+        delay = min(
+            self.max_delay,
+            (self.base_delay * (2 ** attempt)) + (random.random() * self.jitter)
+        )
+        return delay
+
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
-        """Execute a function with exponential backoff retry logic.
-
-        Args:
-            func: The function to execute
-            *args: Arguments to pass to the function
-            **kwargs: Keyword arguments to pass to the function
-
-        Returns:
-            The result of the function execution
-
-        Raises:
-            Exception: If max retries are exceeded
-        """
+        """Execute a function with improved exponential backoff retry logic."""
         last_exception = None
         for attempt in range(self.max_retries):
             try:
@@ -58,16 +56,16 @@ class ContentService:
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(600, (self.base_delay * (2 ** attempt)) + (random.random() * 5))
-                logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
+                delay = self._get_delay(attempt)
+                logger.warning(f"Rate limit hit, retrying in {delay:.2f} seconds (attempt {attempt + 1}/{self.max_retries})")
                 time.sleep(delay)
             except Exception as e:
                 logger.error(f"Unexpected error in attempt {attempt + 1}: {str(e)}")
                 last_exception = e
                 if attempt == self.max_retries - 1:
                     raise last_exception
-                delay = min(300, (self.base_delay * (2 ** attempt)) + (random.random() * 2))
-                logger.info(f"Retrying in {delay} seconds...")
+                delay = self._get_delay(attempt)
+                logger.info(f"Retrying in {delay:.2f} seconds...")
                 time.sleep(delay)
 
     def organize_content_by_repository(self, github_content: List[Dict]) -> Dict[str, Dict]:

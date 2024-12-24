@@ -7,6 +7,7 @@ import time
 import requests
 import pytz
 from openai import OpenAI
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +16,29 @@ class ForumService:
 
     def __init__(self):
         """Initialize the ForumService."""
-        self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63"
-        self.openai = OpenAI()
-        self.model = "gpt-4"
-        self.max_retries = 3
-        self.base_delay = 1
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
-        })
+        try:
+            self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63"
+            api_key = os.environ.get('OPENAI_API_KEY')
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+            self.openai = OpenAI(api_key=api_key)
+            self.model = "gpt-4"
+            self.max_retries = 3
+            self.base_delay = 1
+            self.session = requests.Session()
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
+            })
+            logger.info("ForumService initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize ForumService: {str(e)}")
+            raise
 
     def _get_week_boundaries(self, date: datetime) -> tuple[datetime, datetime]:
         """Get the start and end dates for a given week."""
+        if date.tzinfo is None:
+            date = pytz.UTC.localize(date)
         start_date = date - timedelta(days=date.weekday())
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
@@ -35,28 +47,43 @@ class ForumService:
     def _extract_date_from_forum_post(self, post_element: Union[Tag, BeautifulSoup]) -> Optional[datetime]:
         """Extract date from a forum post element."""
         try:
-            # Look for date in post metadata
             date_elem = post_element.select_one('.post-date, .topic-date')
-            if date_elem and date_elem.has_attr('title'):
-                date_str = date_elem['title']
-                # Convert to datetime object
+            if not date_elem:
+                logger.debug("No date element found in post")
+                return None
+
+            if not date_elem.has_attr('title'):
+                logger.debug("Date element has no title attribute")
+                return None
+
+            date_str = date_elem['title']
+            try:
                 return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
-            return None
+            except ValueError as e:
+                logger.error(f"Error parsing date string '{date_str}': {str(e)}")
+                return None
+
         except Exception as e:
             logger.error(f"Error extracting date from forum post: {str(e)}")
             return None
 
     def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute a function with exponential backoff retry logic."""
+        last_error = None
         for attempt in range(self.max_retries):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                last_error = e
                 if attempt == self.max_retries - 1:
+                    logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
                 delay = min(300, (self.base_delay * (2 ** attempt)))
                 logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
                 time.sleep(delay)
+
+        if last_error:
+            raise last_error
 
     def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
         """Fetch forum discussions for a specific week."""
