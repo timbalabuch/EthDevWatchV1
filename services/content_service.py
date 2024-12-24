@@ -74,9 +74,15 @@ class ContentService:
 
     def _clean_title(self, title):
         """Clean and format the article title"""
+        # Remove Title: prefix
         title = title.replace('Title:', '').strip()
+        # Remove text between parentheses and the parentheses
         title = re.sub(r'\([^)]*\)', '', title).strip()
+        # Remove any remaining parentheses
         title = title.replace('(', '').replace(')', '').strip()
+        # Remove quotation marks
+        title = title.replace('"', '').replace("'", '').strip()
+        # Handle colons in title
         if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
             title = title.split(':', 1)[1].strip()
         return title
@@ -179,40 +185,39 @@ class ContentService:
                     Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
 
                     Most important rules:
-                    1. Maintain a formal, professional tone throughout the summary
-                    2. Provide precise technical explanations with clear definitions
-                    3. Include technical terminology with concise explanations
-                    4. Focus on technical significance and practical implications
-                    5. Support technical concepts with concrete examples
+                    1. Use plain language that anyone can understand
+                    2. Explain complex ideas in simple terms
+                    3. Focus on real-world impact and benefits
+                    4. Avoid technical jargon in titles
+                    5. Make concepts accessible to regular users
 
                     Title requirements:
-                    - Create clear, understandable titles that capture the main developments
-                    - Focus on key improvements and changes in plain language
-                    - Include multiple significant developments when relevant
-                    - DO NOT include dates, week references, or "Ethereum Development:" prefix in the title
-                    - DO NOT use parentheses or technical jargon in titles
-                    - Example: "Consensus Layer Improvements and Network Upgrades"
-                    - Example: "Protocol Security Enhancements and Infrastructure Updates"
+                    - Create simple, clear titles that describe the main improvements
+                    - Write titles that anyone can understand
+                    - Combine multiple key changes in plain language
+                    - DO NOT include dates or week references
+                    - DO NOT use technical terms, parentheses, or quotation marks
+                    - Example: "Making Smart Contracts Better and Network Updates"
+                    - Example: "Network Speed Improvements and Better Security"
 
                     Required sections:
-                    1. A clear, formal title following the above format
-                    2. A detailed technical overview (at least 700 characters)
+                    1. A clear, simple title following the above format
+                    2. A detailed overview (at least 700 characters)
                     3. Repository updates (start with 'Repository Updates:')
                     4. Technical highlights (start with 'Technical Highlights:')
                     5. Next Steps (start with 'Next Steps:')"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
+                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {week_str}.
                     Remember:
-                    - Create clear, descriptive titles without technical jargon
-                    - Include multiple key developments in plain language
-                    - Avoid parentheses and technical terms in titles
-                    - Maintain formal, professional language
-                    - Include precise technical details
-                    - Focus on implementation specifics
-                    - Keep explanations clear and structured
-                    - The overview must be at least 700 characters
+                    - Create clear, simple titles without technical terms
+                    - Explain the main improvements in plain language
+                    - Avoid technical jargon and quotation marks in titles
+                    - Use everyday language
+                    - Make complex ideas easy to understand
+                    - Focus on real-world benefits
+                    - Keep explanations clear and simple
                     - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
 
                     Here are the technical updates to analyze:
