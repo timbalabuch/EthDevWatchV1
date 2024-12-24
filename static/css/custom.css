@@ -1,6 +1,18 @@
 :root {
     --card-bg: rgba(17, 24, 39, 0.7);
     --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    --gradient-start: #3b82f6;
+    --gradient-end: #34d399;
+}
+
+[data-bs-theme="light"] {
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+/* Theme transition effects */
+*, *::before, *::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
@@ -10,6 +22,11 @@ body {
     display: flex;
     flex-direction: column;
     font-family: 'Titillium Web', sans-serif;
+}
+
+[data-bs-theme="light"] body {
+    background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+    color: #1e293b;
 }
 
 .hero-section {
@@ -41,7 +58,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: var(--glow-shadow);
     backdrop-filter: blur(10px);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
     margin-bottom: 1.5rem;
 }
 
@@ -65,6 +82,10 @@ body {
     font-family: 'Titillium Web', sans-serif;
 }
 
+[data-bs-theme="light"] .card-title {
+    color: #1e293b;
+}
+
 .card-title a:hover {
     color: #3b82f6 !important;
     transition: color 0.3s ease;
@@ -79,8 +100,16 @@ body {
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(to right, #3b82f6, #34d399);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
     border-radius: 2px;
+    animation: gradientShift 3s ease infinite;
+    background-size: 200% 100%;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .navbar {
@@ -109,6 +138,15 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.footer a {
+    color: var(--gradient-start);
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: var(--gradient-end);
+}
+
 .form-control {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -129,9 +167,29 @@ body {
 }
 
 .btn-outline-light:hover {
-    background: linear-gradient(to right, #3b82f6, #34d399);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
     border-color: transparent;
     color: #fff;
+}
+
+#themeToggle {
+    position: relative;
+}
+
+#themeToggle .theme-icon-light {
+    display: none;
+}
+
+#themeToggle .theme-icon-dark {
+    display: inline-block;
+}
+
+[data-bs-theme="light"] #themeToggle .theme-icon-light {
+    display: inline-block;
+}
+
+[data-bs-theme="light"] #themeToggle .theme-icon-dark {
+    display: none;
 }
 
 .gap-2 {
@@ -151,13 +209,13 @@ body {
 }
 
 .page-link:hover {
-    background: linear-gradient(to right, #3b82f6, #34d399);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
     border-color: transparent;
     color: #fff;
 }
 
 .page-item.active .page-link {
-    background: linear-gradient(to right, #3b82f6, #34d399);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
     border-color: transparent;
 }
 
