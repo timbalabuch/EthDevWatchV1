@@ -1,9 +1,9 @@
 import logging
 import re
+import time
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any, Union
 from bs4 import BeautifulSoup
-import time
 import requests
 import pytz
 from openai import OpenAI
@@ -30,9 +30,8 @@ class ForumService:
             self.session.headers.update({
                 'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
             })
-            # Keep track of last API call to implement rate limiting
             self.last_api_call = 0
-            self.min_time_between_calls = 2  # Increased minimum time between calls
+            self.min_time_between_calls = 2  # Minimum seconds between calls
             logger.info("ForumService initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ForumService: {str(e)}")
@@ -51,7 +50,8 @@ class ForumService:
         """Fetch forum discussions for a specific week using the JSON API."""
         try:
             start_date, end_date = self._get_week_boundaries(week_date)
-            logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            logger.info(f"Starting forum discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            fetch_start_time = time.time()
 
             # Use the JSON API endpoint with retries
             response = self._retry_with_backoff(
@@ -61,15 +61,20 @@ class ForumService:
             )
             response.raise_for_status()
             data = response.json()
-            logger.info("Successfully fetched forum data from API")
+            initial_fetch_time = time.time() - fetch_start_time
+            logger.info(f"Initial forum data fetch completed in {initial_fetch_time:.2f} seconds")
 
             discussions = []
             if 'topic_list' in data and 'topics' in data['topic_list']:
                 topics = data['topic_list']['topics']
-                logger.info(f"Found {len(topics)} topics in the response")
+                total_topics = len(topics)
+                logger.info(f"Found {total_topics} topics to process")
 
-                for topic in topics:
+                for index, topic in enumerate(topics, 1):
                     try:
+                        process_start_time = time.time()
+                        logger.info(f"Processing topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
+
                         created_at = topic.get('created_at')
                         if not created_at:
                             logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
@@ -89,6 +94,9 @@ class ForumService:
                             slug = topic.get('slug', str(topic_id))
                             topic_url = f"https://ethereum-magicians.org/t/{slug}/{topic_id}.json"
 
+                            logger.debug(f"Fetching details for topic: {topic.get('title', 'Unknown')}")
+                            topic_fetch_start = time.time()
+
                             # Fetch full topic content with retries
                             topic_response = self._retry_with_backoff(
                                 self.session.get,
@@ -97,6 +105,9 @@ class ForumService:
                             )
                             topic_response.raise_for_status()
                             topic_data = topic_response.json()
+
+                            topic_fetch_time = time.time() - topic_fetch_start
+                            logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
 
                             if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
                                 first_post = topic_data['post_stream']['posts'][0]
@@ -116,13 +127,15 @@ class ForumService:
                                     'url': f"https://ethereum-magicians.org/t/{slug}/{topic_id}",
                                     'date': post_date
                                 })
-                                logger.info(f"Successfully added discussion: {topic.get('title', '')}")
+                                process_time = time.time() - process_start_time
+                                logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
 
                     except Exception as e:
                         logger.error(f"Error processing topic: {str(e)}", exc_info=True)
                         continue
 
-            logger.info(f"Successfully fetched {len(discussions)} relevant discussions for the week")
+            total_fetch_time = time.time() - fetch_start_time
+            logger.info(f"Successfully fetched {len(discussions)} relevant discussions in {total_fetch_time:.2f} seconds")
             return discussions
 
         except Exception as e:
