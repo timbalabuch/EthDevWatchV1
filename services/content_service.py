@@ -261,28 +261,29 @@ class ContentService:
                 {
                     "role": "system",
                     "content": """You are a technical writer specializing in blockchain technology documentation. 
-                    Your task is to create a summary ONLY about Ethereum repository updates.
+                    Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
 
-                    STRICT RULES:
-                    1. Focus ONLY on code changes, pull requests, and commits
-                    2. DO NOT include ANY forum discussions, community feedback, or meeting notes
-                    3. Only reference GitHub repository activities
-                    4. Each update must link directly to a specific repository change
+                    Most important rules:
+                    1. Focus ONLY on repository updates and technical changes
+                    2. DO NOT include community discussions or forum content
+                    3. Explain complex ideas in simple terms
+                    4. Focus on real-world impact and benefits
+                    5. Keep explanations clear and simple
 
                     Required sections:
-                    1. Repository Updates - Changes from code repositories only
-                    2. Technical Highlights - Implementation details and code improvements
-                    3. Next Steps - Upcoming repository work and planned code changes"""
+                    1. Repository Updates
+                    2. Technical Highlights
+                    3. Next Steps"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a technical summary focusing ONLY on the GitHub repository updates for the week of {publication_date.strftime('%Y-%m-%d')}.
-
-                    IMPORTANT:
-                    - Focus only on code changes, PRs, and commits
-                    - No forum discussions or community content
-                    - Each point should reference a specific code change
-                    - Only discuss repository activities
+                    "content": f"""Create a technical summary about Ethereum repository updates for the week of {publication_date.strftime('%Y-%m-%d')}.
+                    Remember:
+                    - Focus only on code changes and technical updates
+                    - Do not include community discussions
+                    - Use plain language
+                    - Keep explanations clear and simple
+                    - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
 
                     Here are the repository updates to analyze:
                     {json.dumps(repo_summaries, indent=2)}"""
