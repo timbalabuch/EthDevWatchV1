@@ -59,6 +59,10 @@ args = "Generate Article"
 task = "workflow.run"
 args = "Regenerate and Cleanup Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Regenerate Articles with Tweets"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -213,6 +217,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/regenerate_articles.py && python migrations/remove_duplicate_articles.py && python scripts/cleanup_future_articles.py"
+
+[[workflows.workflow]]
+name = "Regenerate Articles with Tweets"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/regenerate_articles.py"
 
 [[ports]]
 localPort = 5000

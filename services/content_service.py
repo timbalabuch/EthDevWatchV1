@@ -11,6 +11,7 @@ from openai import OpenAI, RateLimitError
 
 from app import db
 from models import Article, Source
+from services.twitter_service import TwitterService
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,10 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
-            logger.info("ContentService initialized with OpenAI client")
+            self.twitter = TwitterService()
+            logger.info("ContentService initialized with OpenAI client and Twitter service")
         except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+            logger.error(f"Failed to initialize services: {str(e)}")
             raise
 
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
@@ -154,6 +156,18 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
+            # Fetch tweets for the week
+            try:
+                tweets = self.twitter.get_list_tweets(
+                    list_id="1793204998274163087",
+                    start_date=publication_date,
+                    end_date=publication_date + timedelta(days=7)
+                )
+                tweets_html = self.twitter.format_tweets_html(tweets)
+            except Exception as e:
+                logger.error(f"Error fetching tweets: {str(e)}")
+                tweets_html = ""
+
             week_str = publication_date.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
@@ -257,13 +271,14 @@ class ContentService:
                 content = response.choices[0].message.content
                 sections = self._extract_content_sections(content)
 
-            # Format the content as HTML
+            # Format the content as HTML with tweets
             content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps']
+                'next_steps': sections['next_steps'],
+                'tweets_html': tweets_html
             }, None)
 
             article = Article(
@@ -334,6 +349,10 @@ class ContentService:
                         </ul>
                     </div>
                 """
+
+            # Add tweets section if available
+            if summary_data.get('tweets_html'):
+                article_html += summary_data.get('tweets_html')
 
             article_html += "</article>"
 

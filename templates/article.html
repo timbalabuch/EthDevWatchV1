@@ -83,5 +83,54 @@
 .sources-section {
     background: var(--bs-dark);
 }
+
+/* Tweet styles */
+.top-tweets-section {
+    background: var(--bs-dark);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.tweet-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tweet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.tweet-author {
+    color: var(--bs-info);
+    font-weight: 500;
+}
+
+.tweet-link {
+    color: var(--bs-info);
+    text-decoration: none;
+}
+
+.tweet-content {
+    margin: 0.5rem 0;
+    white-space: pre-wrap;
+}
+
+.tweet-stats {
+    display: flex;
+    gap: 1rem;
+    color: var(--bs-secondary);
+    font-size: 0.9rem;
+}
+
+.tweet-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
 </style>
 {% endblock %}
