@@ -2,6 +2,7 @@ import sys
 import os
 import logging
 from datetime import datetime
+import pytz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
@@ -18,29 +19,33 @@ def cleanup_future_articles():
     """Remove any articles with future publication dates"""
     try:
         with app.app_context():
-            current_date = datetime.utcnow()
-            
+            # Get current UTC time with timezone information
+            current_date = datetime.now(pytz.UTC)
+            logger.info(f"Current UTC time: {current_date}")
+
             # Find articles with future dates
             future_articles = Article.query.filter(
                 Article.publication_date > current_date
             ).all()
-            
+
             if not future_articles:
                 logger.info("No future articles found")
                 return True
-                
+
             # Log the articles that will be removed
             logger.info(f"Found {len(future_articles)} articles with future dates")
             for article in future_articles:
                 logger.info(f"Removing article: {article.title} (Date: {article.publication_date})")
+                # Delete the article and its associated sources (cascade delete)
                 db.session.delete(article)
-            
+
             db.session.commit()
             logger.info("Successfully removed all future articles")
             return True
-            
+
     except Exception as e:
         logger.error(f"Error cleaning up future articles: {str(e)}")
+        db.session.rollback()
         return False
 
 if __name__ == "__main__":
