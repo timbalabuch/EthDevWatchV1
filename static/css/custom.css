@@ -269,3 +269,30 @@ body {
 .article-list .card-body {
     padding: 1.5rem;
 }
+
+/* Add to existing CSS file */
+.technical-term {
+    border-bottom: 1px dashed var(--link-color);
+    cursor: help;
+    position: relative;
+}
+
+.term-tooltip {
+    position: fixed;
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    max-width: 300px;
+    z-index: 1000;
+    box-shadow: var(--glow-shadow);
+    backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+    color: var(--text-color);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

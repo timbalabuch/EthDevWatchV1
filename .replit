@@ -59,6 +59,10 @@ args = "Add Weekly Metrics Table"
 task = "workflow.run"
 args = "Add Forum Summary Column"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Create Blockchain Terms Table"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -213,6 +217,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_forum_summary.py"
+
+[[workflows.workflow]]
+name = "Create Blockchain Terms Table"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/add_blockchain_terms.py"
 
 [[ports]]
 localPort = 5000

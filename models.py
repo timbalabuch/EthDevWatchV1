@@ -55,9 +55,19 @@ class Article(db.Model):
         """Extract brief summary from content."""
         if not self.content:
             return None
-        soup = BeautifulSoup(self.content, 'lxml')
-        overview = soup.find('div', class_='overview-content')
-        return str(overview) if overview else None
+        try:
+            soup = BeautifulSoup(self.content, 'lxml')
+            # Look for the overview content div
+            overview = soup.find('div', class_='overview-section')
+            if overview:
+                # Get the actual content div inside overview section
+                overview_content = overview.find('div', class_='overview-content')
+                if overview_content:
+                    return str(overview_content.get_text(strip=True))
+            return None
+        except Exception as e:
+            print(f"Error extracting brief summary: {e}")
+            return None
 
     @property
     def repository_updates(self):
@@ -96,3 +106,10 @@ class Source(db.Model):
     repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+
+class BlockchainTerm(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    term = db.Column(db.String(100), unique=True, nullable=False)
+    explanation = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
