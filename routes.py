@@ -33,22 +33,13 @@ def get_current_utc() -> datetime:
     return datetime.now(pytz.UTC)
 
 def get_last_completed_week() -> Tuple[datetime, datetime]:
-    """Get the date range for the last completed week.
-
-    Returns:
-        Tuple containing (start_date, end_date) for the last completed week
-    """
+    """Get the date range for the last completed week."""
     current_date = get_current_utc()
-
-    # Calculate the last completed Sunday
-    days_since_sunday = current_date.weekday() + 1  # +1 because we want the previous Sunday
+    days_since_sunday = current_date.weekday() + 1
     last_sunday = current_date - timedelta(days=days_since_sunday)
     last_sunday = last_sunday.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-    # Get the Monday of that week
     last_monday = last_sunday - timedelta(days=6)
     last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
-
     return last_monday, last_sunday
 
 @app.route('/')
@@ -57,11 +48,33 @@ def index() -> str:
     last_monday, last_sunday = get_last_completed_week()
     logger.info(f"Filtering articles up to last completed week: {last_sunday.strftime('%Y-%m-%d')}")
 
-    articles = Article.query.filter(
-        Article.publication_date <= last_sunday
-    ).order_by(Article.publication_date.desc()).all()
+    # Get page number from request
+    page = request.args.get('page', 1, type=int)
+    per_page = 6
 
-    return render_template('index.html', articles=articles)
+    # Get current week's article
+    current_week_article = Article.query.filter(
+        Article.publication_date <= last_sunday,
+        Article.publication_date >= last_monday
+    ).first()
+
+    # Get other articles with pagination
+    other_articles_query = Article.query.filter(
+        Article.publication_date <= last_sunday
+    )
+
+    if current_week_article:
+        other_articles_query = other_articles_query.filter(
+            Article.id != current_week_article.id
+        )
+
+    other_articles = other_articles_query.order_by(
+        Article.publication_date.desc()
+    ).paginate(page=page, per_page=per_page)
+
+    return render_template('index.html', 
+                         current_week_article=current_week_article,
+                         other_articles=other_articles)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login() -> Union[str, Response]:
@@ -225,14 +238,7 @@ def page_not_found(e) -> Tuple[str, int]:
 def utility_processor() -> dict:
     """Add utility functions to template context."""
     def format_date(date: datetime) -> str:
-        """Format a date object for display.
-
-        Args:
-            date: Date to format
-
-        Returns:
-            Formatted date string
-        """
+        """Format a date object for display."""
         if not date:
             return ''
 

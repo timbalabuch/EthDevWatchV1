@@ -45,6 +45,10 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.featured-article.card {
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
 .card:hover {
     transform: translateY(-2px);
     box-shadow: var(--glow-shadow), 0 4px 20px rgba(59, 130, 246, 0.2);
@@ -118,7 +122,6 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
 }
 
-/* Gradient button styles */
 .btn-outline-light {
     color: #e2e8f0;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -133,4 +136,39 @@ body {
 
 .gap-2 {
     gap: 0.5rem !important;
+}
+
+/* Pagination styles */
+.pagination {
+    margin-bottom: 2rem;
+}
+
+.page-link {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: linear-gradient(to right, #3b82f6, #34d399);
+    border-color: transparent;
+    color: #fff;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(to right, #3b82f6, #34d399);
+    border-color: transparent;
+}
+
+.article-list .card {
+    transition: transform 0.2s ease;
+}
+
+.article-list .card:hover {
+    transform: translateX(5px);
+}
+
+.article-list .card-body {
+    padding: 1.5rem;
 }
