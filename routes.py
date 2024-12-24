@@ -52,25 +52,25 @@ def index() -> str:
     page = request.args.get('page', 1, type=int)
     per_page = 6
 
-    # Get current week's article
+    # Get current week's article, ensure it's unique by using first()
     current_week_article = Article.query.filter(
         Article.publication_date <= last_sunday,
         Article.publication_date >= last_monday
-    ).first()
+    ).order_by(Article.publication_date.desc()).first()
 
-    # Get other articles with pagination
+    # Get other articles with pagination, excluding current week's article
     other_articles_query = Article.query.filter(
-        Article.publication_date <= last_sunday
-    )
+        Article.publication_date <= last_monday
+    ).order_by(Article.publication_date.desc())
 
     if current_week_article:
         other_articles_query = other_articles_query.filter(
             Article.id != current_week_article.id
         )
 
-    other_articles = other_articles_query.order_by(
-        Article.publication_date.desc()
-    ).paginate(page=page, per_page=per_page)
+    other_articles = other_articles_query.paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     return render_template('index.html', 
                          current_week_article=current_week_article,
