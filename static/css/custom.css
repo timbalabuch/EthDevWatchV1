@@ -125,6 +125,10 @@ body {
     color: #ffffff !important;
 }
 
+[data-bs-theme="light"] .navbar-brand {
+    color: #1e293b !important;
+}
+
 .eth-logo {
     width: 40px;
     height: 40px;
