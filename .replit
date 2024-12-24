@@ -23,6 +23,10 @@ args = "Flask Server"
 task = "workflow.run"
 args = "Initialize Database"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Cleanup Future Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -51,6 +55,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/generate_sample_data.py"
+
+[[workflows.workflow]]
+name = "Cleanup Future Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/cleanup_future_articles.py"
 
 [[ports]]
 localPort = 5000

@@ -2,6 +2,7 @@ import os
 import logging
 import time
 from datetime import datetime, timedelta
+import pytz
 from github import Github
 from github.GithubException import GithubException, RateLimitExceededException
 
@@ -29,6 +30,12 @@ class GitHubService:
             logger.warning(f"Rate limit exceeded. Waiting {sleep_time} seconds for reset...")
             time.sleep(sleep_time)
 
+    def _make_timezone_aware(self, dt):
+        """Convert naive datetime to UTC timezone-aware datetime"""
+        if dt.tzinfo is None:
+            return pytz.UTC.localize(dt)
+        return dt.astimezone(pytz.UTC)
+
     def fetch_recent_content(self, start_date=None, end_date=None):
         """
         Fetch content from Ethereum PM repository for a specific date range.
@@ -39,6 +46,10 @@ class GitHubService:
             current_date = datetime.utcnow()
             end_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
             start_date = end_date - timedelta(days=7)
+
+        # Ensure dates are timezone-aware
+        start_date = self._make_timezone_aware(start_date)
+        end_date = self._make_timezone_aware(end_date)
 
         logger.info(f"Fetching content from {start_date} to {end_date}")
 
@@ -52,13 +63,14 @@ class GitHubService:
                 try:
                     issues = repo.get_issues(state='all', since=start_date)
                     for issue in issues:
-                        if start_date <= issue.created_at <= end_date:
+                        issue_date = self._make_timezone_aware(issue.created_at)
+                        if start_date <= issue_date <= end_date:
                             content.append({
                                 'type': 'issue',
                                 'title': issue.title,
                                 'url': issue.html_url,
                                 'body': issue.body,
-                                'created_at': issue.created_at.replace(tzinfo=None)
+                                'created_at': issue_date.replace(tzinfo=None)
                             })
                             logger.debug(f"Fetched issue: {issue.title}")
                 except RateLimitExceededException:
@@ -69,14 +81,16 @@ class GitHubService:
                 try:
                     commits = repo.get_commits(since=start_date, until=end_date)
                     for commit in commits:
-                        content.append({
-                            'type': 'commit',
-                            'title': commit.commit.message,
-                            'url': commit.html_url,
-                            'body': commit.commit.message,
-                            'created_at': commit.commit.author.date.replace(tzinfo=None)
-                        })
-                        logger.debug(f"Fetched commit: {commit.sha[:7]}")
+                        commit_date = self._make_timezone_aware(commit.commit.author.date)
+                        if start_date <= commit_date <= end_date:
+                            content.append({
+                                'type': 'commit',
+                                'title': commit.commit.message,
+                                'url': commit.html_url,
+                                'body': commit.commit.message,
+                                'created_at': commit_date.replace(tzinfo=None)
+                            })
+                            logger.debug(f"Fetched commit: {commit.sha[:7]}")
                 except RateLimitExceededException:
                     self._handle_rate_limit()
                     continue

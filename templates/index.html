@@ -26,12 +26,7 @@
                     </div>
 
                     <p class="text-muted mb-4">
-                        {% set current_date = now('utc', '%Y-%m-%d')|datetime %}
-                        {% set end_date = (article.publication_date + timedelta(days=6)) %}
-                        {% if end_date > current_date %}
-                            {% set end_date = current_date %}
-                        {% endif %}
-                        Week of {{ article.publication_date.strftime('%B %d') }} - {{ end_date.strftime('%B %d, %Y') }}
+                        Week of {{ format_date(article.publication_date) }} - {{ format_date(article.end_date) }}
                     </p>
 
                     <div class="article-summary mb-4">
