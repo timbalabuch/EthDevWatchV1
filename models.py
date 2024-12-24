@@ -21,13 +21,16 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    technical_highlights = db.Column(db.Text)
+    meeting_summaries = db.Column(db.Text)
+    next_steps = db.Column(db.Text)
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
-    forum_summary = db.Column(db.Text)  # New field for forum discussions
+    forum_summary = db.Column(db.Text)
 
     # Publishing workflow columns
-    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
+    status = db.Column(db.String(20), nullable=False, default='draft')
     scheduled_publish_date = db.Column(db.DateTime)
     published_date = db.Column(db.DateTime)
 
@@ -54,6 +57,6 @@ class Source(db.Model):
     url = db.Column(db.String(500), nullable=False)
     type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(200))
-    repository = db.Column(db.String(100), nullable=False)  # Added repository field
+    repository = db.Column(db.String(100), nullable=False)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
