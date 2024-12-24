@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import time
-import re
 from datetime import datetime, timedelta
 
 import pytz
@@ -74,15 +73,8 @@ class ContentService:
 
     def _clean_title(self, title):
         """Clean and format the article title"""
-        # Remove Title: prefix
         title = title.replace('Title:', '').strip()
-        # Remove text between parentheses and the parentheses
-        title = re.sub(r'\([^)]*\)', '', title).strip()
-        # Remove any remaining parentheses
-        title = title.replace('(', '').replace(')', '').strip()
-        # Remove quotation marks
         title = title.replace('"', '').replace("'", '').strip()
-        # Handle colons in title
         if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
             title = title.split(':', 1)[1].strip()
         return title
@@ -132,6 +124,98 @@ class ContentService:
             'tech_highlights': tech_highlights,
             'next_steps': next_steps
         }
+
+    def _format_article_content(self, summary_data):
+        """Format the article content with proper HTML structure"""
+        try:
+            article_html = f"""
+                <article class="ethereum-article">
+                    <div class="article-content mb-4">
+                        {summary_data.get('brief_summary', '')}
+                    </div>
+            """
+
+            # Repository updates section
+            if summary_data.get('repository_updates'):
+                article_html += f"""
+                    <div class="repository-updates mb-4">
+                        <h2 class="section-title">Repository Updates</h2>
+                        {self._format_repository_updates(summary_data.get('repository_updates', []))}
+                    </div>
+                """
+
+            # Technical highlights section
+            if summary_data.get('technical_highlights'):
+                article_html += f"""
+                    <div class="technical-highlights mb-4">
+                        <h2 class="section-title">Technical Highlights</h2>
+                        {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
+                    </div>
+                """
+
+            # Next steps section
+            if summary_data.get('next_steps'):
+                article_html += f"""
+                    <div class="next-steps mb-4">
+                        <h2 class="section-title">Next Steps</h2>
+                        <ul>
+                            {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
+                        </ul>
+                    </div>
+                """
+
+            article_html += "</article>"
+            logger.info("Generated article HTML length: %d", len(article_html))
+            return article_html
+
+        except Exception as e:
+            logger.error(f"Error formatting article content: {str(e)}")
+            raise
+
+    def _format_repository_updates(self, updates):
+        """Format repository updates section"""
+        formatted_updates = []
+        for update in updates:
+            if isinstance(update, str):
+                update_html = f"""
+                    <div class="repository-update mb-3">
+                        <div class="update-summary">
+                            <p>{update}</p>
+                        </div>
+                    </div>
+                """
+            else:
+                update_html = f"""
+                    <div class="repository-update mb-3">
+                        {f'<h3 class="repository-name">{update.get("repository")}</h3>' if update.get("repository") else ''}
+                        <div class="update-summary">
+                            <p>{update.get('summary', '')}</p>
+                        </div>
+                    </div>
+                """
+            formatted_updates.append(update_html)
+        return '\n'.join(formatted_updates)
+
+    def _format_technical_highlights(self, highlights):
+        """Format technical highlights section"""
+        formatted_highlights = []
+        for highlight in highlights:
+            if isinstance(highlight, str):
+                highlight_html = f"""
+                    <div class="highlight mb-3">
+                        <p>{highlight}</p>
+                    </div>
+                """
+            else:
+                highlight_html = f"""
+                    <div class="highlight mb-3">
+                        {f'<h3>{highlight.get("title")}</h3>' if highlight.get("title") else ''}
+                        <p>{highlight.get('description', '')}</p>
+                        {f'<div class="highlight-impact"><strong>Impact:</strong><p>{highlight.get("impact")}</p></div>' if highlight.get("impact") else ''}
+                    </div>
+                """
+            formatted_highlights.append(highlight_html)
+        return '\n'.join(formatted_highlights)
 
     def generate_weekly_summary(self, github_content, publication_date=None):
         """Generate a weekly summary article from GitHub content"""
@@ -295,100 +379,3 @@ class ContentService:
             logger.error(f"Error in generate_weekly_summary: {str(e)}")
             db.session.rollback()
             raise
-
-    def _format_article_content(self, summary_data):
-        """Format the article content with proper HTML structure"""
-        try:
-            article_html = f"""
-                <article class="ethereum-article">
-                    <div class="article-content mb-4">
-                        {summary_data.get('brief_summary', '')}
-                    </div>
-            """
-
-            # Only show repository updates section if there are updates
-            if summary_data.get('repository_updates'):
-                article_html += f"""
-                    <div class="repository-updates mb-4">
-                        <h2 class="section-title">Repository Updates</h2>
-                        {self._format_repository_updates(summary_data.get('repository_updates', []))}
-                    </div>
-                """
-
-            # Only show technical highlights section if there are highlights
-            if summary_data.get('technical_highlights'):
-                article_html += f"""
-                    <div class="technical-highlights mb-4">
-                        <h2 class="section-title">Technical Highlights</h2>
-                        {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
-                    </div>
-                """
-
-            # Only show next steps section if there are steps
-            if summary_data.get('next_steps'):
-                article_html += f"""
-                    <div class="next-steps mb-4">
-                        <h2 class="section-title">Next Steps</h2>
-                        <ul>
-                            {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
-                        </ul>
-                    </div>
-                """
-
-            article_html += "</article>"
-
-            logger.info("Generated article HTML length: %d", len(article_html))
-            return article_html
-
-        except Exception as e:
-            logger.error(f"Error formatting article content: {str(e)}")
-            raise
-
-    def _format_repository_updates(self, updates):
-        """Format repository updates section"""
-        formatted_updates = []
-        for update in updates:
-            if isinstance(update, str):
-                # Handle string updates
-                update_html = f"""
-                    <div class="repository-update mb-3">
-                        <div class="update-summary">
-                            <p>{update}</p>
-                        </div>
-                    </div>
-                """
-            else:
-                # Handle dictionary updates - only show repository name if it exists
-                update_html = f"""
-                    <div class="repository-update mb-3">
-                        {f'<h3 class="repository-name">{update.get("repository")}</h3>' if update.get("repository") else ''}
-                        <div class="update-summary">
-                            <p>{update.get('summary', '')}</p>
-                        </div>
-                    </div>
-                """
-            formatted_updates.append(update_html)
-        return '\n'.join(formatted_updates)
-
-    def _format_technical_highlights(self, highlights):
-        """Format technical highlights section"""
-        formatted_highlights = []
-        for highlight in highlights:
-            if isinstance(highlight, str):
-                # Handle string highlights
-                highlight_html = f"""
-                    <div class="highlight mb-3">
-                        <p>{highlight}</p>
-                    </div>
-                """
-            else:
-                # Handle dictionary highlights - only show title and impact if they exist
-                highlight_html = f"""
-                    <div class="highlight mb-3">
-                        {f'<h3>{highlight.get("title")}</h3>' if highlight.get("title") else ''}
-                        <p>{highlight.get('description', '')}</p>
-                        {f'<div class="highlight-impact"><strong>Impact:</strong><p>{highlight.get("impact")}</p></div>' if highlight.get("impact") else ''}
-                    </div>
-                """
-            formatted_highlights.append(highlight_html)
-        return '\n'.join(formatted_highlights)
