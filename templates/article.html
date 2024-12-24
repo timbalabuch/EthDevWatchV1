@@ -24,13 +24,18 @@
             <section class="overview mb-5">
                 <h2 class="h4 mb-4">Overview</h2>
                 <div class="content-section">
-                    <p class="lead mb-0">
-                        This week's update covers important developments in the Ethereum ecosystem. 
-                        The community has been actively discussing topics in both Ethereum Magicians and Ethereum Research forums,
-                        focusing on protocol improvements and technical proposals. Additionally, there have been significant
-                        updates across various Ethereum repositories, including consensus changes and implementation progress.
-                        Read on for detailed breakdowns of both community discussions and repository updates.
-                    </p>
+                    <div class="mb-4">
+                        <h3 class="h5 text-info mb-3">Community Highlights</h3>
+                        {% if article.forum_summary %}
+                            {{ article.forum_summary | safe }}
+                        {% else %}
+                            <p class="text-muted">Community discussions are being processed and will be available shortly.</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="h5 text-info mb-3">Repository Highlights</h3>
+                        {{ article.content | safe }}
+                    </div>
                 </div>
             </section>
 
@@ -210,9 +215,8 @@ h2 {
     color: var(--bs-text-muted);
 }
 
-.lead {
-    font-size: 1.1rem;
-    line-height: 1.6;
+.overview .h5 {
+    font-weight: 600;
 }
 </style>
 {% endblock %}
