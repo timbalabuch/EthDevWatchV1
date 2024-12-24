@@ -217,16 +217,21 @@ def edit_article(article_id: int) -> Union[str, Response]:
 @app.route('/article/<int:article_id>')
 def article(article_id: int) -> Union[str, Tuple[str, int]]:
     """Display a single article."""
-    article = Article.query.get_or_404(article_id)
-    last_monday, last_sunday = get_last_completed_week()
+    try:
+        article = Article.query.get_or_404(article_id)
+        last_monday, last_sunday = get_last_completed_week()
 
-    # Don't show articles from incomplete weeks
-    article_date = article.publication_date.replace(tzinfo=pytz.UTC) if article.publication_date.tzinfo is None else article.publication_date
-    if article_date > last_sunday:
-        logger.warning(f"Attempted to access future article {article_id} with date {article_date}")
+        # Don't show articles from incomplete weeks
+        article_date = article.publication_date.replace(tzinfo=pytz.UTC) if article.publication_date.tzinfo is None else article.publication_date
+        if article_date > last_sunday:
+            logger.warning(f"Attempted to access future article {article_id} with date {article_date}")
+            abort(404)
+
+        logger.debug(f"Rendering article {article_id} with date {article_date}")
+        return render_template('article.html', article=article)
+    except Exception as e:
+        logger.error(f"Error rendering article {article_id}: {str(e)}")
         abort(404)
-
-    return render_template('article.html', article=article)
 
 @app.errorhandler(404)
 def page_not_found(e) -> Tuple[str, int]:
