@@ -35,6 +35,10 @@ args = "Fix Article Dates"
 task = "workflow.run"
 args = "Remove Image URL"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Add Repository Column"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -105,6 +109,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/remove_image_url.py"
+
+[[workflows.workflow]]
+name = "Add Repository Column"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/add_repository_to_source.py"
 
 [[ports]]
 localPort = 5000

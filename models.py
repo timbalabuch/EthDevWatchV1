@@ -52,5 +52,6 @@ class Source(db.Model):
     url = db.Column(db.String(500), nullable=False)
     type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(200))
+    repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

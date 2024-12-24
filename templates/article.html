@@ -22,18 +22,35 @@
                     <div class="progress-bar mb-4">
                         <div class="progress-bar-fill" style="width: 100%"></div>
                     </div>
-                    <ul class="list-unstyled">
+                    {% if article.sources %}
+                        {% set repositories = {} %}
                         {% for source in article.sources %}
-                        <li class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
-                                    {{ source.title }}
-                                </a>
-                                <span class="badge bg-secondary">{{ source.type }}</span>
-                            </div>
-                        </li>
+                            {% if source.repository not in repositories %}
+                                {% do repositories.update({source.repository: []}) %}
+                            {% endif %}
+                            {% do repositories[source.repository].append(source) %}
                         {% endfor %}
-                    </ul>
+
+                        {% for repository, sources in repositories.items() %}
+                            <div class="repository-group mb-4">
+                                <h4 class="repository-name mb-3">{{ repository }}</h4>
+                                <ul class="list-unstyled">
+                                    {% for source in sources %}
+                                    <li class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
+                                                {{ source.title or 'Untitled' }}
+                                            </a>
+                                            <span class="badge bg-secondary">{{ source.type }}</span>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No sources available for this article.</p>
+                    {% endif %}
                 </div>
             </div>
         </article>

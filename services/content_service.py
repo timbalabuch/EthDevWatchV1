@@ -161,8 +161,9 @@ class ContentService:
             for item in current_week_content:
                 source = Source(
                     url=item['url'],
-                    type='github',
+                    type=item['type'],
                     title=item.get('title', ''),
+                    repository=item['repository'],  # Add repository field
                     article=article
                 )
                 db.session.add(source)
