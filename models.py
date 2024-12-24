@@ -91,23 +91,23 @@ class Article(db.Model):
         try:
             logger.info("Processing magicians discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            # Look for Magicians-specific content
-            discussions = []
-            if 'ethereum-magicians.org' in self.forum_summary:
-                logger.debug("Found ethereum-magicians.org URLs in forum summary")
-                for title in soup.find_all(['h2', 'h3']):
-                    if title.string and ('ethereum-magicians.org' in str(title.next_sibling) if title.next_sibling else False):
-                        discussion = title.parent
-                        discussions.append(str(discussion))
-                        logger.debug(f"Found magicians discussion: {title.string}")
 
-                if discussions:
-                    logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
-                    return f"""
-                    <div class="magicians-discussions">
-                        {''.join(discussions)}
-                    </div>
-                    """
+            # Look for any content blocks containing ethereum-magicians.org
+            discussions = []
+            for div in soup.find_all(['div', 'section']):
+                content = div.get_text()
+                if 'ethereum-magicians.org' in content:
+                    # Log the structure for debugging
+                    logger.debug(f"Found magicians content block: {div.name}, classes: {div.get('class', [])}")
+                    discussions.append(str(div))
+
+            if discussions:
+                logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
+                return f"""
+                <div class="magicians-discussions">
+                    {''.join(discussions)}
+                </div>
+                """
             logger.debug("No magicians discussions found in forum summary")
             return None
         except Exception as e:
@@ -123,23 +123,23 @@ class Article(db.Model):
         try:
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            # Look for Research-specific content by checking discussion titles and URLs
-            discussions = []
-            if 'ethresear.ch' in self.forum_summary:
-                logger.debug("Found ethresear.ch URLs in forum summary")
-                for title in soup.find_all(['h2', 'h3']):
-                    if title.string and ('ethresear.ch' in str(title.next_sibling) if title.next_sibling else False):
-                        discussion = title.parent
-                        discussions.append(str(discussion))
-                        logger.debug(f"Found research discussion: {title.string}")
 
-                if discussions:
-                    logger.info(f"Successfully extracted {len(discussions)} research discussions")
-                    return f"""
-                    <div class="research-discussions">
-                        {''.join(discussions)}
-                    </div>
-                    """
+            # Look for any content blocks containing ethresear.ch
+            discussions = []
+            for div in soup.find_all(['div', 'section']):
+                content = div.get_text()
+                if 'ethresear.ch' in content:
+                    # Log the structure for debugging
+                    logger.debug(f"Found research content block: {div.name}, classes: {div.get('class', [])}")
+                    discussions.append(str(div))
+
+            if discussions:
+                logger.info(f"Successfully extracted {len(discussions)} research discussions")
+                return f"""
+                <div class="research-discussions">
+                    {''.join(discussions)}
+                </div>
+                """
             logger.debug("No research discussions found in forum summary")
             return None
         except Exception as e:

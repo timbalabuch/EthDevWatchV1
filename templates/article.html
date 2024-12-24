@@ -70,7 +70,10 @@
                                         {% if config.DEBUG %}
                                         <div class="debug-info mt-3">
                                             <small class="text-muted">
-                                                Debug info: {{ article.forum_summary[:200] if article.forum_summary else 'No forum summary available' }}
+                                                Debug info: Forum summary length: {{ article.forum_summary|length if article.forum_summary else 0 }} chars
+                                                {% if article.forum_summary %}
+                                                <br>Content preview: {{ article.forum_summary[:200] }}...
+                                                {% endif %}
                                             </small>
                                         </div>
                                         {% endif %}
