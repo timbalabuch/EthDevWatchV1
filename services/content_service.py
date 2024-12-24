@@ -292,9 +292,12 @@ class ContentService:
         impact_length = len(intro_data.get('impact', ''))
         future_length = len(intro_data.get('future_implications', ''))
 
+        logger.info(f"Content data - Intro: {intro_data.get('introduction', '')[:100]}...")
         logger.info(f"Content lengths - Intro: {intro_length}, Significance: {sig_length}, Impact: {impact_length}, Future: {future_length}")
+        logger.info(f"Summary data: {json.dumps(summary_data)[:200]}...")
 
-        return f"""
+        # Build the article HTML
+        article_html = f"""
             <article class="ethereum-article">
                 <!-- Introduction and Context Sections -->
                 <section class="article-introduction mb-5">
@@ -338,35 +341,13 @@ class ContentService:
                 <!-- Repository Updates Section -->
                 <section class="repository-updates mb-4">
                     <h2 class="section-title">Repository Updates</h2>
-                    {''.join(f"""
-                        <div class="repository-update mb-3">
-                            <h3 class="repository-name">{update.get('repository', '')}</h3>
-                            <div class="update-summary">
-                                <p>{update.get('summary', '')}</p>
-                            </div>
-                            <div class="key-changes">
-                                <strong>Key Changes:</strong>
-                                <ul>
-                                    {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
-                                </ul>
-                            </div>
-                        </div>
-                    """ for update in summary_data.get('repository_updates', []))}
+                    {self._format_repository_updates(summary_data.get('repository_updates', []))}
                 </section>
 
                 <!-- Technical Highlights Section -->
                 <section class="technical-highlights mb-4">
                     <h2 class="section-title">Technical Highlights</h2>
-                    {''.join(f"""
-                        <div class="highlight mb-3">
-                            <h3>{highlight.get('title', '')}</h3>
-                            <p>{highlight.get('description', '')}</p>
-                            <div class="highlight-impact">
-                                <strong>Impact:</strong>
-                                <p>{highlight.get('impact', '')}</p>
-                            </div>
-                        </div>
-                    """ for highlight in summary_data.get('technical_highlights', []))}
+                    {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
                 </section>
 
                 <!-- Next Steps Section -->
@@ -378,3 +359,44 @@ class ContentService:
                 </section>
             </article>
         """
+
+        logger.info("Generated article HTML length: %d", len(article_html))
+        return article_html
+
+    def _format_repository_updates(self, updates):
+        """Format repository updates section"""
+        formatted_updates = []
+        for update in updates:
+            update_html = f"""
+                <div class="repository-update mb-3">
+                    <h3 class="repository-name">{update.get('repository', '')}</h3>
+                    <div class="update-summary">
+                        <p>{update.get('summary', '')}</p>
+                    </div>
+                    <div class="key-changes">
+                        <strong>Key Changes:</strong>
+                        <ul>
+                            {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
+                        </ul>
+                    </div>
+                </div>
+            """
+            formatted_updates.append(update_html)
+        return '\n'.join(formatted_updates)
+
+    def _format_technical_highlights(self, highlights):
+        """Format technical highlights section"""
+        formatted_highlights = []
+        for highlight in highlights:
+            highlight_html = f"""
+                <div class="highlight mb-3">
+                    <h3>{highlight.get('title', '')}</h3>
+                    <p>{highlight.get('description', '')}</p>
+                    <div class="highlight-impact">
+                        <strong>Impact:</strong>
+                        <p>{highlight.get('impact', '')}</p>
+                    </div>
+                </div>
+            """
+            formatted_highlights.append(highlight_html)
+        return '\n'.join(formatted_highlights)

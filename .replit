@@ -51,6 +51,10 @@ args = "Cleanup and Fix Articles"
 task = "workflow.run"
 args = "Remove Duplicates"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate Article"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -177,6 +181,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/remove_duplicate_articles.py"
+
+[[workflows.workflow]]
+name = "Generate Article"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/generate_one_article.py"
 
 [[ports]]
 localPort = 5000
