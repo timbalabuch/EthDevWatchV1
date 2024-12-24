@@ -41,23 +41,11 @@ args = "Add Repository Column"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Regenerate Articles"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Cleanup and Fix Articles"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Remove Duplicates"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Generate Article"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Regenerate and Cleanup Articles"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -70,10 +58,6 @@ args = "Add Weekly Metrics Table"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Add Forum Summary Column"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Update Forum Summaries"
 
 [[workflows.workflow]]
 name = "Flask Server"
@@ -161,20 +145,6 @@ task = "shell.exec"
 args = "python migrations/add_repository_to_source.py"
 
 [[workflows.workflow]]
-name = "Regenerate Articles"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/regenerate_articles.py"
-
-[[workflows.workflow]]
 name = "Cleanup and Fix Articles"
 author = "agent"
 
@@ -201,34 +171,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/remove_duplicate_articles.py"
-
-[[workflows.workflow]]
-name = "Generate Article"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/generate_one_article.py"
-
-[[workflows.workflow]]
-name = "Regenerate and Cleanup Articles"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/regenerate_articles.py && python migrations/remove_duplicate_articles.py && python scripts/cleanup_future_articles.py"
 
 [[workflows.workflow]]
 name = "Regenerate Articles with Tweets"
@@ -271,20 +213,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_forum_summary.py"
-
-[[workflows.workflow]]
-name = "Update Forum Summaries"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/update_forum_summaries.py"
 
 [[ports]]
 localPort = 5000
