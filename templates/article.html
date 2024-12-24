@@ -67,6 +67,13 @@
                                             are posted on ethresear.ch when there are new protocol research topics or 
                                             technical proposals to discuss.
                                         </p>
+                                        {% if config.DEBUG %}
+                                        <div class="debug-info mt-3">
+                                            <small class="text-muted">
+                                                Debug info: {{ article.forum_summary[:200] if article.forum_summary else 'No forum summary available' }}...
+                                            </small>
+                                        </div>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </div>

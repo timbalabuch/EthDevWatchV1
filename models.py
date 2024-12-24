@@ -1,9 +1,19 @@
+import logging
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 import pytz
 from bs4 import BeautifulSoup
+
+# Configure logging (adjust as needed for your application)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Set the desired logging level
+handler = logging.StreamHandler() # Or file handler for production
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -17,6 +27,7 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,52 +86,63 @@ class Article(db.Model):
     def magicians_discussions(self):
         """Extract Ethereum Magicians discussions."""
         if not self.forum_summary:
+            logger.debug("No forum summary available for magicians discussions")
             return None
         try:
+            logger.info("Processing magicians discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             # Look for Magicians-specific content
             discussions = []
             if 'ethereum-magicians.org' in self.forum_summary:
+                logger.debug("Found ethereum-magicians.org URLs in forum summary")
                 for title in soup.find_all(['h2', 'h3']):
                     if title.string and ('ethereum-magicians.org' in str(title.next_sibling) if title.next_sibling else False):
                         discussion = title.parent
                         discussions.append(str(discussion))
 
                 if discussions:
+                    logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
                     return f"""
                     <div class="magicians-discussions">
                         {''.join(discussions)}
                     </div>
                     """
+            logger.debug("No magicians discussions found in forum summary")
             return None
         except Exception as e:
-            print(f"Error extracting magicians discussions: {e}")
+            logger.error(f"Error extracting magicians discussions: {e}")
             return None
 
     @property
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
         if not self.forum_summary:
+            logger.debug("No forum summary available for research discussions")
             return None
         try:
+            logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             # Look for Research-specific content by checking discussion titles and URLs
             discussions = []
             if 'ethresear.ch' in self.forum_summary:
+                logger.debug("Found ethresear.ch URLs in forum summary")
                 for title in soup.find_all(['h2', 'h3']):
                     if title.string and ('ethresear.ch' in str(title.next_sibling) if title.next_sibling else False):
                         discussion = title.parent
                         discussions.append(str(discussion))
+                        logger.debug(f"Found research discussion: {title.string}")
 
                 if discussions:
+                    logger.info(f"Successfully extracted {len(discussions)} research discussions")
                     return f"""
                     <div class="research-discussions">
                         {''.join(discussions)}
                     </div>
                     """
+            logger.debug("No research discussions found in forum summary")
             return None
         except Exception as e:
-            print(f"Error extracting research discussions: {e}")
+            logger.error(f"Error extracting research discussions: {e}", exc_info=True)
             return None
 
     @property
@@ -152,6 +174,7 @@ class Article(db.Model):
             return []
         return [step.get_text(strip=True) for step in steps.find_all('li')]
 
+
 class Source(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String(500), nullable=False)
@@ -160,6 +183,7 @@ class Source(db.Model):
     repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+
 
 class BlockchainTerm(db.Model):
     id = db.Column(db.Integer, primary_key=True)
