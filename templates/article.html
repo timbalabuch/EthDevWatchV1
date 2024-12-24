@@ -60,38 +60,7 @@
             <section class="repo-updates-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repo Updates</h2>
-
-                    <!-- Weekly Updates Overview -->
-                    <div class="weekly-updates mb-4">
-                        <h3 class="h4 mb-3">Weekly Overview</h3>
-                        <div class="weekly-content">
-                            {{ article.content | safe }}
-                        </div>
-                    </div>
-
-                    <!-- Technical Highlights -->
-                    <div class="technical-highlights mb-4">
-                        <h3 class="h4 mb-3">Technical Highlights</h3>
-                        <div class="tech-content">
-                            {{ article.technical_highlights | safe }}
-                        </div>
-                    </div>
-
-                    <!-- Meeting Summaries -->
-                    <div class="meeting-summaries mb-4">
-                        <h3 class="h4 mb-3">Meeting Summaries</h3>
-                        <div class="meeting-content">
-                            {{ article.meeting_summaries | safe }}
-                        </div>
-                    </div>
-
-                    <!-- Next Steps -->
-                    <div class="next-steps">
-                        <h3 class="h4 mb-3">Next Steps</h3>
-                        <div class="steps-content">
-                            {{ article.next_steps | safe }}
-                        </div>
-                    </div>
+                    {{ article.content | safe }}
                 </div>
             </section>
 
@@ -250,55 +219,6 @@
 
 .btn:hover {
     background: var(--bs-btn-hover-bg);
-}
-
-/* Repo Updates Section Styling */
-.repo-updates-section h3 {
-    color: var(--bs-info);
-    font-weight: 600;
-}
-
-.weekly-content,
-.tech-content,
-.meeting-content,
-.steps-content {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    color: var(--bs-light);
-}
-
-.weekly-content p,
-.tech-content p,
-.meeting-content p,
-.steps-content p {
-    margin-bottom: 1.5rem;
-}
-
-.technical-highlights ul,
-.next-steps ul {
-    margin-bottom: 1.5rem;
-    padding-left: 1.5rem;
-    list-style-type: none;
-}
-
-.technical-highlights li,
-.next-steps li {
-    position: relative;
-    margin-bottom: 0.75rem;
-    padding-left: 1.5rem;
-}
-
-.technical-highlights li:before,
-.next-steps li:before {
-    content: "•";
-    position: absolute;
-    left: 0;
-    color: var(--bs-info);
-}
-
-/* Ensure accordion arrows are white */
-.accordion-button::after {
-    filter: brightness(0) invert(1);
 }
 </style>
 {% endblock %}
