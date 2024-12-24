@@ -71,11 +71,15 @@ class ContentService:
                 if publication_date > current_date:
                     logger.error(f"Cannot create article with future date: {publication_date}")
                     return None
+            else:
+                # If no publication_date provided, use the start of the current week
+                publication_date = current_date - timedelta(days=current_date.weekday())
+                publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                publication_date = pytz.UTC.localize(publication_date)
 
-            # Filter content to only use items from the previous week
+            # Filter content to only use items from the specified week
             current_week_content = []
-            week_start = publication_date or current_date - timedelta(days=7)
-            week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
             week_end = week_start + timedelta(days=7)
 
             # Ensure we're not looking into the future
@@ -172,7 +176,7 @@ class ContentService:
             article = Article(
                 title=summary_data["title"],
                 content=content,
-                publication_date=publication_date or current_date,
+                publication_date=publication_date,
                 status='published',
                 published_date=current_date
             )

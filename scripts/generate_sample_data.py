@@ -2,6 +2,8 @@ import sys
 import os
 import logging
 from datetime import datetime, timedelta
+import pytz # Added import for timezone support
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
@@ -21,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 def get_monday_of_week(date):
     """Get the Monday of the week for a given date"""
-    return date - timedelta(days=date.weekday())
+    monday = date - timedelta(days=date.weekday())
+    return monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
 def get_sunday_of_week(date):
     """Get the Sunday of the week (end of week) for a given date"""
@@ -32,6 +35,7 @@ def get_missing_weeks():
     """Get a list of weeks that don't have articles"""
     with app.app_context():
         current_date = datetime.utcnow()
+        current_date = pytz.UTC.localize(current_date)
         last_monday = get_monday_of_week(current_date)
         missing_weeks = []
 
