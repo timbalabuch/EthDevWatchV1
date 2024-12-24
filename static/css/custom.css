@@ -8,6 +8,13 @@
 [data-bs-theme="light"] {
     --card-bg: rgba(255, 255, 255, 0.9);
     --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+}
+
+[data-bs-theme="dark"] {
+    --text-color: #e2e8f0;
+    --text-muted: #94a3b8;
 }
 
 /* Theme transition effects */
@@ -17,7 +24,7 @@
 
 body {
     background: linear-gradient(to bottom right, #0f172a, #1e293b);
-    color: #e2e8f0;
+    color: var(--text-color);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -26,7 +33,6 @@ body {
 
 [data-bs-theme="light"] body {
     background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
-    color: #1e293b;
 }
 
 .hero-section {
@@ -38,7 +44,7 @@ body {
 .hero-section h1 {
     font-size: 4rem;
     font-weight: 700;
-    background: linear-gradient(to right, #e2e8f0, #94a3b8);
+    background: linear-gradient(to right, var(--text-color), var(--text-muted));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
@@ -47,7 +53,7 @@ body {
 
 .hero-section .subtitle {
     font-size: 1.5rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     max-width: 800px;
     margin: 0 auto;
     font-weight: 300;
@@ -76,19 +82,24 @@ body {
 }
 
 .card-title {
-    color: #e2e8f0;
+    color: var(--text-color);
     font-size: 1.75rem;
     font-weight: 600;
     font-family: 'Titillium Web', sans-serif;
 }
 
-[data-bs-theme="light"] .card-title {
-    color: #1e293b;
+.card-title a {
+    color: var(--text-color);
+    text-decoration: none;
 }
 
 .card-title a:hover {
-    color: #3b82f6 !important;
+    color: var(--gradient-start) !important;
     transition: color 0.3s ease;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
 }
 
 .progress-bar {
@@ -122,11 +133,7 @@ body {
 .navbar-brand {
     font-family: 'Titillium Web', sans-serif;
     font-weight: 600;
-    color: #ffffff !important;
-}
-
-[data-bs-theme="light"] .navbar-brand {
-    color: #1e293b !important;
+    color: var(--text-color) !important;
 }
 
 .eth-logo {
@@ -154,18 +161,18 @@ body {
 .form-control {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #e2e8f0;
+    color: var(--text-color);
 }
 
 .form-control:focus {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(59, 130, 246, 0.5);
-    color: #e2e8f0;
+    color: var(--text-color);
     box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
 }
 
 .btn-outline-light {
-    color: #e2e8f0;
+    color: var(--text-color);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
 }
@@ -208,7 +215,7 @@ body {
 .page-link {
     background: var(--card-bg);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #e2e8f0;
+    color: var(--text-color);
     transition: all 0.3s ease;
 }
 
