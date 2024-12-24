@@ -29,43 +29,52 @@ class GitHubService:
             logger.warning(f"Rate limit exceeded. Waiting {sleep_time} seconds for reset...")
             time.sleep(sleep_time)
 
-    def fetch_recent_content(self):
-        """Fetch content from Ethereum PM repository from the past week with retry logic"""
+    def fetch_recent_content(self, start_date=None, end_date=None):
+        """
+        Fetch content from Ethereum PM repository for a specific date range.
+        If no dates provided, defaults to the previous week.
+        """
+        if start_date is None:
+            # Get previous week's Monday to Sunday
+            current_date = datetime.utcnow()
+            end_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_date = end_date - timedelta(days=7)
+
+        logger.info(f"Fetching content from {start_date} to {end_date}")
+
         for attempt in range(self.max_retries):
             try:
-                logger.info(f"Fetching recent content from {self.pm_repo} (Attempt {attempt + 1}/{self.max_retries})")
+                logger.info(f"Fetching content from {self.pm_repo} (Attempt {attempt + 1}/{self.max_retries})")
                 repo = self.github.get_repo(self.pm_repo)
-                one_week_ago = datetime.utcnow() - timedelta(days=7)
-
-                # Get recent issues and pull requests
-                issues = repo.get_issues(state='all', since=one_week_ago)
                 content = []
 
-                # Fetch issues with retry logic
+                # Get recent issues and pull requests
                 try:
+                    issues = repo.get_issues(state='all', since=start_date)
                     for issue in issues:
-                        content.append({
-                            'type': 'issue',
-                            'title': issue.title,
-                            'url': issue.html_url,
-                            'body': issue.body,
-                            'created_at': issue.created_at
-                        })
-                        logger.debug(f"Fetched issue: {issue.title}")
+                        if start_date <= issue.created_at <= end_date:
+                            content.append({
+                                'type': 'issue',
+                                'title': issue.title,
+                                'url': issue.html_url,
+                                'body': issue.body,
+                                'created_at': issue.created_at.replace(tzinfo=None)
+                            })
+                            logger.debug(f"Fetched issue: {issue.title}")
                 except RateLimitExceededException:
                     self._handle_rate_limit()
                     continue
 
-                # Get recent commits with retry logic
+                # Get recent commits
                 try:
-                    commits = repo.get_commits(since=one_week_ago)
+                    commits = repo.get_commits(since=start_date, until=end_date)
                     for commit in commits:
                         content.append({
                             'type': 'commit',
                             'title': commit.commit.message,
                             'url': commit.html_url,
                             'body': commit.commit.message,
-                            'created_at': commit.commit.author.date
+                            'created_at': commit.commit.author.date.replace(tzinfo=None)
                         })
                         logger.debug(f"Fetched commit: {commit.sha[:7]}")
                 except RateLimitExceededException:
@@ -77,20 +86,6 @@ class GitHubService:
 
             except GithubException as e:
                 logger.error(f"GitHub API error (Attempt {attempt + 1}/{self.max_retries}): {str(e)}")
-                if e.status == 304:
-                    logger.warning("Received 304 error - clearing internal cache and retrying...")
-                    # Force a fresh request by recreating the client
-                    self.github = Github(self.github_token)
-                elif e.status == 401:
-                    logger.error("Authentication failed - check GitHub token")
-                    break  # Don't retry auth failures
-                elif e.status == 403:
-                    if "rate limit exceeded" in str(e).lower():
-                        self._handle_rate_limit()
-                    else:
-                        logger.error("Permission denied")
-                        break
-
                 if attempt < self.max_retries - 1:
                     sleep_time = self.retry_delay * (attempt + 1)
                     logger.info(f"Retrying in {sleep_time} seconds...")
