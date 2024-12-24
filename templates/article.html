@@ -26,7 +26,36 @@
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Overview</h2>
                     <div class="overview-content">
-                        {{ article.content | safe }}
+                        <div class="article-summary">
+                            {{ article.content | safe }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Repository Updates Section -->
+            <section class="repository-updates-section mb-5">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h3 mb-4">Repository Updates</h2>
+                    <div class="repository-updates mb-4">
+                        <h3 class="h4 mb-3">Updates</h3>
+                        <div class="updates-content">
+                            {{ repository_updates | safe }}
+                        </div>
+                    </div>
+
+                    <div class="technical-highlights mb-4">
+                        <h3 class="h4 mb-3">Technical Highlights</h3>
+                        <div class="highlights-content">
+                            {{ technical_highlights | safe }}
+                        </div>
+                    </div>
+
+                    <div class="next-steps">
+                        <h3 class="h4 mb-3">Next Steps</h3>
+                        <div class="steps-content">
+                            {{ next_steps | safe }}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -66,57 +95,6 @@
                 </div>
             </section>
 
-            <!-- Source Section -->
-            <section class="repository-section">
-                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h3 mb-4">Source</h2>
-                    {% if article.sources %}
-                        {% set repo_sources = {} %}
-                        {% for source in article.sources %}
-                            {% if repo_sources.get(source.repository) %}
-                                {% set _ = repo_sources[source.repository].append(source) %}
-                            {% else %}
-                                {% set _ = repo_sources.update({source.repository: [source]}) %}
-                            {% endif %}
-                        {% endfor %}
-
-                        <div class="accordion" id="repositoryAccordion">
-                            {% for repo, sources in repo_sources.items() %}
-                                <div class="accordion-item bg-dark border-light border-opacity-10 mb-3">
-                                    <h3 class="accordion-header">
-                                        <button class="accordion-button bg-dark text-light collapsed" type="button"
-                                                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}"
-                                                aria-expanded="false" aria-controls="collapse{{ loop.index }}">
-                                            <span class="h5 repository-name mb-0">{{ repo }}</span>
-                                            <span class="badge bg-info rounded-pill ms-2">{{ sources|length }} updates</span>
-                                        </button>
-                                    </h3>
-                                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
-                                         data-bs-parent="#repositoryAccordion">
-                                        <div class="accordion-body">
-                                            <ul class="list-unstyled mb-0">
-                                                {% for source in sources %}
-                                                    <li class="mb-3">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <a href="{{ source.url }}" target="_blank"
-                                                               class="text-info text-decoration-none source-link">
-                                                                {{ source.title or 'Untitled' }}
-                                                            </a>
-                                                            <span class="badge bg-secondary ms-2">{{ source.type }}</span>
-                                                        </div>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No repository updates available for this article.</p>
-                    {% endif %}
-                </div>
-            </section>
         </div>
     </div>
 </article>
@@ -231,6 +209,35 @@
 
 .btn:hover {
     background: var(--bs-btn-hover-bg);
+}
+
+
+/* Repository Updates Section Styling */
+.repository-updates-section h3 {
+    color: var(--bs-info);
+}
+
+.updates-content,
+.highlights-content,
+.steps-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+}
+
+.updates-content p,
+.highlights-content p,
+.steps-content p {
+    margin-bottom: 1.5rem;
+}
+
+.steps-content ul {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.steps-content li {
+    margin-bottom: 0.75rem;
 }
 </style>
 {% endblock %}
