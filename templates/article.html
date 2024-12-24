@@ -60,9 +60,7 @@
             <section class="repo-updates-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repo Updates</h2>
-                    <div class="repo-content">
-                        {{ article.content | safe }}
-                    </div>
+                    {{ article.content | safe }}
                 </div>
             </section>
 
@@ -134,15 +132,13 @@
 }
 
 /* Content styling */
-.forum-content,
-.repo-content {
+.forum-content {
     font-size: 1.1rem;
     line-height: 1.8;
     color: var(--bs-light);
 }
 
-.forum-content p,
-.repo-content p {
+.forum-content p {
     margin-bottom: 1.5rem;
 }
 
