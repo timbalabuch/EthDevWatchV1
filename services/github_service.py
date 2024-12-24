@@ -50,69 +50,53 @@ class GitHubService:
             logger.info(f"Fetching content from {repo_name}")
             repo = self.github.get_repo(repo_name)
 
-            # Get recent issues and pull requests
-            try:
-                issues = repo.get_issues(state='all', since=start_date)
-                for issue in issues:
-                    issue_date = self._make_timezone_aware(issue.created_at)
-                    if start_date <= issue_date <= end_date:
-                        content.append({
-                            'type': 'issue',
-                            'title': issue.title,
-                            'url': issue.html_url,
-                            'body': issue.body,
-                            'created_at': issue_date.replace(tzinfo=None),
-                            'repository': repo_name
-                        })
-                        logger.debug(f"Fetched issue from {repo_name}: {issue.title}")
-            except RateLimitExceededException:
-                self._handle_rate_limit()
-                # Retry after handling rate limit
-                issues = repo.get_issues(state='all', since=start_date)
-                for issue in issues:
-                    issue_date = self._make_timezone_aware(issue.created_at)
-                    if start_date <= issue_date <= end_date:
-                        content.append({
-                            'type': 'issue',
-                            'title': issue.title,
-                            'url': issue.html_url,
-                            'body': issue.body,
-                            'created_at': issue_date.replace(tzinfo=None),
-                            'repository': repo_name
-                        })
-                        logger.debug(f"Fetched issue from {repo_name}: {issue.title}")
+            # Get recent issues and pull requests with error handling
+            for attempt in range(self.max_retries):
+                try:
+                    issues = repo.get_issues(state='all', since=start_date)
+                    for issue in issues:
+                        issue_date = self._make_timezone_aware(issue.created_at)
+                        if start_date <= issue_date <= end_date:
+                            content.append({
+                                'type': 'issue',
+                                'title': issue.title,
+                                'url': issue.html_url,
+                                'body': issue.body,
+                                'created_at': issue_date.replace(tzinfo=None),
+                                'repository': repo_name
+                            })
+                            logger.debug(f"Fetched issue from {repo_name}: {issue.title}")
+                    break
+                except RateLimitExceededException:
+                    if attempt < self.max_retries - 1:
+                        self._handle_rate_limit()
+                    else:
+                        logger.error(f"Failed to fetch issues from {repo_name} after {self.max_retries} attempts")
+                        raise
 
-            # Get recent commits
-            try:
-                commits = repo.get_commits(since=start_date, until=end_date)
-                for commit in commits:
-                    commit_date = self._make_timezone_aware(commit.commit.author.date)
-                    if start_date <= commit_date <= end_date:
-                        content.append({
-                            'type': 'commit',
-                            'title': commit.commit.message,
-                            'url': commit.html_url,
-                            'body': commit.commit.message,
-                            'created_at': commit_date.replace(tzinfo=None),
-                            'repository': repo_name
-                        })
-                        logger.debug(f"Fetched commit from {repo_name}: {commit.sha[:7]}")
-            except RateLimitExceededException:
-                self._handle_rate_limit()
-                # Retry after handling rate limit
-                commits = repo.get_commits(since=start_date, until=end_date)
-                for commit in commits:
-                    commit_date = self._make_timezone_aware(commit.commit.author.date)
-                    if start_date <= commit_date <= end_date:
-                        content.append({
-                            'type': 'commit',
-                            'title': commit.commit.message,
-                            'url': commit.html_url,
-                            'body': commit.commit.message,
-                            'created_at': commit_date.replace(tzinfo=None),
-                            'repository': repo_name
-                        })
-                        logger.debug(f"Fetched commit from {repo_name}: {commit.sha[:7]}")
+            # Get recent commits with error handling
+            for attempt in range(self.max_retries):
+                try:
+                    commits = repo.get_commits(since=start_date, until=end_date)
+                    for commit in commits:
+                        commit_date = self._make_timezone_aware(commit.commit.author.date)
+                        if start_date <= commit_date <= end_date:
+                            content.append({
+                                'type': 'commit',
+                                'title': commit.commit.message.split('\n')[0],  # First line of commit message
+                                'url': commit.html_url,
+                                'body': commit.commit.message,
+                                'created_at': commit_date.replace(tzinfo=None),
+                                'repository': repo_name
+                            })
+                            logger.debug(f"Fetched commit from {repo_name}: {commit.sha[:7]}")
+                    break
+                except RateLimitExceededException:
+                    if attempt < self.max_retries - 1:
+                        self._handle_rate_limit()
+                    else:
+                        logger.error(f"Failed to fetch commits from {repo_name} after {self.max_retries} attempts")
+                        raise
 
             logger.info(f"Successfully fetched {len(content)} items from {repo_name}")
             return content
@@ -143,7 +127,11 @@ class GitHubService:
                 try:
                     logger.info(f"Fetching from {repo_name} (Attempt {attempt + 1}/{self.max_retries})")
                     content = self._fetch_repository_content(repo_name, start_date, end_date)
-                    all_content.extend(content)
+                    if content:  # Only extend if we got content
+                        all_content.extend(content)
+                        logger.info(f"Added {len(content)} items from {repo_name}")
+                    else:
+                        logger.warning(f"No content found in {repo_name} for the specified date range")
                     break
                 except Exception as e:
                     logger.error(f"Error fetching from {repo_name} (Attempt {attempt + 1}/{self.max_retries}): {str(e)}")
