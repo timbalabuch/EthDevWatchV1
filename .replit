@@ -39,6 +39,10 @@ args = "Remove Image URL"
 task = "workflow.run"
 args = "Add Repository Column"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Regenerate Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -123,6 +127,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_repository_to_source.py"
+
+[[workflows.workflow]]
+name = "Regenerate Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/regenerate_articles.py"
 
 [[ports]]
 localPort = 5000

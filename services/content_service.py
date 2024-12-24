@@ -21,7 +21,7 @@ class ContentService:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
 
             self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4o"
+            self.model = "gpt-4o"  # Latest model as of May 13, 2024
             self.max_retries = 5
             self.base_delay = 1
             logger.info("ContentService initialized with OpenAI client")
@@ -30,6 +30,7 @@ class ContentService:
             raise
 
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
+        """Execute a function with exponential backoff retry logic"""
         last_exception = None
         for attempt in range(self.max_retries):
             try:
@@ -51,7 +52,27 @@ class ContentService:
                 logger.info(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
 
+    def organize_content_by_repository(self, github_content):
+        """Organize GitHub content by repository and type"""
+        repo_content = {}
+        for item in github_content:
+            repo = item['repository']
+            if repo not in repo_content:
+                repo_content[repo] = {
+                    'issues': [],
+                    'commits': [],
+                    'repository': repo
+                }
+
+            if item['type'] == 'issue':
+                repo_content[repo]['issues'].append(item)
+            elif item['type'] == 'commit':
+                repo_content[repo]['commits'].append(item)
+
+        return repo_content
+
     def generate_weekly_summary(self, github_content, publication_date=None):
+        """Generate a weekly summary article from GitHub content"""
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
@@ -70,64 +91,60 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
-            current_week_content = []
-            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            week_end = week_start + timedelta(days=7)
-
-            if week_end > current_date:
-                week_end = current_date
-
             # Organize content by repository
-            repo_content = {}
-            for item in github_content:
-                item_date = item.get('created_at')
-                if item_date:
-                    if isinstance(item_date, datetime) and item_date.tzinfo is None:
-                        item_date = pytz.UTC.localize(item_date)
-                    if week_start <= item_date <= week_end:
-                        repo = item['repository']
-                        if repo not in repo_content:
-                            repo_content[repo] = []
-                        repo_content[repo].append(item)
-                        current_week_content.append(item)
+            repo_content = self.organize_content_by_repository(github_content)
 
-            if not current_week_content:
-                logger.warning("No content found for the specified week")
+            if not repo_content:
+                logger.warning("No content found to summarize")
                 return None
 
-            week_str = week_start.strftime("%Y-%m-%d")
+            week_str = publication_date.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
-            # Create a detailed breakdown of content by repository
-            content_summary = []
-            for repo, items in repo_content.items():
-                content_summary.append(f"{repo}: {len(items)} items ({', '.join(set(item['type'] for item in items))})")
+            # Create repository summaries
+            repo_summaries = []
+            for repo, content in repo_content.items():
+                summary = {
+                    'repository': repo,
+                    'total_issues': len(content['issues']),
+                    'total_commits': len(content['commits']),
+                    'sample_issues': [
+                        {'title': issue['title'], 'url': issue['url']}
+                        for issue in content['issues'][:3]
+                    ],
+                    'sample_commits': [
+                        {'title': commit['title'], 'url': commit['url']}
+                        for commit in content['commits'][:3]
+                    ]
+                }
+                repo_summaries.append(summary)
 
             messages = [
                 {
                     "role": "system",
                     "content": """You are an expert in Ethereum ecosystem development. Create a comprehensive weekly summary 
-                    of development activities across multiple Ethereum repositories, including:
-                    - ethereum/pm: Core protocol meetings and discussions
-                    - ethereum/EIPs: Ethereum Improvement Proposals
-                    - ethereum/execution-apis: Execution layer API specifications
-                    - ethereum/execution-specs: Execution layer specifications
-                    - ethereum/consensus-specs: Consensus layer specifications
+                    of development activities across multiple Ethereum repositories. Focus on:
+
+                    1. Core protocol development (ethereum/pm)
+                    2. EIP proposals and changes (ethereum/EIPs)
+                    3. API specifications (ethereum/execution-apis)
+                    4. Implementation specifications (ethereum/execution-specs, ethereum/consensus-specs)
 
                     Structure the response as JSON with the following sections:
                     1. title: An engaging title highlighting key developments
                     2. brief_summary: 2-3 sentences capturing main updates
-                    3. meetings: Array of meeting summaries from ethereum/pm
-                    4. technical_updates: Array of technical changes from specs repositories
-                    5. proposals: Array of EIP updates and status changes
+                    3. repository_updates: Array of updates from each repository
+                    4. technical_highlights: Key technical changes and their impact
+                    5. next_steps: Expected next steps or ongoing discussions
 
-                    Include repository attribution for each item."""
+                    Keep the focus on technical accuracy and ecosystem impact."""
                 },
                 {
                     "role": "user",
                     "content": f"""Generate a comprehensive Ethereum ecosystem development update for the week of {week_str}.
-                    Content breakdown:
-                    {chr(10).join(content_summary)}"""
+
+                    Repository Activity Summary:
+                    {json.dumps(repo_summaries, indent=2)}"""
                 }
             ]
 
@@ -158,12 +175,13 @@ class ContentService:
                 published_date=current_date
             )
 
-            for item in current_week_content:
+            # Add sources for each piece of content
+            for item in github_content:
                 source = Source(
                     url=item['url'],
                     type=item['type'],
                     title=item.get('title', ''),
-                    repository=item['repository'],  # Add repository field
+                    repository=item['repository'],
                     article=article
                 )
                 db.session.add(source)
@@ -180,67 +198,55 @@ class ContentService:
             raise
 
     def _format_article_content(self, summary_data):
+        """Format the article content with proper HTML structure"""
         return f"""
         <div class="article-summary mb-4">
             <p class="lead">{summary_data.get('brief_summary', '')}</p>
         </div>
 
         <div class="ethereum-updates">
-            <div class="meetings-section mb-4">
-                <h2 class="section-title">Meeting Summaries</h2>
+            <div class="repository-updates mb-4">
+                <h2 class="section-title">Repository Updates</h2>
                 {''.join(f'''
-                <div class="meeting-card mb-3">
-                    <h3>{meeting.get('title', '')}</h3>
-                    <div class="meeting-source text-muted mb-2">
-                        <small>From {meeting.get('repository', 'ethereum/pm')}</small>
+                <div class="repository-card mb-3">
+                    <h3 class="repository-name">{update.get('repository', '')}</h3>
+                    <div class="repository-source text-muted mb-2">
+                        <small>{update.get('repository', '')}</small>
                     </div>
-                    <ul class="key-points list-unstyled">
-                        {''.join(f'<li class="mb-2">{point}</li>' for point in meeting.get('key_points', []))}
-                    </ul>
-                    <div class="decisions">
-                        <strong>Key Decisions:</strong>
-                        <p>{meeting.get('decisions', '')}</p>
+                    <div class="update-summary">
+                        <p>{update.get('summary', '')}</p>
+                    </div>
+                    <div class="key-changes">
+                        <strong>Key Changes:</strong>
+                        <ul>
+                            {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
+                        </ul>
                     </div>
                 </div>
-                ''' for meeting in summary_data.get('meetings', []))}
+                ''' for update in summary_data.get('repository_updates', []))}
             </div>
 
-            <div class="technical-section">
-                <h2 class="section-title">Technical Updates</h2>
+            <div class="technical-highlights mb-4">
+                <h2 class="section-title">Technical Highlights</h2>
                 {''.join(f'''
-                <div class="technical-card mb-3">
-                    <h3>{update.get('area', '')}</h3>
-                    <div class="repository-source text-muted mb-2">
-                        <small>From {update.get('repository', 'ethereum/specs')}</small>
-                    </div>
-                    <div class="changes">
-                        <strong>Changes:</strong>
-                        <p>{update.get('changes', '')}</p>
-                    </div>
+                <div class="highlight-card mb-3">
+                    <h3>{highlight.get('title', '')}</h3>
+                    <p>{highlight.get('description', '')}</p>
                     <div class="impact">
                         <strong>Impact:</strong>
-                        <p>{update.get('impact', '')}</p>
+                        <p>{highlight.get('impact', '')}</p>
                     </div>
                 </div>
-                ''' for update in summary_data.get('technical_updates', []))}
+                ''' for highlight in summary_data.get('technical_highlights', []))}
             </div>
 
-            <div class="proposals-section">
-                <h2 class="section-title">EIPs and Proposals</h2>
-                {''.join(f'''
-                <div class="proposal-card mb-3">
-                    <h3>{proposal.get('title', '')}</h3>
-                    <div class="repository-source text-muted mb-2">
-                        <small>From {proposal.get('repository', 'ethereum/EIPs')}</small>
-                    </div>
-                    <div class="summary">
-                        <p>{proposal.get('summary', '')}</p>
-                    </div>
-                    <div class="status">
-                        <strong>Status:</strong> {proposal.get('status', 'Draft')}
-                    </div>
+            <div class="next-steps">
+                <h2 class="section-title">Next Steps</h2>
+                <div class="next-steps-card">
+                    <ul>
+                        {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
+                    </ul>
                 </div>
-                ''' for proposal in summary_data.get('proposals', []))}
             </div>
         </div>
         """
