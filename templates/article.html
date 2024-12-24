@@ -84,27 +84,27 @@
                             {% for repo, sources in repo_sources.items() %}
                                 <div class="accordion-item bg-dark border-light border-opacity-10 mb-3">
                                     <h3 class="accordion-header">
-                                        <button class="accordion-button bg-dark text-light collapsed" type="button" 
-                                                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" 
+                                        <button class="accordion-button bg-dark text-light collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}"
                                                 aria-expanded="false" aria-controls="collapse{{ loop.index }}">
                                             <span class="h5 repository-name mb-0">{{ repo }}</span>
                                             <span class="badge bg-info rounded-pill ms-2">{{ sources|length }} updates</span>
                                         </button>
                                     </h3>
-                                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" 
+                                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
                                          data-bs-parent="#repositoryAccordion">
                                         <div class="accordion-body">
                                             <ul class="list-unstyled mb-0">
                                                 {% for source in sources %}
-                                                <li class="mb-3">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <a href="{{ source.url }}" target="_blank" 
-                                                           class="text-info text-decoration-none source-link">
-                                                            {{ source.title or 'Untitled' }}
-                                                        </a>
-                                                        <span class="badge bg-secondary ms-2">{{ source.type }}</span>
-                                                    </div>
-                                                </li>
+                                                    <li class="mb-3">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <a href="{{ source.url }}" target="_blank"
+                                                               class="text-info text-decoration-none source-link">
+                                                                {{ source.title or 'Untitled' }}
+                                                            </a>
+                                                            <span class="badge bg-secondary ms-2">{{ source.type }}</span>
+                                                        </div>
+                                                    </li>
                                                 {% endfor %}
                                             </ul>
                                         </div>
@@ -180,7 +180,7 @@
 }
 
 .accordion-button::after {
-    filter: invert(1);
+    filter: brightness(0) invert(1);
 }
 
 .accordion-body {
