@@ -11,7 +11,6 @@ from openai import OpenAI, RateLimitError
 
 from app import db
 from models import Article, Source
-from services.twitter_service import TwitterService
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +25,7 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
-            self.twitter = TwitterService()
-            logger.info("ContentService initialized with OpenAI client and Twitter service")
+            logger.info("ContentService initialized with OpenAI client")
         except Exception as e:
             logger.error(f"Failed to initialize services: {str(e)}")
             raise
@@ -156,23 +154,6 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
-            # Fetch tweets for the week
-            try:
-                logger.info(f"Fetching tweets for week of {publication_date.strftime('%Y-%m-%d')}")
-                tweets = self.twitter.get_list_tweets(
-                    list_id="1793204998274163087",
-                    start_date=publication_date,
-                    end_date=publication_date + timedelta(days=7)
-                )
-                tweets_html = self.twitter.format_tweets_html(tweets)
-                if tweets_html:
-                    logger.info(f"Successfully formatted {len(tweets)} tweets")
-                else:
-                    logger.warning("No tweets were formatted")
-            except Exception as e:
-                logger.error(f"Error fetching tweets: {str(e)}")
-                tweets_html = ""
-
             week_str = publication_date.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
@@ -276,15 +257,14 @@ class ContentService:
                 content = response.choices[0].message.content
                 sections = self._extract_content_sections(content)
 
-            # Format the content as HTML with tweets
+            # Format the content as HTML
             content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps'],
-                'tweets_html': tweets_html
-            }, None)
+                'next_steps': sections['next_steps']
+            })
 
             article = Article(
                 title=sections['title'],
@@ -316,7 +296,7 @@ class ContentService:
             db.session.rollback()
             raise
 
-    def _format_article_content(self, summary_data, intro_data):
+    def _format_article_content(self, summary_data):
         """Format the article content with proper HTML structure"""
         try:
             article_html = f"""
@@ -354,10 +334,6 @@ class ContentService:
                         </ul>
                     </div>
                 """
-
-            # Add tweets section if available
-            if summary_data.get('tweets_html'):
-                article_html += summary_data.get('tweets_html')
 
             article_html += "</article>"
 
