@@ -66,12 +66,42 @@
                 </div>
             </section>
 
-            <!-- Repo Updates Section -->
+            <!-- Repository Updates Section -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repository Updates</h2>
                     <div class="repository-updates">
-                        {{ article.content | safe }}
+                        {% if article.repository_updates %}
+                            {{ article.repository_updates | safe }}
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Highlights Section -->
+            <section class="technical-highlights-section mb-5">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h3 mb-4">Technical Highlights</h2>
+                    <div class="technical-highlights">
+                        {% if article.technical_highlights %}
+                            {{ article.technical_highlights | safe }}
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- Next Steps Section -->
+            <section class="next-steps-section mb-5">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h3 mb-4">Next Steps</h2>
+                    <div class="next-steps">
+                        {% if article.next_steps %}
+                            <ul>
+                                {% for step in article.next_steps %}
+                                    <li>{{ step }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
                     </div>
                 </div>
             </section>
@@ -146,7 +176,9 @@
 /* Content styling */
 .overview-content,
 .forum-content,
-.repository-updates {
+.repository-updates,
+.technical-highlights,
+.next-steps {
     font-size: 1.1rem;
     line-height: 1.8;
     color: var(--bs-light);
@@ -154,16 +186,19 @@
 
 .overview-content p,
 .forum-content p,
-.repository-updates p {
+.repository-updates p,
+.technical-highlights p {
     margin-bottom: 1.5rem;
 }
 
-.forum-content ul {
+.forum-content ul,
+.next-steps ul {
     margin-bottom: 1.5rem;
     padding-left: 1.5rem;
 }
 
-.forum-content li {
+.forum-content li,
+.next-steps li {
     margin-bottom: 0.75rem;
 }
 
