@@ -93,8 +93,12 @@ class Article(db.Model):
             return None
         try:
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            content = soup.find('div', class_='forum-discussion-summary')
+            content = soup.find('div', class_='forum-discussion-summary-research')
             if content and 'Ethereum Research Discussion' in content.get_text():
+                return str(content)
+            # If standard research section not found, check for research content in main summary
+            content = soup.find('div', class_='forum-discussion-summary')
+            if content and 'Ethereum Research' in content.get_text():
                 return str(content)
             return None
         except Exception as e:
