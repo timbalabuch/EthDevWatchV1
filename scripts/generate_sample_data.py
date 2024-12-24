@@ -9,7 +9,7 @@ from services.github_service import GitHubService
 from services.content_service import ContentService
 from models import Article, Source
 
-# Setup logging with more detailed format
+# Setup logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,17 +27,6 @@ def get_sunday_of_week(date):
     """Get the Sunday of the week (end of week) for a given date"""
     monday = get_monday_of_week(date)
     return monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
-
-def check_existing_articles():
-    """Check if we already have articles generated"""
-    try:
-        with app.app_context():
-            article_count = Article.query.count()
-            logger.info(f"Found {article_count} existing articles")
-            return article_count > 0
-    except Exception as e:
-        logger.error(f"Error checking existing articles: {str(e)}")
-        return False
 
 def generate_sample_articles():
     """Generate sample articles if they don't exist"""
@@ -59,47 +48,29 @@ def generate_sample_articles():
 
         logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
-        # Start with the last 4 weeks
-        start_date = datetime.utcnow() - timedelta(days=28)  # 4 weeks
+        # Generate articles for past 4 weeks from today
         current_date = datetime.utcnow()
-
-        # Get all Monday dates
         weeks = []
-        current = get_monday_of_week(start_date)
-        while current <= current_date:
-            weeks.append(current)
-            current += timedelta(days=7)
 
-        # Generate articles for each completed week
+        # Get the most recent Monday
+        last_monday = get_monday_of_week(current_date)
+
+        # Generate dates for the last 4 weeks
+        for i in range(4):
+            week_date = last_monday - timedelta(weeks=i)
+            weeks.append(week_date)
+            logger.info(f"Added week starting {week_date.strftime('%Y-%m-%d')} to generation queue")
+
         success_count = 0
 
         with app.app_context():
             for monday in weeks:
                 try:
-                    # Calculate the end of the week
-                    week_end = get_sunday_of_week(monday)
-
-                    # Skip if week hasn't ended yet
-                    if week_end > current_date:
-                        logger.info(f"Skipping incomplete week: {monday.strftime('%Y-%m-%d')}")
-                        continue
-
-                    # Check if article already exists for this week
-                    existing = Article.query.filter(
-                        Article.publication_date >= monday,
-                        Article.publication_date <= week_end
-                    ).first()
-
-                    if existing:
-                        logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
-                        success_count += 1
-                        continue
-
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
 
                     # Add delay between article generations to handle rate limits
                     if success_count > 0:
-                        delay = 60  # 60 seconds between generations
+                        delay = 30  # 30 seconds between generations
                         logger.info(f"Waiting {delay} seconds before generating next article...")
                         import time
                         time.sleep(delay)
