@@ -147,6 +147,12 @@ def article(article_id):
         logger.warning(f"Attempted to access future article {article_id} with date {article_date}")
         abort(404)
 
+    # Add debug logging for metrics
+    if article.metrics:
+        logger.debug(f"Article {article_id} metrics: {article.metrics.__dict__}")
+    else:
+        logger.debug(f"No metrics found for article {article_id}")
+
     return render_template('article.html', article=article)
 
 @app.errorhandler(404)
