@@ -71,6 +71,10 @@ args = "Add Weekly Metrics Table"
 task = "workflow.run"
 args = "Add Forum Summary Column"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Update Forum Summaries"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -267,6 +271,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_forum_summary.py"
+
+[[workflows.workflow]]
+name = "Update Forum Summaries"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/update_forum_summaries.py"
 
 [[ports]]
 localPort = 5000

@@ -23,7 +23,7 @@ class ForumService:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
 
             self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4"
+            self.model = "gpt-4"  # Using a more powerful model for better summaries
             self.max_retries = 3
             self.base_delay = 1
             self.session = requests.Session()
@@ -165,6 +165,7 @@ class ForumService:
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
         """Generate a summary of forum discussions using OpenAI."""
         if not discussions:
+            logger.warning("No discussions provided for summarization")
             return None
 
         try:
