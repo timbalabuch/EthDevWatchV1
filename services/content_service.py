@@ -21,7 +21,7 @@ class ContentService:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
 
             self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4o"  # Latest model as of May 13, 2024
+            self.model = "gpt-4"  # Fixed model name
             self.max_retries = 5
             self.base_delay = 1
             logger.info("ContentService initialized with OpenAI client")
@@ -140,36 +140,35 @@ class ContentService:
             intro_messages = [
                 {
                     "role": "system",
-                    "content": """You are an expert in explaining blockchain technology to both technical 
-                    and non-technical audiences. Create a comprehensive and detailed introduction (minimum 1800 characters) that thoroughly explains:
-                    1. The significance of this week's Ethereum developments with concrete examples and real-world implications
-                    2. What these changes mean for the blockchain ecosystem, including detailed explanations of technical concepts in simple terms
-                    3. The potential impact on users and developers, with specific scenarios and use cases
-                    4. Why these updates matter in simple terms, connecting technical improvements to practical benefits
-                    5. The broader context of these changes in Ethereum's evolution
+                    "content": """You are an expert in explaining blockchain technology. Generate a detailed article with the following REQUIRED sections:
 
-                    Your explanation should be engaging, thorough, and accessible to readers who are new to blockchain technology.
-                    Use analogies and real-world comparisons to explain complex concepts.
-                    Break down technical terms and provide context for industry-specific terminology.
+1. Introduction (MINIMUM 600 characters): A comprehensive overview of this week's Ethereum updates
+2. Significance (MINIMUM 500 characters): Detailed explanation of why these changes matter
+3. Impact (MINIMUM 400 characters): Analysis of effects on users and developers
+4. Future Implications (MINIMUM 300 characters): Exploration of long-term effects
 
-                    Structure the response as JSON with:
-                    1. introduction: A welcoming, detailed paragraph that sets context and draws readers in (at least 600 characters)
-                    2. significance: A thorough explanation of why these changes matter, using examples and analogies (at least 500 characters)
-                    3. impact: A comprehensive analysis of how these affect users and developers, with specific scenarios (at least 400 characters)
-                    4. future_implications: A detailed exploration of what this means for Ethereum's future (at least 300 characters)"""
+Your response MUST be in this exact JSON format:
+{
+    "introduction": "detailed text here...",
+    "significance": "detailed text here...",
+    "impact": "detailed text here...",
+    "future_implications": "detailed text here..."
+}
+
+Each section MUST meet its minimum character length requirement. The total response MUST be at least 1800 characters.
+Use clear, engaging language and real-world examples."""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a detailed, user-friendly introductory explanation (at least 1800 characters) for the Ethereum ecosystem updates for the week of {week_str}.
-                    Here are the key updates to explain:
-                    {json.dumps(repo_summaries, indent=2)}
+                    "content": f"""Create a detailed article about Ethereum ecosystem updates for the week of {week_str}.
+Here are the key updates to explain:
+{json.dumps(repo_summaries, indent=2)}
 
-                    Remember to:
-                    - Write in a conversational, engaging style
-                    - Break down complex concepts into simple terms
-                    - Use real-world analogies and examples
-                    - Connect technical changes to practical benefits
-                    - Explain the broader context and implications"""
+Remember:
+- Each section must meet its minimum length requirement
+- Use clear examples and analogies
+- Explain technical concepts in accessible terms
+- Connect changes to practical benefits"""
                 }
             ]
 
@@ -179,26 +178,55 @@ class ContentService:
                 messages=intro_messages,
                 response_format={"type": "json_object"},
                 temperature=0.7,
-                max_tokens=2500  # Increased to allow for longer responses
+                max_tokens=2500
             )
 
-            intro_data = json.loads(intro_response.choices[0].message.content)
-
-            # Verify the length requirement
-            total_length = sum(len(intro_data.get(field, "")) for field in ['introduction', 'significance', 'impact', 'future_implications'])
-            if total_length < 1800:
-                logger.warning(f"Introduction length ({total_length}) is less than required (1800 characters). Regenerating...")
-                # Retry with more emphasis on length
-                intro_messages[0]["content"] += "\n\nIMPORTANT: Your response MUST be at least 1800 characters in total length."
-                intro_response = self._retry_with_exponential_backoff(
-                    self.openai.chat.completions.create,
-                    model=self.model,
-                    messages=intro_messages,
-                    response_format={"type": "json_object"},
-                    temperature=0.7,
-                    max_tokens=2500
-                )
+            try:
                 intro_data = json.loads(intro_response.choices[0].message.content)
+                # Validate section lengths
+                section_lengths = {
+                    'introduction': len(intro_data.get('introduction', '')),
+                    'significance': len(intro_data.get('significance', '')),
+                    'impact': len(intro_data.get('impact', '')),
+                    'future_implications': len(intro_data.get('future_implications', ''))
+                }
+
+                logger.info(f"Section lengths: {section_lengths}")
+
+                # Check if any section is missing or too short
+                requirements = {
+                    'introduction': 600,
+                    'significance': 500,
+                    'impact': 400,
+                    'future_implications': 300
+                }
+
+                missing_requirements = {
+                    section: req_length
+                    for section, req_length in requirements.items()
+                    if section_lengths.get(section, 0) < req_length
+                }
+
+                if missing_requirements:
+                    logger.warning(f"Sections not meeting length requirements: {missing_requirements}")
+                    # Retry with more emphasis on length requirements
+                    intro_messages[0]["content"] += "\n\nIMPORTANT: Previous response was too short. Sections must meet minimum lengths:"
+                    for section, length in missing_requirements.items():
+                        intro_messages[0]["content"] += f"\n- {section}: at least {length} characters"
+
+                    intro_response = self._retry_with_exponential_backoff(
+                        self.openai.chat.completions.create,
+                        model=self.model,
+                        messages=intro_messages,
+                        response_format={"type": "json_object"},
+                        temperature=0.7,
+                        max_tokens=2500
+                    )
+                    intro_data = json.loads(intro_response.choices[0].message.content)
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
+                raise ValueError("Invalid JSON response from OpenAI")
 
             # Then generate the technical summary
             messages = [
