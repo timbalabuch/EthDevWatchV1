@@ -21,14 +21,21 @@
                 </div>
             </header>
 
-            <div class="article-content mb-5">
-                <section class="repository-updates">
-                    <h2 class="h4 mb-4">Repository Updates</h2>
-                    <div class="content-section">
-                        {{ article.content | safe }}
-                    </div>
-                </section>
-            </div>
+            {% if article.overview %}
+            <section class="article-overview mb-5">
+                <h2 class="h4 mb-4">Overview</h2>
+                <div class="content-section overview-content">
+                    {{ article.overview | safe }}
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="repository-updates mb-5">
+                <h2 class="h4 mb-4">Repository Updates</h2>
+                <div class="content-section">
+                    {{ article.content | safe }}
+                </div>
+            </section>
 
             {% if article.forum_summary %}
             <section class="community-discussions">
@@ -154,7 +161,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.content-section {
+.content-section, .overview-content {
     padding: 1.5rem;
     background: var(--bs-dark);
     border-radius: 0.5rem;
@@ -167,6 +174,7 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.article-overview h2,
 .repository-updates h2,
 .community-discussions h2 {
     color: var(--bs-info);
@@ -200,6 +208,11 @@
 
 .sources {
     color: var(--bs-text-muted);
+}
+
+.overview-content {
+    font-size: 1.1rem;
+    line-height: 1.6;
 }
 </style>
 {% endblock %}
