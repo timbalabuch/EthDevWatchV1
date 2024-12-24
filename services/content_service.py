@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import time
+import re # Added import for regular expression
 from datetime import datetime, timedelta
 
 import pytz
@@ -137,12 +138,13 @@ class ContentService:
                     5. Support technical concepts with concrete examples
 
                     Title requirements:
-                    - Create a highly specific title that captures the most important technical developments
-                    - Title must highlight key protocol changes, improvements, or technical milestones
-                    - Include multiple significant developments when relevant (e.g. "Layer 2 Scaling Solutions and EIP-4844 Protocol Enhancements")
+                    - Create clear, understandable titles that capture the main developments
+                    - Focus on key improvements and changes in plain language
+                    - Include multiple significant developments when relevant (e.g. "Layer 2 Scaling Solutions and Network Security Improvements")
                     - DO NOT include dates, week references, or "Ethereum Development:" prefix in the title
-                    - Example: "Consensus Layer Optimizations and EVM Upgrades"
-                    - Example: "Protocol-Level Security Enhancements and EIP Implementations"
+                    - DO NOT use parentheses or technical jargon in titles
+                    - Example: "Consensus Layer Improvements and Network Upgrades"
+                    - Example: "Protocol Security Enhancements and Infrastructure Updates"
 
                     Required sections:
                     1. A clear, formal title following the above format
@@ -160,8 +162,9 @@ class ContentService:
                     "role": "user",
                     "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
                     Remember:
-                    - Create highly descriptive titles without any prefixes or dates
-                    - Title must capture multiple key technical developments
+                    - Create clear, descriptive titles without technical jargon
+                    - Include multiple key developments in plain language
+                    - Avoid parentheses and technical terms in titles
                     - Maintain formal, professional language
                     - Include precise technical details
                     - Focus on implementation specifics
@@ -195,10 +198,13 @@ class ContentService:
                 title = parts[0].strip()
                 # Clean up the title by removing any "Title:" prefix
                 title = title.replace('Title:', '').strip()
+                # Remove any text between parentheses and the parentheses themselves
+                title = re.sub(r'\([^)]*\)', '', title).strip() #Added regex for parenthesis removal
+                # Remove any remaining parentheses
+                title = title.replace('(', '').replace(')', '').strip()
                 if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
                     title = title.split(':', 1)[1].strip()
                 # Remove parentheses from title
-                title = title.replace('(', '').replace(')', '').strip()
 
                 brief_summary = ''
                 repo_updates = []
@@ -254,6 +260,8 @@ class ContentService:
                     parts = content.split('\n\n')
                     title = parts[0].strip()
                     title = title.replace('Title:', '').strip()
+                    title = re.sub(r'\([^)]*\)', '', title).strip() #Added regex for parenthesis removal
+                    title = title.replace('(', '').replace(')', '').strip()
                     if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
                         title = title.split(':', 1)[1].strip()
                     brief_summary = ' '.join(p.strip() for p in parts[1:] if not any(p.lower().startswith(s) for s in ['repository updates', 'technical highlights', 'next steps']))
