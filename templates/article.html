@@ -21,103 +21,139 @@
                 </div>
             </header>
 
-            <div class="article-content">
-                {{ article.content | safe }}
-            </div>
-
-            <div class="row mt-5">
-                <!-- Repository Updates Section -->
-                <div class="col-12 mb-4">
-                    <div class="repository-updates p-4 bg-dark rounded border border-light border-opacity-10">
-                        <h2 class="h4 mb-4">Repository Updates</h2>
-                        {% if article.sources %}
-                            {% set repo_sources = {} %}
-                            {% for source in article.sources %}
-                                {% if repo_sources.get(source.repository) %}
-                                    {% set _ = repo_sources[source.repository].append(source) %}
-                                {% else %}
-                                    {% set _ = repo_sources.update({source.repository: [source]}) %}
-                                {% endif %}
-                            {% endfor %}
-
-                            {% for repo, sources in repo_sources.items() %}
-                                <div class="repository-group mb-4">
-                                    <h4 class="repository-name mb-3">{{ repo }}</h4>
-                                    <ul class="list-unstyled">
-                                        {% for source in sources %}
-                                        <li class="mb-2">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
-                                                    {{ source.title or 'Untitled' }}
-                                                </a>
-                                                <span class="badge bg-secondary ms-2">{{ source.type }}</span>
-                                            </div>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted">No repository updates available for this article.</p>
-                        {% endif %}
-                    </div>
+            <!-- Overview Section -->
+            <section class="overview-section mb-5">
+                <h2 class="h4 mb-4">Overview</h2>
+                <div class="overview-content">
+                    {{ article.content | safe }}
                 </div>
+            </section>
 
-                <!-- Community Discussions Section -->
-                <div class="col-12">
-                    <div class="community-discussions p-4 bg-dark rounded border border-light border-opacity-10">
-                        <h2 class="h4 mb-4">Community Discussions</h2>
-                        {% if article.forum_summary %}
-                            <div class="forum-content">
-                                {{ article.forum_summary | safe }}
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info" role="alert">
-                                <h4 class="alert-heading">Community Discussions Processing</h4>
-                                <div class="mb-3">
-                                    <div class="spinner-border spinner-border-sm text-info me-2" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <span>Community discussions are being processed</span>
+            <!-- Community Discussions Section -->
+            <section class="community-section mb-5">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h4 mb-4">Community Discussions</h2>
+                    {% if article.forum_summary %}
+                        <div class="forum-content">
+                            {{ article.forum_summary | safe }}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info" role="alert">
+                            <h4 class="alert-heading">Community Discussions Processing</h4>
+                            <div class="mb-3">
+                                <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
                                 </div>
-                                <p class="mb-2">Our system is currently:</p>
-                                <ul class="mb-3">
-                                    <li>Fetching discussions from Ethereum Magicians forum</li>
-                                    <li>Processing and summarizing the content</li>
-                                    <li>Preparing a comprehensive overview of community discussions</li>
-                                </ul>
-                                <p class="mb-2">Estimated processing times:</p>
-                                <ul class="mb-3">
-                                    <li>Initial forum data fetch: ~10-15 seconds</li>
-                                    <li>Processing each topic: ~5-10 seconds per topic</li>
-                                    <li>Content summarization: ~30-45 seconds</li>
-                                </ul>
-                                <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly. If the content doesn't appear after 5 minutes, try refreshing the page.</p>
+                                <span>Community discussions are being processed</span>
                             </div>
-                        {% endif %}
-                    </div>
+                            <p class="mb-2">Our system is currently:</p>
+                            <ul class="mb-3">
+                                <li>Fetching discussions from Ethereum Magicians forum</li>
+                                <li>Processing and summarizing the content</li>
+                                <li>Preparing a comprehensive overview of community discussions</li>
+                            </ul>
+                            <p class="mb-2">Estimated processing times:</p>
+                            <ul class="mb-3">
+                                <li>Initial forum data fetch: ~10-15 seconds</li>
+                                <li>Processing each topic: ~5-10 seconds per topic</li>
+                                <li>Content summarization: ~30-45 seconds</li>
+                            </ul>
+                            <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly. If the content doesn't appear after 5 minutes, try refreshing the page.</p>
+                        </div>
+                    {% endif %}
                 </div>
-            </div>
+            </section>
+
+            <!-- Repository Updates Section -->
+            <section class="repository-section">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h4 mb-4">Repository Updates</h2>
+                    {% if article.sources %}
+                        {% set repo_sources = {} %}
+                        {% for source in article.sources %}
+                            {% if repo_sources.get(source.repository) %}
+                                {% set _ = repo_sources[source.repository].append(source) %}
+                            {% else %}
+                                {% set _ = repo_sources.update({source.repository: [source]}) %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% for repo, sources in repo_sources.items() %}
+                            <div class="repository-group mb-4">
+                                <h3 class="h5 repository-name mb-3">{{ repo }}</h3>
+                                <ul class="list-unstyled">
+                                    {% for source in sources %}
+                                    <li class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none source-link">
+                                                {{ source.title or 'Untitled' }}
+                                            </a>
+                                            <span class="badge bg-secondary ms-2">{{ source.type }}</span>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No repository updates available for this article.</p>
+                    {% endif %}
+                </div>
+            </section>
         </div>
     </div>
 </article>
 
 <style>
+/* General section styling */
+.section-container {
+    background: var(--bs-dark);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.section-container:hover {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Overview section styling */
+.overview-content {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+/* Repository section styling */
 .repository-name {
     color: var(--bs-info);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
+.source-link {
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: color 0.2s ease;
+}
+
+.source-link:hover {
+    color: var(--bs-info-text) !important;
+}
+
+/* Community discussions styling */
+.forum-content {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Alert styling */
+.alert-info {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+    border-color: rgba(var(--bs-info-rgb), 0.2);
+}
+
+/* Utility classes */
 .gap-2 {
     gap: 0.5rem !important;
-}
-
-.repository-updates,
-.community-discussions {
-    background: var(--bs-dark);
-    padding: 2rem;
-    border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn {
