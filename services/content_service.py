@@ -141,23 +141,35 @@ class ContentService:
                 {
                     "role": "system",
                     "content": """You are an expert in explaining blockchain technology to both technical 
-                    and non-technical audiences. Create a comprehensive introduction that explains:
-                    1. The significance of this week's Ethereum developments
-                    2. What these changes mean for the blockchain ecosystem
-                    3. The potential impact on users and developers
-                    4. Why these updates matter in simple terms
+                    and non-technical audiences. Create a comprehensive and detailed introduction (minimum 1800 characters) that thoroughly explains:
+                    1. The significance of this week's Ethereum developments with concrete examples and real-world implications
+                    2. What these changes mean for the blockchain ecosystem, including detailed explanations of technical concepts in simple terms
+                    3. The potential impact on users and developers, with specific scenarios and use cases
+                    4. Why these updates matter in simple terms, connecting technical improvements to practical benefits
+                    5. The broader context of these changes in Ethereum's evolution
+
+                    Your explanation should be engaging, thorough, and accessible to readers who are new to blockchain technology.
+                    Use analogies and real-world comparisons to explain complex concepts.
+                    Break down technical terms and provide context for industry-specific terminology.
 
                     Structure the response as JSON with:
-                    1. introduction: A welcoming paragraph that sets context
-                    2. significance: Why these changes matter
-                    3. impact: How these affect users and developers
-                    4. future_implications: What this means for Ethereum's future"""
+                    1. introduction: A welcoming, detailed paragraph that sets context and draws readers in (at least 600 characters)
+                    2. significance: A thorough explanation of why these changes matter, using examples and analogies (at least 500 characters)
+                    3. impact: A comprehensive analysis of how these affect users and developers, with specific scenarios (at least 400 characters)
+                    4. future_implications: A detailed exploration of what this means for Ethereum's future (at least 300 characters)"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create an introductory explanation for the Ethereum ecosystem updates for the week of {week_str}.
+                    "content": f"""Create a detailed, user-friendly introductory explanation (at least 1800 characters) for the Ethereum ecosystem updates for the week of {week_str}.
                     Here are the key updates to explain:
-                    {json.dumps(repo_summaries, indent=2)}"""
+                    {json.dumps(repo_summaries, indent=2)}
+
+                    Remember to:
+                    - Write in a conversational, engaging style
+                    - Break down complex concepts into simple terms
+                    - Use real-world analogies and examples
+                    - Connect technical changes to practical benefits
+                    - Explain the broader context and implications"""
                 }
             ]
 
@@ -167,10 +179,26 @@ class ContentService:
                 messages=intro_messages,
                 response_format={"type": "json_object"},
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=2500  # Increased to allow for longer responses
             )
 
             intro_data = json.loads(intro_response.choices[0].message.content)
+
+            # Verify the length requirement
+            total_length = sum(len(intro_data.get(field, "")) for field in ['introduction', 'significance', 'impact', 'future_implications'])
+            if total_length < 1800:
+                logger.warning(f"Introduction length ({total_length}) is less than required (1800 characters). Regenerating...")
+                # Retry with more emphasis on length
+                intro_messages[0]["content"] += "\n\nIMPORTANT: Your response MUST be at least 1800 characters in total length."
+                intro_response = self._retry_with_exponential_backoff(
+                    self.openai.chat.completions.create,
+                    model=self.model,
+                    messages=intro_messages,
+                    response_format={"type": "json_object"},
+                    temperature=0.7,
+                    max_tokens=2500
+                )
+                intro_data = json.loads(intro_response.choices[0].message.content)
 
             # Then generate the technical summary
             messages = [
