@@ -140,9 +140,9 @@ class ContentService:
                     - Create a highly specific title that captures the most important technical developments
                     - Title must highlight key protocol changes, improvements, or technical milestones
                     - Include multiple significant developments when relevant (e.g. "Layer 2 Scaling Solutions and EIP-4844 Protocol Enhancements")
-                    - DO NOT include dates or week references in the title
-                    - Format: "Ethereum Development: [Detailed Technical Focus Areas]"
-                    - Example: "Ethereum Development: Consensus Layer Optimizations and EVM Upgrades"
+                    - DO NOT include dates, week references, or "Ethereum Development:" prefix in the title
+                    - Example: "Consensus Layer Optimizations and EVM Upgrades"
+                    - Example: "Protocol-Level Security Enhancements and EIP Implementations"
 
                     Required sections:
                     1. A clear, formal title following the above format
@@ -160,7 +160,7 @@ class ContentService:
                     "role": "user",
                     "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
                     Remember:
-                    - Create highly descriptive titles without dates
+                    - Create highly descriptive titles without any prefixes or dates
                     - Title must capture multiple key technical developments
                     - Maintain formal, professional language
                     - Include precise technical details
