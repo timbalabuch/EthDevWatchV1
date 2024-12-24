@@ -187,6 +187,8 @@ class ContentService:
                 title = title.replace('Title:', '').strip()
                 if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
                     title = title.split(':', 1)[1].strip()
+                # Remove parentheses from title
+                title = title.replace('(', '').replace(')', '').strip()
 
                 brief_summary = ''
                 repo_updates = []
