@@ -303,7 +303,7 @@ class ContentService:
             article_html = f"""
                 <article class="ethereum-article">
                     <div class="article-content mb-4">
-                        <p class="lead">{summary_data.get('brief_summary', '')}</p>
+                        {summary_data.get('brief_summary', '')}
                     </div>
             """
 
