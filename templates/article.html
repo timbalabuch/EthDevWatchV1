@@ -61,7 +61,12 @@
                                 {% if article.ethresearch_discussions %}
                                     {{ article.ethresearch_discussions | safe }}
                                 {% else %}
-                                    <p class="text-muted">No discussions from Ethereum Research for this period.</p>
+                                    <p class="text-muted">
+                                        No discussions from Ethereum Research (ethresear.ch) were found for this period. 
+                                        Research discussions typically cover technical proposals, protocol improvements, and 
+                                        theoretical concepts. Not all weeks may have active research discussions as they depend 
+                                        on ongoing community engagement and research initiatives.
+                                    </p>
                                 {% endif %}
                             </div>
                         </div>
