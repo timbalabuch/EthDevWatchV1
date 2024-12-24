@@ -33,6 +33,7 @@ class TwitterService:
             if not start_date:
                 start_date = end_date - timedelta(days=7)
 
+            logger.info(f"Fetching tweets from list {list_id} between {start_date} and {end_date}")
             tweets = []
             try:
                 # Fetch tweets from the list
@@ -42,12 +43,14 @@ class TwitterService:
                     include_rts=False,
                     tweet_mode="extended"
                 ).items(100):  # Fetch more than needed to filter by date
-                    
+
                     # Convert tweet created_at to UTC
                     tweet_date = tweet.created_at
                     if tweet_date.tzinfo is None:
                         tweet_date = pytz.UTC.localize(tweet_date)
-                    
+
+                    logger.debug(f"Processing tweet {tweet.id_str} from {tweet_date}")
+
                     # Check if tweet is within the date range
                     if start_date <= tweet_date <= end_date:
                         tweets.append({
@@ -59,9 +62,11 @@ class TwitterService:
                             'retweets': tweet.retweet_count,
                             'url': f"https://twitter.com/{tweet.user.screen_name}/status/{tweet.id_str}"
                         })
-                        
+
                         if len(tweets) >= limit:
                             break
+
+                logger.info(f"Found {len(tweets)} tweets within the date range")
 
             except Exception as e:
                 logger.error(f"Error fetching tweets: {str(e)}")
@@ -69,7 +74,7 @@ class TwitterService:
 
             # Sort tweets by engagement (likes + retweets)
             tweets.sort(key=lambda x: (x['likes'] + x['retweets']), reverse=True)
-            
+
             return tweets[:limit]
 
         except Exception as e:
@@ -79,12 +84,14 @@ class TwitterService:
     def format_tweets_html(self, tweets):
         """Format tweets as HTML for article display"""
         if not tweets:
+            logger.info("No tweets to format")
             return ""
-            
+
+        logger.info(f"Formatting {len(tweets)} tweets as HTML")
         html = '<div class="top-tweets-section mt-4">\n'
         html += '    <h2 class="section-title">Top Community Tweets</h2>\n'
         html += '    <div class="tweet-list">\n'
-        
+
         for tweet in tweets:
             html += f'''        <div class="tweet-card mb-3">
             <div class="tweet-header">
@@ -102,6 +109,7 @@ class TwitterService:
             </div>
         </div>
 '''
-        
+
         html += '    </div>\n</div>'
+        logger.info("Successfully formatted tweets HTML")
         return html
