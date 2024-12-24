@@ -17,7 +17,7 @@ class ForumService:
     def __init__(self):
         """Initialize the ForumService."""
         try:
-            self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63"
+            self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
@@ -44,58 +44,76 @@ class ForumService:
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
         return start_date, end_date
 
-    def _extract_date_from_forum_post(self, post_element: Union[Tag, BeautifulSoup]) -> Optional[datetime]:
-        """Extract date from a forum post element."""
+    def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
+        """Fetch forum discussions for a specific week using the JSON API."""
         try:
-            # First try to find the date in the 'created-at' attribute
-            date_elem = post_element.select_one('[data-created-at]')
-            if date_elem and date_elem.has_attr('data-created-at'):
-                try:
-                    timestamp = int(date_elem['data-created-at'])
-                    return datetime.fromtimestamp(timestamp, pytz.UTC)
-                except (ValueError, TypeError) as e:
-                    logger.debug(f"Failed to parse timestamp: {e}")
+            start_date, end_date = self._get_week_boundaries(week_date)
+            logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
-            # Fallback to other date elements
-            date_elem = post_element.select_one('.post-date, .topic-date, time.relative-date, span.relative-date')
-            if not date_elem:
-                logger.debug(f"No date element found in post HTML: {post_element.prettify()[:200]}")
-                return None
+            # Use the JSON API endpoint instead of scraping HTML
+            response = self._retry_with_backoff(
+                self.session.get,
+                self.forum_base_url,
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+            logger.info("Successfully fetched forum data from API")
 
-            # Try different date attributes
-            date_str = None
-            for attr in ['datetime', 'title', 'data-time']:
-                if date_elem.has_attr(attr):
-                    date_str = date_elem[attr]
-                    break
+            discussions = []
+            if 'topic_list' in data and 'topics' in data['topic_list']:
+                topics = data['topic_list']['topics']
+                logger.info(f"Found {len(topics)} topics in the response")
 
-            if not date_str:
-                logger.debug(f"No date attribute found in element: {date_elem}")
-                return None
+                for topic in topics:
+                    try:
+                        # Extract date from the created_at field
+                        created_at = topic.get('created_at')
+                        if not created_at:
+                            continue
 
-            # Try different date formats
-            formats = [
-                '%Y-%m-%dT%H:%M:%S.%fZ',
-                '%Y-%m-%dT%H:%M:%SZ',
-                '%Y-%m-%d %H:%M:%S %z',
-                '%Y-%m-%d %H:%M:%S'
-            ]
+                        post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
 
-            for fmt in formats:
-                try:
-                    date = datetime.strptime(date_str, fmt)
-                    if date.tzinfo is None:
-                        date = pytz.UTC.localize(date)
-                    return date
-                except ValueError:
-                    continue
+                        if start_date <= post_date <= end_date:
+                            # Fetch full topic content using topic id
+                            topic_id = topic.get('id')
+                            topic_url = f"https://ethereum-magicians.org/t/{topic.get('slug')}/{topic_id}.json"
 
-            logger.error(f"Could not parse date string '{date_str}' with any known format")
-            return None
+                            topic_response = self._retry_with_backoff(
+                                self.session.get,
+                                topic_url,
+                                timeout=30
+                            )
+                            topic_response.raise_for_status()
+                            topic_data = topic_response.json()
+
+                            # Extract content from the first post
+                            if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
+                                first_post = topic_data['post_stream']['posts'][0]
+                                content = first_post.get('cooked', '')  # 'cooked' contains the HTML content
+
+                                # Clean HTML content
+                                content_soup = BeautifulSoup(content, 'lxml')
+                                clean_content = content_soup.get_text(strip=True)
+
+                                discussions.append({
+                                    'title': topic.get('title', ''),
+                                    'content': clean_content,
+                                    'url': f"https://ethereum-magicians.org/t/{topic.get('slug')}/{topic_id}",
+                                    'date': post_date
+                                })
+                                logger.info(f"Successfully added discussion: {topic.get('title', '')}")
+
+                    except Exception as e:
+                        logger.error(f"Error processing topic: {str(e)}", exc_info=True)
+                        continue
+
+            logger.info(f"Successfully fetched {len(discussions)} relevant discussions for the week")
+            return discussions
 
         except Exception as e:
-            logger.error(f"Error extracting date from forum post: {str(e)}")
-            return None
+            logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
+            return []
 
     def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute a function with exponential backoff retry logic."""
@@ -114,87 +132,6 @@ class ForumService:
 
         if last_error:
             raise last_error
-
-    def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
-        """Fetch forum discussions for a specific week."""
-        try:
-            start_date, end_date = self._get_week_boundaries(week_date)
-            logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-
-            # Download the forum page with proper headers
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0)',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5'
-            }
-            response = self._retry_with_backoff(
-                self.session.get,
-                self.forum_base_url,
-                headers=headers,
-                timeout=30
-            )
-            response.raise_for_status()
-            logger.info(f"Received response with status code: {response.status_code}")
-
-            # Parse HTML content
-            soup = BeautifulSoup(response.text, 'lxml')
-            discussions = []
-
-            # Find all topic elements with the correct class
-            topics = soup.select('.topic-list tr.topic-list-item')
-            logger.info(f"Found {len(topics)} topics on the page")
-
-            for topic in topics:
-                try:
-                    # Extract date
-                    post_date = self._extract_date_from_forum_post(topic)
-                    if post_date:
-                        logger.debug(f"Found post with date: {post_date}")
-
-                    if post_date and start_date <= post_date <= end_date:
-                        # Extract title and URL
-                        title_elem = topic.select_one('.topic-title, .title')
-                        title = title_elem.get_text(strip=True) if title_elem else ''
-
-                        topic_url = None
-                        if title_elem:
-                            link = title_elem.find('a')
-                            if link and link.has_attr('href'):
-                                topic_url = f"https://ethereum-magicians.org{link['href']}"
-                                logger.debug(f"Processing topic: {title} with URL: {topic_url}")
-
-                        if topic_url:
-                            # Fetch full topic content
-                            topic_response = self._retry_with_backoff(
-                                self.session.get,
-                                topic_url,
-                                headers=headers,
-                                timeout=30
-                            )
-                            topic_response.raise_for_status()
-
-                            topic_soup = BeautifulSoup(topic_response.text, 'lxml')
-                            content_elem = topic_soup.select_one('.topic-body .contents')
-                            content = content_elem.get_text(strip=True) if content_elem else ''
-
-                            discussions.append({
-                                'title': title,
-                                'content': content,
-                                'url': topic_url,
-                                'date': post_date
-                            })
-                            logger.info(f"Successfully added discussion: {title}")
-
-                except Exception as e:
-                    logger.error(f"Error processing topic: {str(e)}", exc_info=True)
-                    continue
-
-            logger.info(f"Successfully fetched {len(discussions)} relevant discussions for the week")
-            return discussions
-
-        except Exception as e:
-            logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
-            return []
 
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
         """Generate a summary of forum discussions using OpenAI."""
