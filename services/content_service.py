@@ -53,49 +53,6 @@ class ContentService:
                 logger.info(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
 
-    def _find_existing_image_url(self, title):
-        """Check if we have a similar article with an image we can reuse"""
-        return None  # Always generate new images for each article
-
-    def generate_image_for_title(self, title):
-        """Generate an image using DALL-E based on the article title"""
-        try:
-            # Add longer delay before image generation
-            time.sleep(5)  # Increased delay to avoid rate limits
-
-            # Enhanced prompt to ensure consistent tech theme with green and blue colors
-            prompt = (
-                f"Create a unique horizontal technology-themed illustration for an article titled: {title}. "
-                "Style: modern, professional, tech-focused with dominant green and blue color scheme. "
-                "Must be in landscape orientation with a 16:9 aspect ratio. "
-                "Theme: Ethereum blockchain, technological advancement, digital innovation. "
-                "Color requirement: Use vibrant emerald greens (#00FF7F) and electric blues (#0000FF) as the dominant colors "
-                "in the design, creating a high-tech, futuristic aesthetic. The image should have a dark background "
-                "with glowing green and blue elements to represent blockchain technology. "
-                f"Make it unique for this specific week's article about: {title}"
-            )
-
-            response = self._retry_with_exponential_backoff(
-                self.openai.images.generate,
-                model="dall-e-3",
-                prompt=prompt,
-                n=1,
-                size="1792x1024",
-                quality="standard",
-                style="vivid"
-            )
-
-            if response and hasattr(response, 'data') and len(response.data) > 0:
-                logger.info("Successfully generated unique image for article")
-                return response.data[0].url
-            else:
-                logger.error("Invalid response format from DALL-E API")
-                return None
-
-        except Exception as e:
-            logger.error(f"Failed to generate image: {str(e)}")
-            return None
-
     def generate_weekly_summary(self, github_content, publication_date=None):
         """Generate a weekly summary using ChatGPT"""
         if not github_content:

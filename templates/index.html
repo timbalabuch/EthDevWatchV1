@@ -12,15 +12,6 @@
             {% for article in articles %}
             <article class="card">
                 <div class="card-body">
-                    {% if article.image_url %}
-                    <div class="article-image loading">
-                        <img src="{{ article.image_url }}" 
-                             alt="{{ article.title }}"
-                             loading="lazy"
-                             onload="this.parentElement.classList.remove('loading')">
-                    </div>
-                    {% endif %}
-
                     <div class="mb-4">
                         <h2 class="card-title">{{ article.title }}</h2>
                     </div>
