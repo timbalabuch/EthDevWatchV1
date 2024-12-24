@@ -39,16 +39,17 @@ def update_forum_summaries():
                         article.forum_summary = summary
                         db.session.commit()  # Commit after each successful update
                         logger.info(f"Successfully added forum summary for article dated {article.publication_date}")
-                        # Add a small delay between articles to avoid rate limits
-                        time.sleep(2)
+                        # Add a larger delay between articles to avoid rate limits
+                        time.sleep(5)  # Increased delay between articles
                     else:
                         logger.warning(f"No forum summary generated for article dated {article.publication_date}")
+                        time.sleep(2)  # Small delay even for failed attempts
 
                 except Exception as e:
                     logger.error(f"Error processing article {article.id}: {str(e)}")
                     db.session.rollback()
                     # Add a longer delay after errors
-                    time.sleep(5)
+                    time.sleep(10)  # Increased delay after errors
                     continue
 
             logger.info("Successfully completed forum summaries update")
