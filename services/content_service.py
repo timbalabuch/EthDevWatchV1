@@ -162,29 +162,48 @@ class ContentService:
             'next_steps': next_steps
         }
 
-    def _format_article_content(self, summary_data: Dict) -> Dict[str, str]:
+    def _format_article_content(self, summary_data: Dict) -> str:
         """Format the article content with proper HTML structure."""
         try:
-            # Format the brief summary section
-            content_html = f"""
+            article_html = f"""
                 <article class="ethereum-article">
                     <div class="article-content mb-4">
                         {summary_data.get('brief_summary', '')}
                     </div>
-                </article>
             """
 
-            # Format the repository updates section
-            repository_updates = self._format_repository_updates(summary_data.get('repository_updates', []))
-            technical_highlights = self._format_technical_highlights(summary_data.get('technical_highlights', []))
-            next_steps = '<ul>' + ''.join([f"<li>{step}</li>" for step in summary_data.get('next_steps', [])]) + '</ul>'
+            # Repository updates section
+            if summary_data.get('repository_updates'):
+                article_html += f"""
+                    <div class="repository-updates mb-4">
+                        <h2 class="section-title">Repository Updates</h2>
+                        {self._format_repository_updates(summary_data.get('repository_updates', []))}
+                    </div>
+                """
 
-            return {
-                'content': content_html,
-                'repository_updates': repository_updates,
-                'technical_highlights': technical_highlights,
-                'next_steps': next_steps
-            }
+            # Technical highlights section
+            if summary_data.get('technical_highlights'):
+                article_html += f"""
+                    <div class="technical-highlights mb-4">
+                        <h2 class="section-title">Technical Highlights</h2>
+                        {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
+                    </div>
+                """
+
+            # Next steps section
+            if summary_data.get('next_steps'):
+                article_html += f"""
+                    <div class="next-steps mb-4">
+                        <h2 class="section-title">Next Steps</h2>
+                        <ul>
+                            {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
+                        </ul>
+                    </div>
+                """
+
+            article_html += "</article>"
+            logger.info(f"Generated article HTML (length: {len(article_html)})")
+            return article_html
 
         except Exception as e:
             logger.error(f"Error formatting article content: {str(e)}")
@@ -402,43 +421,18 @@ class ContentService:
                     </div>
                 """
 
-            formatted_content = self._format_article_content({
+            content = self._format_article_content({
+                'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps']
+                'next_steps': sections['next_steps'],
+                'forum_summary': forum_section
             })
-
-            final_html = formatted_content['content']
-
-            if formatted_content['repository_updates']:
-                final_html += f"""
-                    <div class="repository-updates mb-4">
-                        <h2 class="section-title">Repository Updates</h2>
-                        {formatted_content['repository_updates']}
-                    </div>
-                """
-            if formatted_content['technical_highlights']:
-                final_html += f"""
-                    <div class="technical-highlights mb-4">
-                        <h2 class="section-title">Technical Highlights</h2>
-                        {formatted_content['technical_highlights']}
-                    </div>
-                """
-            if formatted_content['next_steps']:
-                final_html += f"""
-                    <div class="next-steps mb-4">
-                        <h2 class="section-title">Next Steps</h2>
-                        {formatted_content['next_steps']}
-                    </div>
-                """
-            final_html += forum_section
-            final_html += "</article>"
-
 
             article = Article(
                 title=sections['title'],
-                content=final_html,
+                content=content,
                 publication_date=publication_date,
                 status='published',
                 published_date=current_date,
