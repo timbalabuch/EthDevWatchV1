@@ -5,6 +5,14 @@ from app import app, db
 from models import Article, User, Source
 from functools import wraps
 import pytz
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def admin_required(f):
     @wraps(f)
@@ -19,11 +27,28 @@ def get_current_utc():
     """Get current UTC time with timezone information"""
     return datetime.now(pytz.UTC)
 
+def get_last_completed_week():
+    """Get the date range for the last completed week"""
+    current_date = get_current_utc()
+
+    # Calculate the last completed Sunday
+    days_since_sunday = current_date.weekday() + 1  # +1 because we want the previous Sunday
+    last_sunday = current_date - timedelta(days=days_since_sunday)
+    last_sunday = last_sunday.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # Get the Monday of that week
+    last_monday = last_sunday - timedelta(days=6)
+    last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    return last_monday, last_sunday
+
 @app.route('/')
 def index():
-    current_date = get_current_utc()
+    last_monday, last_sunday = get_last_completed_week()
+    logger.info(f"Filtering articles up to last completed week: {last_sunday.strftime('%Y-%m-%d')}")
+
     articles = Article.query.filter(
-        Article.publication_date <= current_date
+        Article.publication_date <= last_sunday
     ).order_by(Article.publication_date.desc()).all()
 
     return render_template('index.html', articles=articles)
@@ -114,11 +139,12 @@ def edit_article(article_id):
 @app.route('/article/<int:article_id>')
 def article(article_id):
     article = Article.query.get_or_404(article_id)
-    current_date = get_current_utc()
+    last_monday, last_sunday = get_last_completed_week()
 
-    # Don't show future articles
+    # Don't show articles from incomplete weeks
     article_date = article.publication_date.replace(tzinfo=pytz.UTC) if article.publication_date.tzinfo is None else article.publication_date
-    if article_date > current_date:
+    if article_date > last_sunday:
+        logger.warning(f"Attempted to access future article {article_id} with date {article_date}")
         abort(404)
 
     return render_template('article.html', article=article)
