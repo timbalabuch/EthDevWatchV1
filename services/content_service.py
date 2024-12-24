@@ -136,99 +136,7 @@ class ContentService:
                 }
                 repo_summaries.append(summary)
 
-            # Generate the introductory explanation first
-            intro_messages = [
-                {
-                    "role": "system",
-                    "content": """You are an expert in explaining blockchain technology. Generate a detailed article with the following REQUIRED sections:
-
-1. Introduction (MINIMUM 600 characters): A comprehensive overview of this week's Ethereum updates
-2. Significance (MINIMUM 500 characters): Detailed explanation of why these changes matter
-3. Impact (MINIMUM 400 characters): Analysis of effects on users and developers
-4. Future Implications (MINIMUM 300 characters): Exploration of long-term effects
-
-Your response MUST be in this exact JSON format:
-{
-    "introduction": "detailed text here...",
-    "significance": "detailed text here...",
-    "impact": "detailed text here...",
-    "future_implications": "detailed text here..."
-}
-
-Each section MUST meet its minimum character length requirement. The total response MUST be at least 1800 characters.
-Use clear, engaging language and real-world examples."""
-                },
-                {
-                    "role": "user",
-                    "content": f"""Create a detailed article about Ethereum ecosystem updates for the week of {week_str}.
-Here are the key updates to explain:
-{json.dumps(repo_summaries, indent=2)}
-
-Remember:
-- Each section must meet its minimum length requirement
-- Use clear examples and analogies
-- Explain technical concepts in accessible terms
-- Connect changes to practical benefits"""
-                }
-            ]
-
-            intro_response = self._retry_with_exponential_backoff(
-                self.openai.chat.completions.create,
-                model=self.model,
-                messages=intro_messages,
-                response_format={"type": "json_object"},
-                temperature=0.7,
-                max_tokens=2500
-            )
-
-            try:
-                intro_data = json.loads(intro_response.choices[0].message.content)
-                # Validate section lengths
-                section_lengths = {
-                    'introduction': len(intro_data.get('introduction', '')),
-                    'significance': len(intro_data.get('significance', '')),
-                    'impact': len(intro_data.get('impact', '')),
-                    'future_implications': len(intro_data.get('future_implications', ''))
-                }
-
-                logger.info(f"Section lengths: {section_lengths}")
-
-                # Check if any section is missing or too short
-                requirements = {
-                    'introduction': 600,
-                    'significance': 500,
-                    'impact': 400,
-                    'future_implications': 300
-                }
-
-                missing_requirements = {
-                    section: req_length
-                    for section, req_length in requirements.items()
-                    if section_lengths.get(section, 0) < req_length
-                }
-
-                if missing_requirements:
-                    logger.warning(f"Sections not meeting length requirements: {missing_requirements}")
-                    # Retry with more emphasis on length requirements
-                    intro_messages[0]["content"] += "\n\nIMPORTANT: Previous response was too short. Sections must meet minimum lengths:"
-                    for section, length in missing_requirements.items():
-                        intro_messages[0]["content"] += f"\n- {section}: at least {length} characters"
-
-                    intro_response = self._retry_with_exponential_backoff(
-                        self.openai.chat.completions.create,
-                        model=self.model,
-                        messages=intro_messages,
-                        response_format={"type": "json_object"},
-                        temperature=0.7,
-                        max_tokens=2500
-                    )
-                    intro_data = json.loads(intro_response.choices[0].message.content)
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
-                raise ValueError("Invalid JSON response from OpenAI")
-
-            # Then generate the technical summary
+            # Generate the technical summary
             messages = [
                 {
                     "role": "system",
@@ -276,7 +184,7 @@ Remember:
                 logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
                 raise ValueError("Invalid JSON response from OpenAI")
 
-            content = self._format_article_content(summary_data, intro_data)
+            content = self._format_article_content(summary_data, None)
             article = Article(
                 title=summary_data["title"],
                 content=content,
@@ -309,87 +217,38 @@ Remember:
 
     def _format_article_content(self, summary_data, intro_data):
         """Format the article content with proper HTML structure"""
-        # Verify we have content in the intro_data
-        if not intro_data:
-            logger.error("No introduction data provided for article formatting")
-            raise ValueError("Introduction data is required for article formatting")
-
-        # Log the content lengths to verify we're meeting requirements
-        intro_length = len(intro_data.get('introduction', ''))
-        sig_length = len(intro_data.get('significance', ''))
-        impact_length = len(intro_data.get('impact', ''))
-        future_length = len(intro_data.get('future_implications', ''))
-
-        logger.info(f"Content data - Intro: {intro_data.get('introduction', '')[:100]}...")
-        logger.info(f"Content lengths - Intro: {intro_length}, Significance: {sig_length}, Impact: {impact_length}, Future: {future_length}")
-        logger.info(f"Summary data: {json.dumps(summary_data)[:200]}...")
-
-        # Build the article HTML
-        article_html = f"""
-            <article class="ethereum-article">
-                <!-- Introduction and Context Sections -->
-                <section class="article-introduction mb-5">
-                    <div class="introduction-section mb-4">
-                        <h2 class="section-title">Understanding This Week's Updates</h2>
-                        <div class="introduction-content">
-                            {intro_data.get('introduction', '')}
-                        </div>
-                    </div>
-
-                    <div class="significance-section mb-4">
-                        <h3 class="section-title">Why These Changes Matter</h3>
-                        <div class="significance-content">
-                            {intro_data.get('significance', '')}
-                        </div>
-                    </div>
-
-                    <div class="impact-section mb-4">
-                        <h3 class="section-title">Impact on Users and Developers</h3>
-                        <div class="impact-content">
-                            {intro_data.get('impact', '')}
-                        </div>
-                    </div>
-
-                    <div class="future-section mb-4">
-                        <h3 class="section-title">Future Implications</h3>
-                        <div class="future-content">
-                            {intro_data.get('future_implications', '')}
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Technical Summary Section -->
-                <section class="technical-summary mb-4">
-                    <h2 class="section-title">Technical Overview</h2>
-                    <div class="summary-content">
+        try:
+            article_html = f"""
+                <article class="ethereum-article">
+                    <div class="article-content mb-4">
                         <p class="lead">{summary_data.get('brief_summary', '')}</p>
                     </div>
-                </section>
 
-                <!-- Repository Updates Section -->
-                <section class="repository-updates mb-4">
-                    <h2 class="section-title">Repository Updates</h2>
-                    {self._format_repository_updates(summary_data.get('repository_updates', []))}
-                </section>
+                    <div class="repository-updates mb-4">
+                        <h2 class="section-title">Repository Updates</h2>
+                        {self._format_repository_updates(summary_data.get('repository_updates', []))}
+                    </div>
 
-                <!-- Technical Highlights Section -->
-                <section class="technical-highlights mb-4">
-                    <h2 class="section-title">Technical Highlights</h2>
-                    {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
-                </section>
+                    <div class="technical-highlights mb-4">
+                        <h2 class="section-title">Technical Highlights</h2>
+                        {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
+                    </div>
 
-                <!-- Next Steps Section -->
-                <section class="next-steps mb-4">
-                    <h2 class="section-title">Next Steps</h2>
-                    <ul>
-                        {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
-                    </ul>
-                </section>
-            </article>
-        """
+                    <div class="next-steps mb-4">
+                        <h2 class="section-title">Next Steps</h2>
+                        <ul>
+                            {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
+                        </ul>
+                    </div>
+                </article>
+            """
 
-        logger.info("Generated article HTML length: %d", len(article_html))
-        return article_html
+            logger.info("Generated article HTML length: %d", len(article_html))
+            return article_html
+
+        except Exception as e:
+            logger.error(f"Error formatting article content: {str(e)}")
+            raise
 
     def _format_repository_updates(self, updates):
         """Format repository updates section"""
