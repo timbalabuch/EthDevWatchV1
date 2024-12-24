@@ -2,26 +2,22 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-8 mx-auto">
-        <article class="card">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
             <div class="card-body">
-                <div class="mb-4">
+                <header class="article-header mb-4">
                     <h1 class="card-title">{{ article.title }}</h1>
-                </div>
+                    <p class="text-muted">
+                        {{ format_date(article.publication_date) }}
+                    </p>
+                </header>
 
-                <p class="text-muted mb-4">
-                    {{ format_date(article.publication_date) }}
-                </p>
-
-                <div class="article-content mb-4">
+                <div class="article-content">
                     {{ article.content | safe }}
                 </div>
 
-                <div class="sources-section p-4 rounded">
+                <div class="sources-section mt-5 p-4 rounded">
                     <h3 class="mb-3">Sources</h3>
-                    <div class="progress-bar mb-4">
-                        <div class="progress-bar-fill" style="width: 100%"></div>
-                    </div>
                     {% if article.sources %}
                         {# Group sources by repository #}
                         {% set repo_sources = {} %}
@@ -39,12 +35,12 @@
                                 <h4 class="repository-name mb-3">{{ repo }}</h4>
                                 <ul class="list-unstyled">
                                     {% for source in sources %}
-                                    <li class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center">
+                                    <li class="mb-2">
+                                        <div class="d-flex justify-content-between align-items-start">
                                             <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
                                                 {{ source.title or 'Untitled' }}
                                             </a>
-                                            <span class="badge bg-secondary">{{ source.type }}</span>
+                                            <span class="badge bg-secondary ms-2">{{ source.type }}</span>
                                         </div>
                                     </li>
                                     {% endfor %}
@@ -56,7 +52,36 @@
                     {% endif %}
                 </div>
             </div>
-        </article>
+        </div>
     </div>
 </div>
+
+<style>
+.article-introduction .section-title {
+    color: var(--bs-primary);
+    margin-bottom: 1rem;
+}
+
+.repository-group {
+    background: var(--bs-dark);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.repository-name {
+    color: var(--bs-info);
+    font-size: 1.2rem;
+}
+
+.technical-highlights .highlight {
+    background: var(--bs-dark);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sources-section {
+    background: var(--bs-dark);
+}
+</style>
 {% endblock %}

@@ -281,77 +281,100 @@ class ContentService:
 
     def _format_article_content(self, summary_data, intro_data):
         """Format the article content with proper HTML structure"""
+        # Verify we have content in the intro_data
+        if not intro_data:
+            logger.error("No introduction data provided for article formatting")
+            raise ValueError("Introduction data is required for article formatting")
+
+        # Log the content lengths to verify we're meeting requirements
+        intro_length = len(intro_data.get('introduction', ''))
+        sig_length = len(intro_data.get('significance', ''))
+        impact_length = len(intro_data.get('impact', ''))
+        future_length = len(intro_data.get('future_implications', ''))
+
+        logger.info(f"Content lengths - Intro: {intro_length}, Significance: {sig_length}, Impact: {impact_length}, Future: {future_length}")
+
         return f"""
-        <div class="article-introduction mb-4">
-            <div class="introduction-section">
-                <h2 class="section-title">Understanding This Week's Updates</h2>
-                <p>{intro_data.get('introduction', '')}</p>
-            </div>
-
-            <div class="significance-section">
-                <h3>Why These Changes Matter</h3>
-                <p>{intro_data.get('significance', '')}</p>
-            </div>
-
-            <div class="impact-section">
-                <h3>Impact on Users and Developers</h3>
-                <p>{intro_data.get('impact', '')}</p>
-            </div>
-
-            <div class="future-section">
-                <h3>Future Implications</h3>
-                <p>{intro_data.get('future_implications', '')}</p>
-            </div>
-        </div>
-
-        <div class="article-summary mb-4">
-            <h2 class="section-title">Technical Summary</h2>
-            <p class="lead">{summary_data.get('brief_summary', '')}</p>
-        </div>
-
-        <div class="ethereum-updates">
-            <div class="repository-updates mb-4">
-                <h2 class="section-title">Repository Updates</h2>
-                {''.join(f'''
-                <div class="repository-card mb-3">
-                    <h3 class="repository-name">{update.get('repository', '')}</h3>
-                    <div class="repository-source text-muted mb-2">
-                        <small>{update.get('repository', '')}</small>
+            <article class="ethereum-article">
+                <!-- Introduction and Context Sections -->
+                <section class="article-introduction mb-5">
+                    <div class="introduction-section mb-4">
+                        <h2 class="section-title">Understanding This Week's Updates</h2>
+                        <div class="introduction-content">
+                            {intro_data.get('introduction', '')}
+                        </div>
                     </div>
-                    <div class="update-summary">
-                        <p>{update.get('summary', '')}</p>
-                    </div>
-                    <div class="key-changes">
-                        <strong>Key Changes:</strong>
-                        <ul>
-                            {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
-                        </ul>
-                    </div>
-                </div>
-                ''' for update in summary_data.get('repository_updates', []))}
-            </div>
 
-            <div class="technical-highlights mb-4">
-                <h2 class="section-title">Technical Highlights</h2>
-                {''.join(f'''
-                <div class="highlight-card mb-3">
-                    <h3>{highlight.get('title', '')}</h3>
-                    <p>{highlight.get('description', '')}</p>
-                    <div class="impact">
-                        <strong>Impact:</strong>
-                        <p>{highlight.get('impact', '')}</p>
+                    <div class="significance-section mb-4">
+                        <h3 class="section-title">Why These Changes Matter</h3>
+                        <div class="significance-content">
+                            {intro_data.get('significance', '')}
+                        </div>
                     </div>
-                </div>
-                ''' for highlight in summary_data.get('technical_highlights', []))}
-            </div>
 
-            <div class="next-steps">
-                <h2 class="section-title">Next Steps</h2>
-                <div class="next-steps-card">
+                    <div class="impact-section mb-4">
+                        <h3 class="section-title">Impact on Users and Developers</h3>
+                        <div class="impact-content">
+                            {intro_data.get('impact', '')}
+                        </div>
+                    </div>
+
+                    <div class="future-section mb-4">
+                        <h3 class="section-title">Future Implications</h3>
+                        <div class="future-content">
+                            {intro_data.get('future_implications', '')}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Technical Summary Section -->
+                <section class="technical-summary mb-4">
+                    <h2 class="section-title">Technical Overview</h2>
+                    <div class="summary-content">
+                        <p class="lead">{summary_data.get('brief_summary', '')}</p>
+                    </div>
+                </section>
+
+                <!-- Repository Updates Section -->
+                <section class="repository-updates mb-4">
+                    <h2 class="section-title">Repository Updates</h2>
+                    {''.join(f"""
+                        <div class="repository-update mb-3">
+                            <h3 class="repository-name">{update.get('repository', '')}</h3>
+                            <div class="update-summary">
+                                <p>{update.get('summary', '')}</p>
+                            </div>
+                            <div class="key-changes">
+                                <strong>Key Changes:</strong>
+                                <ul>
+                                    {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
+                                </ul>
+                            </div>
+                        </div>
+                    """ for update in summary_data.get('repository_updates', []))}
+                </section>
+
+                <!-- Technical Highlights Section -->
+                <section class="technical-highlights mb-4">
+                    <h2 class="section-title">Technical Highlights</h2>
+                    {''.join(f"""
+                        <div class="highlight mb-3">
+                            <h3>{highlight.get('title', '')}</h3>
+                            <p>{highlight.get('description', '')}</p>
+                            <div class="highlight-impact">
+                                <strong>Impact:</strong>
+                                <p>{highlight.get('impact', '')}</p>
+                            </div>
+                        </div>
+                    """ for highlight in summary_data.get('technical_highlights', []))}
+                </section>
+
+                <!-- Next Steps Section -->
+                <section class="next-steps mb-4">
+                    <h2 class="section-title">Next Steps</h2>
                     <ul>
                         {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
                     </ul>
-                </div>
-            </div>
-        </div>
+                </section>
+            </article>
         """
