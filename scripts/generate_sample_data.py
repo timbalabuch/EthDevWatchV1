@@ -28,10 +28,45 @@ def get_sunday_of_week(date):
     monday = get_monday_of_week(date)
     return monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
+def get_missing_weeks():
+    """Get a list of weeks that don't have articles"""
+    with app.app_context():
+        current_date = datetime.utcnow()
+        last_monday = get_monday_of_week(current_date)
+        missing_weeks = []
+
+        # Check last 4 weeks
+        for i in range(4):
+            week_start = last_monday - timedelta(weeks=i)
+            week_end = get_sunday_of_week(week_start)
+
+            # Check if article exists for this week
+            existing = Article.query.filter(
+                Article.publication_date >= week_start,
+                Article.publication_date <= week_end
+            ).first()
+
+            if not existing:
+                missing_weeks.append(week_start)
+                logger.info(f"No article found for week of {week_start.strftime('%Y-%m-%d')}")
+            else:
+                logger.info(f"Article exists for week of {week_start.strftime('%Y-%m-%d')}: {existing.title}")
+
+        return missing_weeks
+
 def generate_sample_articles():
-    """Generate sample articles if they don't exist"""
+    """Generate articles for missing weeks"""
     try:
         logger.info("=== Starting Sample Data Generation ===")
+
+        # Find which weeks need articles
+        missing_weeks = get_missing_weeks()
+
+        if not missing_weeks:
+            logger.info("No missing articles - all weeks are covered")
+            return True
+
+        logger.info(f"Found {len(missing_weeks)} weeks needing articles")
 
         # Initialize services
         logger.info("Initializing services...")
@@ -48,23 +83,10 @@ def generate_sample_articles():
 
         logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
-        # Generate articles for past 4 weeks from today
-        current_date = datetime.utcnow()
-        weeks = []
-
-        # Get the most recent Monday
-        last_monday = get_monday_of_week(current_date)
-
-        # Generate dates for the last 4 weeks
-        for i in range(4):
-            week_date = last_monday - timedelta(weeks=i)
-            weeks.append(week_date)
-            logger.info(f"Added week starting {week_date.strftime('%Y-%m-%d')} to generation queue")
-
         success_count = 0
 
         with app.app_context():
-            for monday in weeks:
+            for monday in missing_weeks:
                 try:
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
 
