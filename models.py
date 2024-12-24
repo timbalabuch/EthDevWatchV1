@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 import pytz
+from bs4 import BeautifulSoup
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,6 +49,44 @@ class Article(db.Model):
         self.status = 'scheduled'
         self.scheduled_publish_date = publish_date
         db.session.commit()
+
+    @property
+    def brief_summary(self):
+        """Extract brief summary from content."""
+        if not self.content:
+            return None
+        soup = BeautifulSoup(self.content, 'lxml')
+        overview = soup.find('div', class_='overview-content')
+        return overview.text.strip() if overview else None
+
+    @property
+    def repository_updates(self):
+        """Extract repository updates from content."""
+        if not self.content:
+            return None
+        soup = BeautifulSoup(self.content, 'lxml')
+        updates = soup.find('div', class_='repository-updates')
+        return updates.text.strip() if updates else None
+
+    @property
+    def technical_highlights(self):
+        """Extract technical highlights from content."""
+        if not self.content:
+            return None
+        soup = BeautifulSoup(self.content, 'lxml')
+        highlights = soup.find('div', class_='technical-highlights')
+        return highlights.text.strip() if highlights else None
+
+    @property
+    def next_steps(self):
+        """Extract next steps from content."""
+        if not self.content:
+            return []
+        soup = BeautifulSoup(self.content, 'lxml')
+        steps = soup.find('div', class_='next-steps')
+        if not steps:
+            return []
+        return [step.get_text(strip=True) for step in steps.find_all('li')]
 
 class Source(db.Model):
     id = db.Column(db.Integer, primary_key=True)

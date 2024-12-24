@@ -71,9 +71,7 @@
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repository Updates</h2>
                     <div class="repository-updates">
-                        {% if article.repository_updates %}
-                            {{ article.repository_updates | safe }}
-                        {% endif %}
+                        {{ article.repository_updates | safe }}
                     </div>
                 </div>
             </section>
@@ -83,9 +81,7 @@
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Technical Highlights</h2>
                     <div class="technical-highlights">
-                        {% if article.technical_highlights %}
-                            {{ article.technical_highlights | safe }}
-                        {% endif %}
+                        {{ article.technical_highlights | safe }}
                     </div>
                 </div>
             </section>
