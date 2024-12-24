@@ -1,8 +1,8 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
-from bs4 import BeautifulSoup
+from typing import List, Dict, Optional, Any, Union
+from bs4 import BeautifulSoup, Tag
 import time
 import requests
 import pytz
@@ -32,12 +32,12 @@ class ForumService:
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
         return start_date, end_date
 
-    def _extract_date_from_forum_post(self, post_element: BeautifulSoup) -> Optional[datetime]:
+    def _extract_date_from_forum_post(self, post_element: Union[Tag, BeautifulSoup]) -> Optional[datetime]:
         """Extract date from a forum post element."""
         try:
             # Look for date in post metadata
             date_elem = post_element.select_one('.post-date, .topic-date')
-            if date_elem and date_elem.get('title'):
+            if date_elem and date_elem.has_attr('title'):
                 date_str = date_elem['title']
                 # Convert to datetime object
                 return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
@@ -46,7 +46,7 @@ class ForumService:
             logger.error(f"Error extracting date from forum post: {str(e)}")
             return None
 
-    def _retry_with_backoff(self, func, *args, **kwargs):
+    def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute a function with exponential backoff retry logic."""
         for attempt in range(self.max_retries):
             try:
@@ -90,11 +90,14 @@ class ForumService:
                         title = title_elem.get_text(strip=True) if title_elem else ''
 
                         # Get topic URL
-                        topic_link = title_elem.find('a')['href'] if title_elem and title_elem.find('a') else None
+                        topic_url = None
+                        topic_link = title_elem.find('a') if title_elem else None
+                        if topic_link and topic_link.has_attr('href'):
+                            topic_url = topic_link['href']
 
-                        if topic_link:
+                        if topic_url:
                             # Fetch full topic content
-                            full_url = f"https://ethereum-magicians.org{topic_link}"
+                            full_url = f"https://ethereum-magicians.org{topic_url}"
                             topic_response = self._retry_with_backoff(
                                 self.session.get,
                                 full_url,

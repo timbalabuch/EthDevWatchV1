@@ -356,7 +356,7 @@ class ContentService:
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {week_str}.
+                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
                     Remember:
                     - Create clear, simple titles without technical terms
                     - Explain the main improvements in plain language
