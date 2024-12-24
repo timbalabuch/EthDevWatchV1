@@ -21,6 +21,16 @@
                 </div>
             </header>
 
+            <!-- Overview Section -->
+            <section class="overview-section mb-5">
+                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
+                    <h2 class="h3 mb-4">Overview</h2>
+                    <div class="overview-content">
+                        {{ article.brief_summary | safe }}
+                    </div>
+                </div>
+            </section>
+
             <!-- Community Discussions Section -->
             <section class="community-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
@@ -132,12 +142,14 @@
 }
 
 /* Content styling */
+.overview-content,
 .forum-content {
     font-size: 1.1rem;
     line-height: 1.8;
     color: var(--bs-light);
 }
 
+.overview-content p,
 .forum-content p {
     margin-bottom: 1.5rem;
 }
@@ -204,21 +216,6 @@
 /* Utility classes */
 .gap-2 {
     gap: 0.5rem !important;
-}
-
-.btn {
-    --bs-btn-color: var(--bs-progress-bar-bg);
-    --bs-btn-border-color: var(--bs-progress-bar-bg);
-    --bs-btn-hover-color: var(--bs-dark);
-    --bs-btn-hover-bg: linear-gradient(90deg, var(--bs-progress-bar-bg) 0%, var(--bs-progress-bar-bg-secondary, var(--bs-progress-bar-bg)) 100%);
-    --bs-btn-hover-border-color: var(--bs-progress-bar-bg);
-    --bs-btn-active-color: var(--bs-dark);
-    --bs-btn-active-bg: linear-gradient(90deg, var(--bs-progress-bar-bg) 0%, var(--bs-progress-bar-bg-secondary, var(--bs-progress-bar-bg)) 100%);
-    --bs-btn-active-border-color: var(--bs-progress-bar-bg);
-}
-
-.btn:hover {
-    background: var(--bs-btn-hover-bg);
 }
 </style>
 {% endblock %}
