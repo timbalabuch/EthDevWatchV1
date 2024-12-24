@@ -18,6 +18,9 @@ def get_previous_week_dates():
     # Calculate previous week's Monday
     days_since_monday = current_date.weekday()
     previous_monday = current_date - timedelta(days=days_since_monday + 7)
+    previous_monday = previous_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Calculate previous week's Sunday
     previous_sunday = previous_monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     return previous_monday, previous_sunday
@@ -58,17 +61,13 @@ def generate_weekly_article():
             )
 
             if github_content:
-                # Generate article for previous week
+                # Generate article with explicit Monday date
                 article = content_service.generate_weekly_summary(
                     github_content,
                     publication_date=start_date
                 )
 
                 if article:
-                    # Double check the article date is not in the future
-                    if article.publication_date > current_date:
-                        article.publication_date = start_date
-
                     article.status = 'published'
                     article.published_date = current_date
                     db.session.commit()

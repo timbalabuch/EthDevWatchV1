@@ -43,6 +43,10 @@ args = "Add Repository Column"
 task = "workflow.run"
 args = "Regenerate Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Cleanup and Fix Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -141,6 +145,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/regenerate_articles.py"
+
+[[workflows.workflow]]
+name = "Cleanup and Fix Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/cleanup_future_articles.py && python migrations/fix_article_dates.py"
 
 [[ports]]
 localPort = 5000

@@ -6,7 +6,7 @@ import pytz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
-from models import Article
+from models import Article, Source
 
 # Setup logging
 logging.basicConfig(
@@ -51,11 +51,14 @@ def cleanup_future_articles():
                 logger.info("No future articles found")
                 return True
 
-            # Log the articles that will be removed
             logger.info(f"Found {len(future_articles)} articles with future dates")
+
+            # Delete future articles and their associated sources
             for article in future_articles:
-                logger.info(f"Removing article: {article.title} (Date: {article.publication_date})")
-                # Delete the article and its associated sources (cascade delete)
+                logger.info(f"Removing article dated {article.publication_date}: {article.title}")
+                # Delete sources first
+                Source.query.filter_by(article_id=article.id).delete()
+                # Then delete the article
                 db.session.delete(article)
 
             db.session.commit()

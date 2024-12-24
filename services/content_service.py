@@ -81,13 +81,17 @@ class ContentService:
             current_date = datetime.now(pytz.UTC)
 
             if publication_date:
+                if not isinstance(publication_date, datetime):
+                    publication_date = datetime.fromisoformat(str(publication_date))
                 if publication_date.tzinfo is None:
                     publication_date = pytz.UTC.localize(publication_date)
                 if publication_date > current_date:
                     logger.error(f"Cannot create article with future date: {publication_date}")
                     return None
             else:
-                publication_date = current_date - timedelta(days=current_date.weekday())
+                # Get the Monday of the current week
+                days_since_monday = current_date.weekday()
+                publication_date = current_date - timedelta(days=days_since_monday)
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
