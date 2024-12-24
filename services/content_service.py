@@ -136,8 +136,15 @@ class ContentService:
                     4. Focus on technical significance and practical implications
                     5. Support technical concepts with concrete examples
 
+                    Title requirements:
+                    - Create a specific title that reflects the key technical developments covered in the article
+                    - Include the most significant technical changes or improvements
+                    - Avoid generic titles like "Weekly Update" alone
+                    - Format: "Ethereum Development: [Key Technical Focus] - Week of [Date]"
+                    - Example: "Ethereum Development: Layer 2 Scaling and EIP-4844 Progress - Week of December 16"
+
                     Required sections:
-                    1. A clear, formal title
+                    1. A clear, formal title following the above format
                     2. A detailed technical overview (at least 700 characters) that addresses:
                        - Key technical developments and their implementation
                        - Impact on network functionality and performance
@@ -146,12 +153,13 @@ class ContentService:
                        - Technical concepts with clear explanations
                     3. Repository updates (start with 'Repository Updates:') - detail technical changes
                     4. Technical highlights (start with 'Technical Highlights:') - analyze implementation impact
-                    5. Next steps (start with 'Next Steps:') with technical roadmap"""
+                    5. Next Steps (start with 'Next Steps:') with technical roadmap"""
                 },
                 {
                     "role": "user",
                     "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
                     Remember:
+                    - Title must reflect the key technical developments
                     - Maintain formal, professional language
                     - Include precise technical details
                     - Focus on implementation specifics
