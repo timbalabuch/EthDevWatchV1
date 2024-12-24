@@ -16,7 +16,11 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    articles = Article.query.order_by(Article.publication_date.desc()).all()
+    # Only show articles from past weeks
+    current_date = datetime.utcnow()
+    articles = Article.query.filter(
+        Article.publication_date <= current_date
+    ).order_by(Article.publication_date.desc()).all()
     return render_template('index.html', articles=articles)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -83,6 +87,9 @@ def edit_article(article_id):
 @app.route('/article/<int:article_id>')
 def article(article_id):
     article = Article.query.get_or_404(article_id)
+    # Don't show future articles
+    if article.publication_date > datetime.utcnow():
+        abort(404)
     return render_template('article.html', article=article)
 
 @app.errorhandler(404)

@@ -113,11 +113,21 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
+            # Ensure we're not using future dates
+            current_date = datetime.utcnow()
+            if publication_date and publication_date > current_date:
+                logger.error(f"Cannot create article with future date: {publication_date}")
+                return None
+
             # Filter content to only use items from the current week
             current_week_content = []
-            week_start = publication_date or datetime.utcnow()
+            week_start = publication_date or current_date
             week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
             week_end = week_start + timedelta(days=7)
+
+            # Ensure we're not looking into the future
+            if week_end > current_date:
+                week_end = current_date
 
             for item in github_content:
                 item_date = item.get('created_at')
@@ -125,7 +135,7 @@ class ContentService:
                     current_week_content.append(item)
 
             if not current_week_content:
-                logger.warning("No content found for the current week")
+                logger.warning("No content found for the specified week")
                 return None
 
             time.sleep(2)
