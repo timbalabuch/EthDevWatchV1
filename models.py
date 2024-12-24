@@ -24,6 +24,7 @@ class Article(db.Model):
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
+    forum_summary = db.Column(db.Text)  # New field for forum discussions
 
     # Publishing workflow columns
     status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published

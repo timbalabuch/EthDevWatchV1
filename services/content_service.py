@@ -11,6 +11,7 @@ from openai import OpenAI, RateLimitError
 
 from app import db
 from models import Article, Source
+from services.forum_service import ForumService
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class ContentService:
     """Service for generating and managing article content using OpenAI."""
 
     def __init__(self):
-        """Initialize the ContentService with OpenAI client."""
+        """Initialize the ContentService with OpenAI client and forum service."""
         try:
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
@@ -28,6 +29,7 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
+            self.forum_service = ForumService()  # Initialize forum service
             logger.info("ContentService initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ContentService: {str(e)}")
@@ -163,14 +165,7 @@ class ContentService:
         }
 
     def _format_article_content(self, summary_data: Dict) -> str:
-        """Format the article content with proper HTML structure.
-
-        Args:
-            summary_data: Dictionary containing article sections
-
-        Returns:
-            Formatted HTML content
-        """
+        """Format the article content with proper HTML structure."""
         try:
             article_html = f"""
                 <article class="ethereum-article">
@@ -185,6 +180,17 @@ class ContentService:
                     <div class="repository-updates mb-4">
                         <h2 class="section-title">Repository Updates</h2>
                         {self._format_repository_updates(summary_data.get('repository_updates', []))}
+                    </div>
+                """
+
+            # Forum discussions section
+            if summary_data.get('forum_summary'):
+                article_html += f"""
+                    <div class="forum-discussions mb-4">
+                        <h2 class="section-title">Community Discussions</h2>
+                        <div class="forum-summary">
+                            {summary_data.get('forum_summary', '')}
+                        </div>
                     </div>
                 """
 
@@ -276,18 +282,7 @@ class ContentService:
         return '\n'.join(formatted_highlights)
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
-        """Generate a weekly summary article from GitHub content.
-
-        Args:
-            github_content: List of content items from GitHub
-            publication_date: Optional publication date for the article
-
-        Returns:
-            Generated Article object or None if generation fails
-
-        Raises:
-            ValueError: If no GitHub content is provided
-        """
+        """Generate a weekly summary article from GitHub content."""
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
@@ -307,11 +302,8 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
-            # Calculate week's end date
-            end_date = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
-
-            week_str = publication_date.strftime("%Y-%m-%d")
-            logger.info(f"Generating content for week of {week_str}")
+            # Get forum discussions summary
+            forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
 
             repo_content = self.organize_content_by_repository(github_content)
             if not repo_content:
@@ -412,13 +404,14 @@ class ContentService:
                 content = response.choices[0].message.content
                 sections = self._extract_content_sections(content)
 
-            # Format the content as HTML
+            # Format the content as HTML with the added forum summary
             content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps']
+                'next_steps': sections['next_steps'],
+                'forum_summary': forum_summary
             })
 
             article = Article(
@@ -426,7 +419,8 @@ class ContentService:
                 content=content,
                 publication_date=publication_date,
                 status='published',
-                published_date=current_date
+                published_date=current_date,
+                forum_summary=forum_summary  # Save the forum summary in the new field
             )
 
             # Add sources
