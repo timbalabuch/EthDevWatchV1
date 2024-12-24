@@ -92,21 +92,8 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
-            # Check if an article already exists for this week
-            monday = publication_date - timedelta(days=publication_date.weekday())
-            monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
-            sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
-
-            existing_article = Article.query.filter(
-                Article.publication_date >= monday,
-                Article.publication_date <= sunday
-            ).first()
-
-            if existing_article:
-                logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
-                return existing_article
-
-            logger.info(f"Generating article with publication date: {publication_date}")
+            week_str = publication_date.strftime("%Y-%m-%d")
+            logger.info(f"Generating content for week of {week_str}")
 
             # Organize content by repository
             repo_content = self.organize_content_by_repository(github_content)
@@ -114,9 +101,6 @@ class ContentService:
             if not repo_content:
                 logger.warning("No content found to summarize")
                 return None
-
-            week_str = publication_date.strftime("%Y-%m-%d")
-            logger.info(f"Generating content for week of {week_str}")
 
             # Create repository summaries
             repo_summaries = []
@@ -136,7 +120,9 @@ class ContentService:
                 }
                 repo_summaries.append(summary)
 
-            # Generate the technical summary
+            logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
+
+            # Generate the article content
             messages = [
                 {
                     "role": "system",
@@ -150,27 +136,17 @@ class ContentService:
                     4. Focus on why each change matters to regular users
                     5. Use concrete, real-world examples for every feature
 
-                    Required format (JSON):
-                    {
-                        "title": "Clear, engaging title",
-                        "brief_summary": "Detailed, friendly explanation (MUST be 700+ characters) that helps regular people understand:
-                            - What changed this week in simple terms
-                            - Why these changes matter to users
-                            - How these improve the Ethereum network
-                            - Real examples of how users benefit
-                            - Simple analogies for technical concepts",
-                        "repository_updates": [{
-                            "repository": "name",
-                            "summary": "Simple explanation of changes",
-                            "changes": ["List of key changes in plain language"]
-                        }],
-                        "technical_highlights": [{
-                            "title": "Simple title",
-                            "description": "Plain language explanation",
-                            "impact": "How this benefits users"
-                        }],
-                        "next_steps": ["Future plans in simple terms"]
-                    }"""
+                    Required sections:
+                    1. A clear, engaging title
+                    2. A detailed, friendly explanation (at least 700 characters) that helps regular people understand:
+                       - What changed this week in simple terms
+                       - Why these changes matter to users
+                       - How these improve the Ethereum network
+                       - Real examples of how users benefit
+                       - Simple analogies for technical concepts
+                    3. Repository updates with simple explanations
+                    4. Technical highlights that explain impact on users
+                    5. Future plans in simple terms"""
                 },
                 {
                     "role": "user",
@@ -180,18 +156,18 @@ class ContentService:
                     - Use everyday examples and analogies
                     - Focus on why users should care about these changes
                     - Keep it engaging and conversational
-                    - The brief summary must be at least 700 characters
+                    - The explanation must be at least 700 characters
 
                     Here are the technical updates to explain in simple terms:
                     {json.dumps(repo_summaries, indent=2)}"""
                 }
             ]
 
+            logger.info("Sending request to OpenAI API...")
             response = self._retry_with_exponential_backoff(
                 self.openai.chat.completions.create,
                 model=self.model,
                 messages=messages,
-                response_format={"type": "json_object"},
                 temperature=0.7,
                 max_tokens=2000
             )
@@ -199,56 +175,100 @@ class ContentService:
             if not response or not hasattr(response, 'choices') or not response.choices:
                 raise ValueError("Invalid response from OpenAI API")
 
-            try:
-                summary_data = json.loads(response.choices[0].message.content)
+            logger.info("Received response from OpenAI API")
+            content = response.choices[0].message.content
 
-                # Verify brief summary length
-                brief_summary_length = len(summary_data.get('brief_summary', ''))
-                if brief_summary_length < 700:
-                    logger.warning(f"Brief summary length ({brief_summary_length}) is less than required (700 characters). Regenerating...")
-                    messages[0]["content"] += "\n\nIMPORTANT: Your brief_summary MUST be at least 700 characters long."
+            try:
+                # Extract sections from the content
+                parts = content.split('\n\n')
+                title = parts[0].strip()
+                brief_summary = ''
+                repo_updates = []
+                tech_highlights = []
+                next_steps = []
+
+                current_section = None
+                for part in parts[1:]:
+                    part = part.strip()
+                    if not part:
+                        continue
+
+                    if part.lower().startswith('repository updates'):
+                        current_section = 'repo'
+                    elif part.lower().startswith('technical highlights'):
+                        current_section = 'tech'
+                    elif part.lower().startswith('next steps'):
+                        current_section = 'next'
+                    elif not current_section and len(brief_summary) < 700:
+                        brief_summary += ' ' + part
+                    elif current_section == 'repo':
+                        repo_updates.append(part)
+                    elif current_section == 'tech':
+                        tech_highlights.append(part)
+                    elif current_section == 'next':
+                        next_steps.append(part)
+
+                # Ensure minimum length for brief summary
+                if len(brief_summary) < 700:
+                    logger.warning(f"Brief summary too short ({len(brief_summary)} chars), regenerating...")
+                    messages[0]["content"] += "\n\nIMPORTANT: Your explanation MUST be at least 700 characters long."
                     response = self._retry_with_exponential_backoff(
                         self.openai.chat.completions.create,
                         model=self.model,
                         messages=messages,
-                        response_format={"type": "json_object"},
                         temperature=0.7,
                         max_tokens=2000
                     )
-                    summary_data = json.loads(response.choices[0].message.content)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
-                raise ValueError("Invalid JSON response from OpenAI")
+                    content = response.choices[0].message.content
+                    # Re-parse the content...
+                    parts = content.split('\n\n')
+                    title = parts[0].strip()
+                    brief_summary = ' '.join(p.strip() for p in parts[1:] if not any(p.lower().startswith(s) for s in ['repository updates', 'technical highlights', 'next steps']))
 
-            content = self._format_article_content(summary_data, None)
-            article = Article(
-                title=summary_data["title"],
-                content=content,
-                publication_date=publication_date,
-                status='published',
-                published_date=current_date
-            )
+                logger.info(f"Generated content - Title: {title[:50]}...")
+                logger.info(f"Brief summary length: {len(brief_summary)} characters")
 
-            # Add sources for each piece of content
-            for item in github_content:
-                source = Source(
-                    url=item['url'],
-                    type=item['type'],
-                    title=item.get('title', ''),
-                    repository=item['repository'],
-                    article=article
+                # Format the content as HTML
+                content = self._format_article_content({
+                    'title': title,
+                    'brief_summary': brief_summary,
+                    'repository_updates': [{'summary': update} for update in repo_updates],
+                    'technical_highlights': [{'description': highlight} for highlight in tech_highlights],
+                    'next_steps': next_steps
+                }, None)
+
+                article = Article(
+                    title=title,
+                    content=content,
+                    publication_date=publication_date,
+                    status='published',
+                    published_date=current_date
                 )
-                db.session.add(source)
 
-            db.session.add(article)
-            db.session.commit()
-            logger.info(f"Successfully created article: {article.title}")
+                # Add sources
+                for item in github_content:
+                    source = Source(
+                        url=item['url'],
+                        type=item['type'],
+                        title=item.get('title', ''),
+                        repository=item['repository'],
+                        article=article
+                    )
+                    db.session.add(source)
 
-            return article
+                db.session.add(article)
+                db.session.commit()
+                logger.info(f"Successfully created article: {article.title}")
+
+                return article
+
+            except Exception as e:
+                logger.error(f"Error generating summary: {str(e)}")
+                db.session.rollback()
+                raise
 
         except Exception as e:
-            logger.error(f"Error generating summary: {str(e)}")
-            db.session.rollback()
+            logger.error(f"Error in generate_weekly_summary: {str(e)}")
             raise
 
     def _format_article_content(self, summary_data, intro_data):
