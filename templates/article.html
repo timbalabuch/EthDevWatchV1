@@ -23,17 +23,20 @@
                         <div class="progress-bar-fill" style="width: 100%"></div>
                     </div>
                     {% if article.sources %}
-                        {% set repositories = {} %}
+                        {# Group sources by repository #}
+                        {% set repo_sources = {} %}
                         {% for source in article.sources %}
-                            {% if source.repository not in repositories %}
-                                {% do repositories.update({source.repository: []}) %}
+                            {% if repo_sources.get(source.repository) %}
+                                {% set _ = repo_sources[source.repository].append(source) %}
+                            {% else %}
+                                {% set _ = repo_sources.update({source.repository: [source]}) %}
                             {% endif %}
-                            {% do repositories[source.repository].append(source) %}
                         {% endfor %}
 
-                        {% for repository, sources in repositories.items() %}
+                        {# Display sources grouped by repository #}
+                        {% for repo, sources in repo_sources.items() %}
                             <div class="repository-group mb-4">
-                                <h4 class="repository-name mb-3">{{ repository }}</h4>
+                                <h4 class="repository-name mb-3">{{ repo }}</h4>
                                 <ul class="list-unstyled">
                                     {% for source in sources %}
                                     <li class="mb-3">
