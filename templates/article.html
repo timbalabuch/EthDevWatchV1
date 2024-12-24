@@ -33,9 +33,24 @@
                 </div>
             </div>
             {% else %}
-            <div class="alert alert-info mt-5" role="alert">
-                <h4 class="alert-heading">No Forum Discussions Available</h4>
-                <p class="mb-0">Forum discussions for this week are not available or are still being processed.</p>
+            <div class="forum-discussions mt-5">
+                <h2 class="h4 mb-4">Forum Discussions</h2>
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">Forum Discussions Processing</h4>
+                    <div class="mb-3">
+                        <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span>Forum discussions are being processed</span>
+                    </div>
+                    <p class="mb-2">Our system is currently:</p>
+                    <ul class="mb-3">
+                        <li>Fetching discussions from Ethereum Magicians forum</li>
+                        <li>Processing and summarizing the content</li>
+                        <li>Preparing a comprehensive overview of community discussions</li>
+                    </ul>
+                    <p class="mb-0">This process may take a few minutes. Please check back shortly.</p>
+                </div>
             </div>
             {% endif %}
 
