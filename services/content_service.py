@@ -85,15 +85,14 @@ class ContentService:
                     publication_date = datetime.fromisoformat(str(publication_date))
                 if publication_date.tzinfo is None:
                     publication_date = pytz.UTC.localize(publication_date)
-                if publication_date > current_date:
-                    logger.error(f"Cannot create article with future date: {publication_date}")
-                    return None
             else:
                 # Get the Monday of the current week
                 days_since_monday = current_date.weekday()
                 publication_date = current_date - timedelta(days=days_since_monday)
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
+
+            logger.info(f"Generating article with publication date: {publication_date}")
 
             # Organize content by repository
             repo_content = self.organize_content_by_repository(github_content)
