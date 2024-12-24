@@ -218,7 +218,14 @@ def edit_article(article_id: int) -> Union[str, Response]:
 def article(article_id: int) -> Union[str, Tuple[str, int]]:
     """Display a single article."""
     try:
+        logger.info(f"Attempting to retrieve article with ID: {article_id}")
         article = Article.query.get_or_404(article_id)
+
+        if not article:
+            logger.error(f"Article {article_id} not found in database")
+            abort(404)
+
+        logger.info(f"Article found: {article.title}")
         last_monday, last_sunday = get_last_completed_week()
 
         # Don't show articles from incomplete weeks
@@ -230,7 +237,7 @@ def article(article_id: int) -> Union[str, Tuple[str, int]]:
         logger.debug(f"Rendering article {article_id} with date {article_date}")
         return render_template('article.html', article=article)
     except Exception as e:
-        logger.error(f"Error rendering article {article_id}: {str(e)}")
+        logger.error(f"Error retrieving article {article_id}: {str(e)}", exc_info=True)
         abort(404)
 
 @app.errorhandler(404)

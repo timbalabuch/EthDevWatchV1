@@ -63,11 +63,31 @@ class Article(db.Model):
                 # Get the actual content div inside overview section
                 overview_content = overview.find('div', class_='overview-content')
                 if overview_content:
-                    return str(overview_content.get_text(strip=True))
+                    text = overview_content.get_text(strip=True)
+                    # Limit to 350 characters
+                    return text[:350] + ('...' if len(text) > 350 else '')
             return None
         except Exception as e:
             print(f"Error extracting brief summary: {e}")
             return None
+
+    @property
+    def magicians_discussions(self):
+        """Extract Ethereum Magicians discussions."""
+        if not self.forum_summary:
+            return None
+        soup = BeautifulSoup(self.forum_summary, 'lxml')
+        magicians = soup.find_all('div', {'data-source': 'ethereum-magicians.org'})
+        return '\n'.join(str(div) for div in magicians) if magicians else None
+
+    @property
+    def ethresearch_discussions(self):
+        """Extract Ethereum Research discussions."""
+        if not self.forum_summary:
+            return None
+        soup = BeautifulSoup(self.forum_summary, 'lxml')
+        research = soup.find_all('div', {'data-source': 'ethresear.ch'})
+        return '\n'.join(str(div) for div in research) if research else None
 
     @property
     def repository_updates(self):

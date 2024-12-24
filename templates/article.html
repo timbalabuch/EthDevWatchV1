@@ -44,23 +44,22 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                                     </a>
                                 </h3>
-                                {% set magicians_content = article.forum_summary | regex_replace('(?s)<div class="forum-discussion-summary">(.*?)</div>', '\\1') %}
-                                {% if 'ethereum-magicians.org' in magicians_content %}
-                                    {{ magicians_content | safe }}
+                                {% if article.magicians_discussions %}
+                                    {{ article.magicians_discussions | safe }}
                                 {% else %}
                                     <p class="text-muted">No discussions from Ethereum Magicians for this period.</p>
                                 {% endif %}
                             </div>
 
-                            <div class="ethresearch">
+                            <div class="ethresearch mb-4">
                                 <h3 class="h4 mb-3">
                                     <a href="https://ethresear.ch" target="_blank" class="text-info text-decoration-none">
                                         Ethereum Research
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                                     </a>
                                 </h3>
-                                {% if 'ethresear.ch' in article.forum_summary %}
-                                    {{ article.forum_summary | safe }}
+                                {% if article.ethresearch_discussions %}
+                                    {{ article.ethresearch_discussions | safe }}
                                 {% else %}
                                     <p class="text-muted">No discussions from Ethereum Research for this period.</p>
                                 {% endif %}
@@ -80,12 +79,6 @@
                                 <li>Fetching discussions from Ethereum Magicians and Ethereum Research forums</li>
                                 <li>Processing and summarizing the content</li>
                                 <li>Preparing a comprehensive overview of community discussions</li>
-                            </ul>
-                            <p class="mb-2">Estimated processing times:</p>
-                            <ul class="mb-3">
-                                <li>Initial forum data fetch: ~10-15 seconds</li>
-                                <li>Processing each topic: ~5-10 seconds per topic</li>
-                                <li>Content summarization: ~30-45 seconds</li>
                             </ul>
                             <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly.</p>
                         </div>
