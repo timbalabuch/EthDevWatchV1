@@ -4,6 +4,7 @@ import os
 import random
 import time
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Union
 
 import pytz
 from openai import OpenAI, RateLimitError
@@ -14,7 +15,10 @@ from models import Article, Source
 logger = logging.getLogger(__name__)
 
 class ContentService:
+    """Service for generating and managing article content using OpenAI."""
+
     def __init__(self):
+        """Initialize the ContentService with OpenAI client."""
         try:
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
@@ -24,13 +28,25 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
-            logger.info("ContentService initialized with OpenAI client")
+            logger.info("ContentService initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ContentService: {str(e)}")
             raise
 
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
-        """Execute a function with exponential backoff retry logic"""
+        """Execute a function with exponential backoff retry logic.
+
+        Args:
+            func: The function to execute
+            *args: Arguments to pass to the function
+            **kwargs: Keyword arguments to pass to the function
+
+        Returns:
+            The result of the function execution
+
+        Raises:
+            Exception: If max retries are exceeded
+        """
         last_exception = None
         for attempt in range(self.max_retries):
             try:
@@ -52,8 +68,15 @@ class ContentService:
                 logger.info(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
 
-    def organize_content_by_repository(self, github_content):
-        """Organize GitHub content by repository and type"""
+    def organize_content_by_repository(self, github_content: List[Dict]) -> Dict[str, Dict]:
+        """Organize GitHub content by repository and type.
+
+        Args:
+            github_content: List of content items from GitHub
+
+        Returns:
+            Dictionary organizing content by repository
+        """
         repo_content = {}
         for item in github_content:
             repo = item['repository']
@@ -71,16 +94,30 @@ class ContentService:
 
         return repo_content
 
-    def _clean_title(self, title):
-        """Clean and format the article title"""
+    def _clean_title(self, title: str) -> str:
+        """Clean and format the article title.
+
+        Args:
+            title: Raw title string
+
+        Returns:
+            Cleaned and formatted title
+        """
         title = title.replace('Title:', '').strip()
         title = title.replace('"', '').replace("'", '').strip()
         if ':' in title and not any(x in title for x in ['Update', 'Progress', 'Development', 'Enhancement']):
             title = title.split(':', 1)[1].strip()
         return title
 
-    def _extract_content_sections(self, content):
-        """Extract different sections from the content"""
+    def _extract_content_sections(self, content: str) -> Dict[str, Union[str, List[str]]]:
+        """Extract different sections from the content.
+
+        Args:
+            content: Raw content string
+
+        Returns:
+            Dictionary containing extracted sections
+        """
         parts = content.split('\n\n')
         title = self._clean_title(parts[0])
 
@@ -119,14 +156,21 @@ class ContentService:
 
         return {
             'title': title,
-            'brief_summary': brief_summary,
+            'brief_summary': brief_summary.strip(),
             'repo_updates': repo_updates,
             'tech_highlights': tech_highlights,
             'next_steps': next_steps
         }
 
-    def _format_article_content(self, summary_data):
-        """Format the article content with proper HTML structure"""
+    def _format_article_content(self, summary_data: Dict) -> str:
+        """Format the article content with proper HTML structure.
+
+        Args:
+            summary_data: Dictionary containing article sections
+
+        Returns:
+            Formatted HTML content
+        """
         try:
             article_html = f"""
                 <article class="ethereum-article">
@@ -165,15 +209,22 @@ class ContentService:
                 """
 
             article_html += "</article>"
-            logger.info("Generated article HTML length: %d", len(article_html))
+            logger.info(f"Generated article HTML (length: {len(article_html)})")
             return article_html
 
         except Exception as e:
             logger.error(f"Error formatting article content: {str(e)}")
             raise
 
-    def _format_repository_updates(self, updates):
-        """Format repository updates section"""
+    def _format_repository_updates(self, updates: List[Union[str, Dict]]) -> str:
+        """Format repository updates section.
+
+        Args:
+            updates: List of repository updates
+
+        Returns:
+            Formatted HTML for updates section
+        """
         formatted_updates = []
         for update in updates:
             if isinstance(update, str):
@@ -196,8 +247,15 @@ class ContentService:
             formatted_updates.append(update_html)
         return '\n'.join(formatted_updates)
 
-    def _format_technical_highlights(self, highlights):
-        """Format technical highlights section"""
+    def _format_technical_highlights(self, highlights: List[Union[str, Dict]]) -> str:
+        """Format technical highlights section.
+
+        Args:
+            highlights: List of technical highlights
+
+        Returns:
+            Formatted HTML for highlights section
+        """
         formatted_highlights = []
         for highlight in highlights:
             if isinstance(highlight, str):
@@ -217,8 +275,19 @@ class ContentService:
             formatted_highlights.append(highlight_html)
         return '\n'.join(formatted_highlights)
 
-    def generate_weekly_summary(self, github_content, publication_date=None):
-        """Generate a weekly summary article from GitHub content"""
+    def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
+        """Generate a weekly summary article from GitHub content.
+
+        Args:
+            github_content: List of content items from GitHub
+            publication_date: Optional publication date for the article
+
+        Returns:
+            Generated Article object or None if generation fails
+
+        Raises:
+            ValueError: If no GitHub content is provided
+        """
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
@@ -263,7 +332,7 @@ class ContentService:
 
             logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
 
-            # Generate the article content using OpenAI
+            # Generate article content using OpenAI
             messages = [
                 {
                     "role": "system",
