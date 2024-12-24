@@ -305,25 +305,38 @@ class ContentService:
                     <div class="article-content mb-4">
                         <p class="lead">{summary_data.get('brief_summary', '')}</p>
                     </div>
+            """
 
+            # Only show repository updates section if there are updates
+            if summary_data.get('repository_updates'):
+                article_html += f"""
                     <div class="repository-updates mb-4">
                         <h2 class="section-title">Repository Updates</h2>
                         {self._format_repository_updates(summary_data.get('repository_updates', []))}
                     </div>
+                """
 
+            # Only show technical highlights section if there are highlights
+            if summary_data.get('technical_highlights'):
+                article_html += f"""
                     <div class="technical-highlights mb-4">
                         <h2 class="section-title">Technical Highlights</h2>
                         {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
                     </div>
+                """
 
+            # Only show next steps section if there are steps
+            if summary_data.get('next_steps'):
+                article_html += f"""
                     <div class="next-steps mb-4">
                         <h2 class="section-title">Next Steps</h2>
                         <ul>
                             {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
                         </ul>
                     </div>
-                </article>
-            """
+                """
+
+            article_html += "</article>"
 
             logger.info("Generated article HTML length: %d", len(article_html))
             return article_html
@@ -346,10 +359,10 @@ class ContentService:
                     </div>
                 """
             else:
-                # Handle dictionary updates
+                # Handle dictionary updates - only show repository name if it exists
                 update_html = f"""
                     <div class="repository-update mb-3">
-                        <h3 class="repository-name">{update.get('repository', '')}</h3>
+                        {f'<h3 class="repository-name">{update.get("repository")}</h3>' if update.get("repository") else ''}
                         <div class="update-summary">
                             <p>{update.get('summary', '')}</p>
                         </div>
@@ -370,15 +383,12 @@ class ContentService:
                     </div>
                 """
             else:
-                # Handle dictionary highlights
+                # Handle dictionary highlights - only show title and impact if they exist
                 highlight_html = f"""
                     <div class="highlight mb-3">
-                        <h3>{highlight.get('title', '')}</h3>
+                        {f'<h3>{highlight.get("title")}</h3>' if highlight.get("title") else ''}
                         <p>{highlight.get('description', '')}</p>
-                        <div class="highlight-impact">
-                            <strong>Impact:</strong>
-                            <p>{highlight.get('impact', '')}</p>
-                        </div>
+                        {f'<div class="highlight-impact"><strong>Impact:</strong><p>{highlight.get("impact")}</p></div>' if highlight.get("impact") else ''}
                     </div>
                 """
             formatted_highlights.append(highlight_html)
