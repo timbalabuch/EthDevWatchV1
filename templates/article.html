@@ -25,6 +25,20 @@
                 {{ article.content | safe }}
             </div>
 
+            {% if article.forum_summary %}
+            <div class="forum-discussions mt-5">
+                <h2 class="h4 mb-4">Forum Discussions</h2>
+                <div class="forum-content">
+                    {{ article.forum_summary | safe }}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info mt-5" role="alert">
+                <h4 class="alert-heading">No Forum Discussions Available</h4>
+                <p class="mb-0">Forum discussions for this week are not available or are still being processed.</p>
+            </div>
+            {% endif %}
+
             <div class="accordion mt-5" id="sourcesAccordion">
                 <div class="accordion-item bg-dark text-light">
                     <h2 class="accordion-header">
@@ -128,6 +142,13 @@
 
 .gap-2 {
     gap: 0.5rem !important;
+}
+
+.forum-discussions {
+    background: var(--bs-dark);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>
 {% endblock %}
