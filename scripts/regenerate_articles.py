@@ -34,71 +34,84 @@ def get_week_dates(publication_date):
     return monday, sunday
 
 def regenerate_article(article, github_service, content_service):
-        """Regenerate a single article with content from all repositories"""
-        try:
-            # Get the week's date range
-            start_date = article.publication_date
-            if start_date.tzinfo is None:
-                start_date = pytz.UTC.localize(start_date)
+    """Regenerate a single article with content from all repositories"""
+    try:
+        # Get the week's date range for the article
+        start_date = article.publication_date
+        if start_date.tzinfo is None:
+            start_date = pytz.UTC.localize(start_date)
 
-            # Ensure we're using the Monday of the week
-            start_date = start_date - timedelta(days=start_date.weekday())
-            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Ensure we're using the Monday of the week
+        start_date = start_date - timedelta(days=start_date.weekday())
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
-            end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+        logger.info(f"Regenerating article for week of {start_date.strftime('%Y-%m-%d')}")
 
-            logger.info(f"Regenerating article for week of {start_date.strftime('%Y-%m-%d')}")
+        # Check if this is already the primary article for this week
+        primary_article = Article.query.filter(
+            Article.publication_date >= start_date,
+            Article.publication_date <= end_date,
+            Article.id != article.id  # Exclude current article
+        ).order_by(Article.id.asc()).first()
 
-            # Fetch content from all repositories
-            github_content = github_service.fetch_recent_content(
-                start_date=start_date,
-                end_date=end_date
-            )
-
-            if not github_content:
-                logger.warning(f"No content found for week of {start_date.strftime('%Y-%m-%d')}")
-                return False
-
-            logger.info(f"Found {len(github_content)} items from all repositories")
-
-            # Generate new article content
-            new_article = content_service.generate_weekly_summary(
-                github_content,
-                publication_date=start_date  # Use the original article's date
-            )
-
-            if not new_article:
-                logger.error("Failed to generate new article content")
-                return False
-
-            # Update existing article
-            article.title = new_article.title
-            article.content = new_article.content
-            # Preserve the original publication date
-            article.publication_date = start_date
-
-            # Delete old sources
-            Source.query.filter_by(article_id=article.id).delete()
-
-            # Add new sources
-            for item in github_content:
-                source = Source(
-                    url=item['url'],
-                    type=item['type'],
-                    title=item.get('title', ''),
-                    repository=item['repository'],
-                    article=article
-                )
-                db.session.add(source)
-
+        if primary_article and primary_article.id < article.id:
+            logger.info(f"Skipping duplicate article {article.id} as primary article {primary_article.id} exists")
+            # Delete this duplicate article and move its sources to the primary article
+            Source.query.filter_by(article_id=article.id).update({"article_id": primary_article.id})
+            db.session.delete(article)
             db.session.commit()
-            logger.info(f"Successfully regenerated article: {article.title}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error regenerating article: {str(e)}")
-            db.session.rollback()
+        # Fetch content from all repositories
+        github_content = github_service.fetch_recent_content(
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        if not github_content:
+            logger.warning(f"No content found for week of {start_date.strftime('%Y-%m-%d')}")
             return False
+
+        logger.info(f"Found {len(github_content)} items from all repositories")
+
+        # Generate new article content
+        new_article = content_service.generate_weekly_summary(
+            github_content,
+            publication_date=start_date  # Use the original article's date
+        )
+
+        if not new_article:
+            logger.error("Failed to generate new article content")
+            return False
+
+        # Update existing article
+        article.title = new_article.title
+        article.content = new_article.content
+        article.publication_date = start_date
+
+        # Delete old sources
+        Source.query.filter_by(article_id=article.id).delete()
+
+        # Add new sources
+        for item in github_content:
+            source = Source(
+                url=item['url'],
+                type=item['type'],
+                title=item.get('title', ''),
+                repository=item['repository'],
+                article=article
+            )
+            db.session.add(source)
+
+        db.session.commit()
+        logger.info(f"Successfully regenerated article: {article.title}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error regenerating article: {str(e)}")
+        db.session.rollback()
+        return False
 
 def regenerate_all_articles():
     """Regenerate all existing articles with content from all repositories"""

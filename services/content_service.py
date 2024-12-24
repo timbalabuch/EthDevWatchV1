@@ -92,6 +92,20 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
+            # Check if an article already exists for this week
+            monday = publication_date - timedelta(days=publication_date.weekday())
+            monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+            existing_article = Article.query.filter(
+                Article.publication_date >= monday,
+                Article.publication_date <= sunday
+            ).first()
+
+            if existing_article:
+                logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
+                return existing_article
+
             logger.info(f"Generating article with publication date: {publication_date}")
 
             # Organize content by repository
