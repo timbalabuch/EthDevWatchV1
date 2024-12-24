@@ -118,18 +118,17 @@ class Article(db.Model):
             return None
         try:
             logger.info("Processing research discussions from forum summary")
-            # Remove markdown code blocks while preserving content
-            clean_summary = re.sub(r'```[^`]*```', '', self.forum_summary)
-            soup = BeautifulSoup(clean_summary, 'lxml')
+            soup = BeautifulSoup(self.forum_summary, 'lxml')
             
-            # Get the discussion summary div
-            content_div = soup.find('div', class_='forum-discussion-summary')
-            if not content_div:
-                return None
-                
-            content = str(content_div)
-            if 'ethresear.ch' in content:
-                return content
+            # Look for any content containing ethresear.ch
+            research_content = []
+            for paragraph in soup.find_all(['p', 'div']):
+                text = str(paragraph)
+                if 'ethresear.ch' in text:
+                    research_content.append(text)
+            
+            if research_content:
+                return '<div class="forum-discussion-summary">' + ''.join(research_content) + '</div>'
                 
             logger.debug("No research discussions found in forum summary")
             return None
