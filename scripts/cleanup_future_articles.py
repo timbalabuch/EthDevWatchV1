@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,17 +15,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def get_last_completed_week():
+    """Get the date range for the last completed week"""
+    current_date = datetime.now(pytz.UTC)
+
+    # Calculate the last completed Sunday
+    days_since_sunday = current_date.weekday() + 1  # +1 because we want the previous Sunday
+    last_sunday = current_date - timedelta(days=days_since_sunday)
+    last_sunday = last_sunday.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # Get the Monday of that week
+    last_monday = last_sunday - timedelta(days=6)
+    last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    return last_monday, last_sunday
+
 def cleanup_future_articles():
-    """Remove any articles with future publication dates"""
+    """Remove any articles that are not from completed weeks"""
     try:
         with app.app_context():
             # Get current UTC time with timezone information
             current_date = datetime.now(pytz.UTC)
             logger.info(f"Current UTC time: {current_date}")
 
-            # Find articles with future dates
+            # Get the last completed week's date range
+            last_monday, last_sunday = get_last_completed_week()
+            logger.info(f"Last completed week: {last_monday.strftime('%Y-%m-%d')} to {last_sunday.strftime('%Y-%m-%d')}")
+
+            # Find articles after the last completed Sunday
             future_articles = Article.query.filter(
-                Article.publication_date > current_date
+                Article.publication_date > last_sunday
             ).all()
 
             if not future_articles:
