@@ -181,10 +181,6 @@ class ContentService:
                     </div>
                 """
 
-            # Forum discussions section
-            article_html += summary_data.get('forum_summary', '')
-
-
             # Technical highlights section
             if summary_data.get('technical_highlights'):
                 article_html += f"""
