@@ -35,7 +35,6 @@
                     <div id="sourcesList" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
                         <div class="accordion-body">
                             {% if article.sources %}
-                                {# Group sources by repository #}
                                 {% set repo_sources = {} %}
                                 {% for source in article.sources %}
                                     {% if repo_sources.get(source.repository) %}
@@ -45,7 +44,6 @@
                                     {% endif %}
                                 {% endfor %}
 
-                                {# Display sources grouped by repository #}
                                 {% for repo, sources in repo_sources.items() %}
                                     <div class="repository-group mb-4">
                                         <h4 class="repository-name mb-3">{{ repo }}</h4>
