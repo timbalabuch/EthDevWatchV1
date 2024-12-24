@@ -62,7 +62,11 @@
                                     {% if article.ethresearch_discussions %}
                                         {{ article.ethresearch_discussions | safe }}
                                     {% else %}
-                                        <pre class="text-muted forum-raw-content">{{ article.forum_summary | safe }}</pre>
+                                        <p class="text-muted mb-0">
+                                            No active discussions found on ethresear.ch for this period. Research discussions 
+                                            are posted on ethresear.ch when there are new protocol research topics or 
+                                            technical proposals to discuss.
+                                        </p>
                                     {% endif %}
                                 </div>
                             </div>

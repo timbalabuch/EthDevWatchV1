@@ -78,9 +78,20 @@ class Article(db.Model):
             return None
         try:
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            content = soup.find('div', class_='forum-discussion-summary')
-            if content and 'Ethereum Magicians Forum Discussion' in content.get_text():
-                return str(content)
+            # Look for Magicians-specific content
+            discussions = []
+            if 'ethereum-magicians.org' in self.forum_summary:
+                for title in soup.find_all(['h2', 'h3']):
+                    if title.string and ('ethereum-magicians.org' in str(title.next_sibling) if title.next_sibling else False):
+                        discussion = title.parent
+                        discussions.append(str(discussion))
+
+                if discussions:
+                    return f"""
+                    <div class="magicians-discussions">
+                        {''.join(discussions)}
+                    </div>
+                    """
             return None
         except Exception as e:
             print(f"Error extracting magicians discussions: {e}")
@@ -93,8 +104,21 @@ class Article(db.Model):
             return None
         try:
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            # Return all forum content for inspection
-            return str(soup)
+            # Look for Research-specific content by checking discussion titles and URLs
+            discussions = []
+            if 'ethresear.ch' in self.forum_summary:
+                for title in soup.find_all(['h2', 'h3']):
+                    if title.string and ('ethresear.ch' in str(title.next_sibling) if title.next_sibling else False):
+                        discussion = title.parent
+                        discussions.append(str(discussion))
+
+                if discussions:
+                    return f"""
+                    <div class="research-discussions">
+                        {''.join(discussions)}
+                    </div>
+                    """
+            return None
         except Exception as e:
             print(f"Error extracting research discussions: {e}")
             return None
