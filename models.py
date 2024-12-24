@@ -90,32 +90,19 @@ class Article(db.Model):
             return None
         try:
             logger.info("Processing magicians discussions from forum summary")
-            soup = BeautifulSoup(self.forum_summary, 'lxml')
-            logger.debug(f"Forum summary content: {self.forum_summary[:500]}")
-
-            discussions = []
-            # Find all discussion blocks that contain magicians content
-            for block in soup.find_all(['div', 'p', 'section']):
-                if not block.get_text(strip=True):  # Skip empty blocks
-                    continue
-
-                if 'ethereum-magicians.org' in block.get_text():
-                    # Extract the entire discussion block
-                    content = str(block)
-                    discussions.append(content)
-                    logger.debug(f"Found magicians discussion block: {content[:200]}")
-
-            if discussions:
-                logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
-                formatted_discussions = []
-                for discussion in discussions:
-                    formatted_discussions.append(f'<div class="discussion-block">{discussion}</div>')
-
-                return f"""
-                <div class="magicians-discussions">
-                    {''.join(formatted_discussions)}
-                </div>
-                """
+            # Remove markdown code blocks
+            clean_summary = re.sub(r'```[^`]*```', '', self.forum_summary)
+            soup = BeautifulSoup(clean_summary, 'lxml')
+            
+            # Extract only the content div
+            content_div = soup.find('div', class_='forum-discussion-summary')
+            if not content_div:
+                return None
+                
+            content = str(content_div)
+            if 'ethereum-magicians.org' in content:
+                return content
+                
             logger.debug("No magicians discussions found in forum summary")
             return None
         except Exception as e:
