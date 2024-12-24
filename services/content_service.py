@@ -144,9 +144,9 @@ class ContentService:
                        - How these improve the Ethereum network
                        - Real examples of how users benefit
                        - Simple analogies for technical concepts
-                    3. Repository updates with simple explanations
-                    4. Technical highlights that explain impact on users
-                    5. Future plans in simple terms"""
+                    3. Repository updates (start with 'Repository Updates:') - explain each repository's changes simply
+                    4. Technical highlights (start with 'Technical Highlights:') - explain impact on users
+                    5. Future plans (start with 'Next Steps:') in simple terms"""
                 },
                 {
                     "role": "user",
@@ -157,6 +157,7 @@ class ContentService:
                     - Focus on why users should care about these changes
                     - Keep it engaging and conversational
                     - The explanation must be at least 700 characters
+                    - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
 
                     Here are the technical updates to explain in simple terms:
                     {json.dumps(repo_summaries, indent=2)}"""
@@ -198,20 +199,32 @@ class ContentService:
                     if not part:
                         continue
 
-                    if part.lower().startswith('repository updates'):
+                    logger.debug(f"Processing part: {part[:100]}...")  # Log first 100 chars of each part
+
+                    if 'Repository Updates:' in part:
                         current_section = 'repo'
-                    elif part.lower().startswith('technical highlights'):
+                        part = part.replace('Repository Updates:', '').strip()
+                    elif 'Technical Highlights:' in part:
                         current_section = 'tech'
-                    elif part.lower().startswith('next steps'):
+                        part = part.replace('Technical Highlights:', '').strip()
+                    elif 'Next Steps:' in part:
                         current_section = 'next'
+                        part = part.replace('Next Steps:', '').strip()
+
+                    if current_section == 'repo' and part:
+                        logger.debug(f"Adding repo update: {part[:100]}...")
+                        repo_updates.append(part)
+                    elif current_section == 'tech' and part:
+                        logger.debug(f"Adding tech highlight: {part[:100]}...")
+                        tech_highlights.append(part)
+                    elif current_section == 'next' and part:
+                        logger.debug(f"Adding next step: {part[:100]}...")
+                        if part.startswith('- '):
+                            next_steps.extend([step.strip() for step in part.split('\n')])
+                        else:
+                            next_steps.append(part)
                     elif not current_section and len(brief_summary) < 700:
                         brief_summary += ' ' + part
-                    elif current_section == 'repo':
-                        repo_updates.append(part)
-                    elif current_section == 'tech':
-                        tech_highlights.append(part)
-                    elif current_section == 'next':
-                        next_steps.append(part)
 
                 # Ensure minimum length for brief summary
                 if len(brief_summary) < 700:
@@ -235,6 +248,9 @@ class ContentService:
 
                 logger.info(f"Generated content - Title: {title[:50]}...")
                 logger.info(f"Brief summary length: {len(brief_summary)} characters")
+                logger.info(f"Number of repository updates: {len(repo_updates)}")
+                logger.info(f"Number of technical highlights: {len(tech_highlights)}")
+                logger.info(f"Number of next steps: {len(next_steps)}")
 
                 # Format the content as HTML
                 content = self._format_article_content({
@@ -318,20 +334,25 @@ class ContentService:
         """Format repository updates section"""
         formatted_updates = []
         for update in updates:
-            update_html = f"""
-                <div class="repository-update mb-3">
-                    <h3 class="repository-name">{update.get('repository', '')}</h3>
-                    <div class="update-summary">
-                        <p>{update.get('summary', '')}</p>
+            if isinstance(update, str):
+                # Handle string updates
+                update_html = f"""
+                    <div class="repository-update mb-3">
+                        <div class="update-summary">
+                            <p>{update}</p>
+                        </div>
                     </div>
-                    <div class="key-changes">
-                        <strong>Key Changes:</strong>
-                        <ul>
-                            {''.join(f"<li>{change}</li>" for change in update.get('changes', []))}
-                        </ul>
+                """
+            else:
+                # Handle dictionary updates
+                update_html = f"""
+                    <div class="repository-update mb-3">
+                        <h3 class="repository-name">{update.get('repository', '')}</h3>
+                        <div class="update-summary">
+                            <p>{update.get('summary', '')}</p>
+                        </div>
                     </div>
-                </div>
-            """
+                """
             formatted_updates.append(update_html)
         return '\n'.join(formatted_updates)
 
@@ -339,15 +360,24 @@ class ContentService:
         """Format technical highlights section"""
         formatted_highlights = []
         for highlight in highlights:
-            highlight_html = f"""
-                <div class="highlight mb-3">
-                    <h3>{highlight.get('title', '')}</h3>
-                    <p>{highlight.get('description', '')}</p>
-                    <div class="highlight-impact">
-                        <strong>Impact:</strong>
-                        <p>{highlight.get('impact', '')}</p>
+            if isinstance(highlight, str):
+                # Handle string highlights
+                highlight_html = f"""
+                    <div class="highlight mb-3">
+                        <p>{highlight}</p>
                     </div>
-                </div>
-            """
+                """
+            else:
+                # Handle dictionary highlights
+                highlight_html = f"""
+                    <div class="highlight mb-3">
+                        <h3>{highlight.get('title', '')}</h3>
+                        <p>{highlight.get('description', '')}</p>
+                        <div class="highlight-impact">
+                            <strong>Impact:</strong>
+                            <p>{highlight.get('impact', '')}</p>
+                        </div>
+                    </div>
+                """
             formatted_highlights.append(highlight_html)
         return '\n'.join(formatted_highlights)
