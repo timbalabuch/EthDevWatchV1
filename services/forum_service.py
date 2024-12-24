@@ -47,25 +47,51 @@ class ForumService:
     def _extract_date_from_forum_post(self, post_element: Union[Tag, BeautifulSoup]) -> Optional[datetime]:
         """Extract date from a forum post element."""
         try:
-            # Look for the date element with class 'relative-date'
-            date_elem = post_element.select_one('time.relative-date, span.relative-date')
-            if not date_elem:
-                logger.debug("No date element found in post")
-                return None
-
-            if not date_elem.has_attr('datetime'):
-                logger.debug("Date element has no datetime attribute")
-                return None
-
-            date_str = date_elem['datetime']
-            try:
-                return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-            except ValueError:
+            # First try to find the date in the 'created-at' attribute
+            date_elem = post_element.select_one('[data-created-at]')
+            if date_elem and date_elem.has_attr('data-created-at'):
                 try:
-                    return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
-                except ValueError as e:
-                    logger.error(f"Error parsing date string '{date_str}': {str(e)}")
-                    return None
+                    timestamp = int(date_elem['data-created-at'])
+                    return datetime.fromtimestamp(timestamp, pytz.UTC)
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Failed to parse timestamp: {e}")
+
+            # Fallback to other date elements
+            date_elem = post_element.select_one('.post-date, .topic-date, time.relative-date, span.relative-date')
+            if not date_elem:
+                logger.debug(f"No date element found in post HTML: {post_element.prettify()[:200]}")
+                return None
+
+            # Try different date attributes
+            date_str = None
+            for attr in ['datetime', 'title', 'data-time']:
+                if date_elem.has_attr(attr):
+                    date_str = date_elem[attr]
+                    break
+
+            if not date_str:
+                logger.debug(f"No date attribute found in element: {date_elem}")
+                return None
+
+            # Try different date formats
+            formats = [
+                '%Y-%m-%dT%H:%M:%S.%fZ',
+                '%Y-%m-%dT%H:%M:%SZ',
+                '%Y-%m-%d %H:%M:%S %z',
+                '%Y-%m-%d %H:%M:%S'
+            ]
+
+            for fmt in formats:
+                try:
+                    date = datetime.strptime(date_str, fmt)
+                    if date.tzinfo is None:
+                        date = pytz.UTC.localize(date)
+                    return date
+                except ValueError:
+                    continue
+
+            logger.error(f"Could not parse date string '{date_str}' with any known format")
+            return None
 
         except Exception as e:
             logger.error(f"Error extracting date from forum post: {str(e)}")
