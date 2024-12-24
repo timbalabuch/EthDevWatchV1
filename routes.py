@@ -136,7 +136,18 @@ def utility_processor():
             return ''
         if not date.tzinfo:
             date = date.replace(tzinfo=pytz.UTC)
-        return date.strftime('%B %d, %Y')
+
+        # Calculate the week range
+        week_start = date - timedelta(days=date.weekday())  # Monday
+        week_end = week_start + timedelta(days=6)  # Sunday
+
+        # Format as "Week of Month Day - Month Day, Year"
+        if week_start.month == week_end.month:
+            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%d')}, {week_start.strftime('%Y')}"
+        elif week_start.year == week_end.year:
+            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%B %d')}, {week_start.strftime('%Y')}"
+        else:
+            return f"Week of {week_start.strftime('%B %d, %Y')} - {week_end.strftime('%B %d, %Y')}"
 
     return dict(
         format_date=format_date,
