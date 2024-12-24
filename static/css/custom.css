@@ -13,6 +13,8 @@
     --link-color: #2563eb;
     --btn-color: #1e293b;
     --btn-hover-color: #fff;
+    --search-bg: rgba(30, 41, 59, 0.05);
+    --search-border: rgba(30, 41, 59, 0.2);
 }
 
 [data-bs-theme="dark"] {
@@ -21,6 +23,8 @@
     --link-color: #3b82f6;
     --btn-color: #e2e8f0;
     --btn-hover-color: #fff;
+    --search-bg: rgba(255, 255, 255, 0.05);
+    --search-border: rgba(255, 255, 255, 0.1);
 }
 
 /* Theme transition effects */
@@ -95,7 +99,7 @@ body {
 }
 
 .card-title a {
-    color: var(--text-color);
+    color: var(--text-color) !important;
     text-decoration: none;
 }
 
@@ -173,14 +177,14 @@ body {
 }
 
 .form-control {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--search-bg);
+    border: 1px solid var(--search-border);
     color: var(--text-color);
 }
 
 .form-control:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: var(--search-bg);
+    border-color: var(--link-color);
     color: var(--text-color);
     box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
 }
