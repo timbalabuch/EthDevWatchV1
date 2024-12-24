@@ -58,8 +58,7 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                                     </a>
                                 </h3>
-                                <div class="forum-content research-content">
-                                    {% if article.ethresearch_discussions %}
+                                {% if article.ethresearch_discussions %}
                                         {{ article.ethresearch_discussions | safe }}
                                     {% else %}
                                         <p class="text-muted mb-0">
@@ -73,12 +72,13 @@
                                                 Debug info: Forum summary length: {{ article.forum_summary|length if article.forum_summary else 0 }} chars
                                                 {% if article.forum_summary %}
                                                 <br>Content preview: {{ article.forum_summary[:200] }}...
+                                                <br>Contains ethresear.ch: {{ 'Yes' if 'ethresear.ch' in article.forum_summary else 'No' }}
+                                                <br>Contains ethereum-magicians.org: {{ 'Yes' if 'ethereum-magicians.org' in article.forum_summary else 'No' }}
                                                 {% endif %}
                                             </small>
                                         </div>
                                         {% endif %}
                                     {% endif %}
-                                </div>
                             </div>
                         </div>
                     {% else %}

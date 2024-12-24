@@ -91,27 +91,35 @@ class Article(db.Model):
         try:
             logger.info("Processing magicians discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
+            logger.debug(f"Forum summary content: {self.forum_summary[:500]}")
 
-            # Look for any content blocks containing ethereum-magicians.org
             discussions = []
-            for div in soup.find_all(['div', 'section']):
-                content = div.get_text()
-                if 'ethereum-magicians.org' in content:
-                    # Log the structure for debugging
-                    logger.debug(f"Found magicians content block: {div.name}, classes: {div.get('class', [])}")
-                    discussions.append(str(div))
+            # Find all discussion blocks that contain magicians content
+            for block in soup.find_all(['div', 'p', 'section']):
+                if not block.get_text(strip=True):  # Skip empty blocks
+                    continue
+
+                if 'ethereum-magicians.org' in block.get_text():
+                    # Extract the entire discussion block
+                    content = str(block)
+                    discussions.append(content)
+                    logger.debug(f"Found magicians discussion block: {content[:200]}")
 
             if discussions:
                 logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
+                formatted_discussions = []
+                for discussion in discussions:
+                    formatted_discussions.append(f'<div class="discussion-block">{discussion}</div>')
+
                 return f"""
                 <div class="magicians-discussions">
-                    {''.join(discussions)}
+                    {''.join(formatted_discussions)}
                 </div>
                 """
             logger.debug("No magicians discussions found in forum summary")
             return None
         except Exception as e:
-            logger.error(f"Error extracting magicians discussions: {e}")
+            logger.error(f"Error extracting magicians discussions: {e}", exc_info=True)
             return None
 
     @property
@@ -123,21 +131,29 @@ class Article(db.Model):
         try:
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
+            logger.debug(f"Forum summary content: {self.forum_summary[:500]}")
 
-            # Look for any content blocks containing ethresear.ch
             discussions = []
-            for div in soup.find_all(['div', 'section']):
-                content = div.get_text()
-                if 'ethresear.ch' in content:
-                    # Log the structure for debugging
-                    logger.debug(f"Found research content block: {div.name}, classes: {div.get('class', [])}")
-                    discussions.append(str(div))
+            # Find all discussion blocks that contain research content
+            for block in soup.find_all(['div', 'p', 'section']):
+                if not block.get_text(strip=True):  # Skip empty blocks
+                    continue
+
+                if 'ethresear.ch' in block.get_text():
+                    # Extract the entire discussion block
+                    content = str(block)
+                    discussions.append(content)
+                    logger.debug(f"Found research discussion block: {content[:200]}")
 
             if discussions:
                 logger.info(f"Successfully extracted {len(discussions)} research discussions")
+                formatted_discussions = []
+                for discussion in discussions:
+                    formatted_discussions.append(f'<div class="discussion-block">{discussion}</div>')
+
                 return f"""
                 <div class="research-discussions">
-                    {''.join(discussions)}
+                    {''.join(formatted_discussions)}
                 </div>
                 """
             logger.debug("No research discussions found in forum summary")
