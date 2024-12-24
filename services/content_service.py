@@ -154,21 +154,25 @@ class ContentService:
 
     def _format_article_content(self, summary_data):
         return f"""
-            <div class="article-summary mb-4">
-                <p class="lead">{summary_data['brief_summary']}</p>
-            </div>
+        <div class="article-summary mb-4">
+            <p class="lead">{summary_data.get('brief_summary', '')}</p>
+        </div>
 
+        <div class="ethereum-updates">
             <div class="meetings-section mb-4">
                 <h2 class="section-title">Meeting Summaries</h2>
                 {''.join(f'''
                 <div class="meeting-card mb-3">
-                    <h3>{meeting['title']}</h3>
+                    <h3>{meeting.get('title', '')}</h3>
+                    <div class="meeting-source text-muted mb-2">
+                        <small>From {meeting.get('repository', 'ethereum/pm')}</small>
+                    </div>
                     <ul class="key-points list-unstyled">
-                        {''.join(f'<li class="mb-2">{point}</li>' for point in meeting['key_points'])}
+                        {''.join(f'<li class="mb-2">{point}</li>' for point in meeting.get('key_points', []))}
                     </ul>
                     <div class="decisions">
                         <strong>Key Decisions:</strong>
-                        <p>{meeting['decisions']}</p>
+                        <p>{meeting.get('decisions', '')}</p>
                     </div>
                 </div>
                 ''' for meeting in summary_data.get('meetings', []))}
@@ -178,16 +182,38 @@ class ContentService:
                 <h2 class="section-title">Technical Updates</h2>
                 {''.join(f'''
                 <div class="technical-card mb-3">
-                    <h3>{update['area']}</h3>
+                    <h3>{update.get('area', '')}</h3>
+                    <div class="repository-source text-muted mb-2">
+                        <small>From {update.get('repository', 'ethereum/specs')}</small>
+                    </div>
                     <div class="changes">
                         <strong>Changes:</strong>
-                        <p>{update['changes']}</p>
+                        <p>{update.get('changes', '')}</p>
                     </div>
                     <div class="impact">
                         <strong>Impact:</strong>
-                        <p>{update['impact']}</p>
+                        <p>{update.get('impact', '')}</p>
                     </div>
                 </div>
                 ''' for update in summary_data.get('technical_updates', []))}
             </div>
-            """
+
+            <div class="proposals-section">
+                <h2 class="section-title">EIPs and Proposals</h2>
+                {''.join(f'''
+                <div class="proposal-card mb-3">
+                    <h3>{proposal.get('title', '')}</h3>
+                    <div class="repository-source text-muted mb-2">
+                        <small>From {proposal.get('repository', 'ethereum/EIPs')}</small>
+                    </div>
+                    <div class="summary">
+                        <p>{proposal.get('summary', '')}</p>
+                    </div>
+                    <div class="status">
+                        <strong>Status:</strong> {proposal.get('status', 'Draft')}
+                    </div>
+                </div>
+                ''' for proposal in summary_data.get('proposals', []))}
+            </div>
+        </div>
+        """
