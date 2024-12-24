@@ -158,12 +158,17 @@ class ContentService:
 
             # Fetch tweets for the week
             try:
+                logger.info(f"Fetching tweets for week of {publication_date.strftime('%Y-%m-%d')}")
                 tweets = self.twitter.get_list_tweets(
                     list_id="1793204998274163087",
                     start_date=publication_date,
                     end_date=publication_date + timedelta(days=7)
                 )
                 tweets_html = self.twitter.format_tweets_html(tweets)
+                if tweets_html:
+                    logger.info(f"Successfully formatted {len(tweets)} tweets")
+                else:
+                    logger.warning("No tweets were formatted")
             except Exception as e:
                 logger.error(f"Error fetching tweets: {str(e)}")
                 tweets_html = ""
