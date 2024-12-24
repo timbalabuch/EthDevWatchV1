@@ -77,12 +77,18 @@ class ContentService:
             if week_end > current_date:
                 week_end = current_date
 
+            # Organize content by repository
+            repo_content = {}
             for item in github_content:
                 item_date = item.get('created_at')
                 if item_date:
                     if isinstance(item_date, datetime) and item_date.tzinfo is None:
                         item_date = pytz.UTC.localize(item_date)
                     if week_start <= item_date <= week_end:
+                        repo = item['repository']
+                        if repo not in repo_content:
+                            repo_content[repo] = []
+                        repo_content[repo].append(item)
                         current_week_content.append(item)
 
             if not current_week_content:
@@ -92,16 +98,36 @@ class ContentService:
             week_str = week_start.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
+            # Create a detailed breakdown of content by repository
+            content_summary = []
+            for repo, items in repo_content.items():
+                content_summary.append(f"{repo}: {len(items)} items ({', '.join(set(item['type'] for item in items))})")
+
             messages = [
                 {
                     "role": "system",
-                    "content": """You are an expert in Ethereum ecosystem development. Create a weekly summary of development activities 
-                    focused on meetings and technical updates. The title should be engaging and highlight the most important development 
-                    of the week. Include a concise 2-3 sentence summary that captures the key developments. Format the response as JSON."""
+                    "content": """You are an expert in Ethereum ecosystem development. Create a comprehensive weekly summary 
+                    of development activities across multiple Ethereum repositories, including:
+                    - ethereum/pm: Core protocol meetings and discussions
+                    - ethereum/EIPs: Ethereum Improvement Proposals
+                    - ethereum/execution-apis: Execution layer API specifications
+                    - ethereum/execution-specs: Execution layer specifications
+                    - ethereum/consensus-specs: Consensus layer specifications
+
+                    Structure the response as JSON with the following sections:
+                    1. title: An engaging title highlighting key developments
+                    2. brief_summary: 2-3 sentences capturing main updates
+                    3. meetings: Array of meeting summaries from ethereum/pm
+                    4. technical_updates: Array of technical changes from specs repositories
+                    5. proposals: Array of EIP updates and status changes
+
+                    Include repository attribution for each item."""
                 },
                 {
                     "role": "user",
-                    "content": f"For the week of {week_str}, generate a comprehensive Ethereum ecosystem development update."
+                    "content": f"""Generate a comprehensive Ethereum ecosystem development update for the week of {week_str}.
+                    Content breakdown:
+                    {chr(10).join(content_summary)}"""
                 }
             ]
 
