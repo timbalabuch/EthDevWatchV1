@@ -19,17 +19,23 @@ class DuneService:
             "Content-Type": "application/json"
         }
 
-        # Define query IDs for each metric
+        # Define correct query IDs for each metric
         self.QUERY_IDS = {
-            'active_addresses': '1619273',
-            'contract_deployments': '1619273',
-            'eth_burned': '1725751'
+            'active_addresses': '1619273/2684507',  # Using the specific query for active addresses
+            'contract_deployments': '1619273/2835668',  # Using the specific query for contract deployments
+            'eth_burned': '1725751/2846212'  # Using the specific query for ETH burned
         }
         logger.info("DuneService initialized with API key and query IDs")
 
     def _execute_query(self, query_id, params=None):
         """Execute a Dune query and return the results"""
         try:
+            query_id_parts = query_id.split('/')
+            if len(query_id_parts) != 2:
+                raise ValueError(f"Invalid query ID format: {query_id}")
+
+            query_id, execution_id = query_id_parts
+
             # Execute query
             execution_endpoint = f"{self.base_url}/query/{query_id}/execute"
             logger.info(f"Executing Dune query {query_id} with params: {params}")
@@ -40,13 +46,16 @@ class DuneService:
                 json={"parameters": params or {}}
             )
             execution_response.raise_for_status()
-            execution_id = execution_response.json()['execution_id']
+            execution_id = execution_response.json().get('execution_id', execution_id)
 
             logger.debug(f"Query {query_id} execution started with ID: {execution_id}")
 
             # Get results
             results_endpoint = f"{self.base_url}/execution/{execution_id}/results"
-            while True:
+            max_retries = 5
+            retry_count = 0
+
+            while retry_count < max_retries:
                 results_response = requests.get(results_endpoint, headers=self.headers)
                 results_response.raise_for_status()
                 result_data = results_response.json()
@@ -59,6 +68,10 @@ class DuneService:
                     error_msg = f"Query failed with state: {result_data['state']}"
                     logger.error(error_msg)
                     raise Exception(error_msg)
+
+                retry_count += 1
+                import time
+                time.sleep(5)  # Wait 5 seconds between retries
 
         except Exception as e:
             logger.error(f"Error executing Dune query {query_id}: {str(e)}")
@@ -112,7 +125,7 @@ class DuneService:
                 logger.warning("No data received for processing")
                 return {}
 
-            processed = {row['date']: row['value'] for row in data}
+            processed = {row['date']: int(row['value']) for row in data}
             logger.debug(f"Processed daily data: {json.dumps(processed, indent=2)}")
             return processed
         except Exception as e:
