@@ -14,36 +14,43 @@ def fix_article_dates():
             # Get current UTC time
             current_date = datetime.now(pytz.UTC)
 
-            # Get all articles ordered by their original dates
-            articles = Article.query.order_by(Article.publication_date.asc()).all()
+            # Get all articles ordered by their original dates, newest first
+            articles = Article.query.order_by(Article.publication_date.desc()).all()
 
             if not articles:
                 print("No articles found")
                 return
 
-            # Get the earliest article date
-            earliest_article = articles[0]
-            earliest_date = earliest_article.publication_date
-            if earliest_date.tzinfo is None:
-                earliest_date = pytz.UTC.localize(earliest_date)
+            # Start with the most recent Monday before current date
+            last_monday = current_date - timedelta(days=current_date.weekday())
+            last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
-            # Get Monday of the earliest article's week
-            monday = earliest_date - timedelta(days=earliest_date.weekday())
-            monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Group articles by week, going backwards from most recent
+            # Keep only the newest article for each week
+            week_counter = 0
+            processed_weeks = set()
 
-            # Group articles by weeks, going forward in time
-            current_week = monday
             for article in articles:
-                # Set article date to current week's Monday
+                # Calculate the Monday for this article
+                article_monday = last_monday - timedelta(weeks=week_counter)
+                article_monday_str = article_monday.strftime('%Y-%m-%d')
+
+                # If we already have an article for this week, delete this one
+                if article_monday_str in processed_weeks:
+                    print(f"Removing duplicate article for week of {article_monday_str}: {article.title}")
+                    db.session.delete(article)
+                    continue
+
+                # Update article date to this Monday
                 if article.publication_date.tzinfo is None:
                     article.publication_date = pytz.UTC.localize(article.publication_date)
 
-                article.publication_date = current_week
-                print(f"Setting article '{article.title}' to week of {current_week.strftime('%Y-%m-%d')}")
+                article.publication_date = article_monday
+                print(f"Setting article '{article.title}' to week of {article_monday_str}")
 
-                # After every second article, move to next week
-                if (articles.index(article) + 1) % 2 == 0:
-                    current_week = current_week + timedelta(weeks=1)
+                # Mark this week as processed
+                processed_weeks.add(article_monday_str)
+                week_counter += 1
 
             db.session.commit()
             print("Successfully updated article dates")
