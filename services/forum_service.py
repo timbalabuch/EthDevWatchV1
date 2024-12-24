@@ -230,11 +230,26 @@ class ForumService:
                     accessible way. Format the output in sections by forum source.
                     For each forum source (Ethereum Magicians, Ethereum Research):
                     1. Create an <h3> header with the forum name
-                    2. List the main topics discussed
-                    3. Important decisions or consensus reached
-                    4. Notable technical proposals
+                    2. Create an unordered list with:
+                       - Main topics discussed (brief bullet points)
+                       - Key decisions or proposals
+                       - Technical specifications mentioned
                     Keep the summary concise and use plain language.
-                    Use HTML formatting for structure."""
+
+                    Example format:
+                    <h3>Ethereum Magicians</h3>
+                    <ul>
+                        <li>Topic: [brief description]</li>
+                        <li>Decision: [what was decided]</li>
+                        <li>Technical: [specs or proposals]</li>
+                    </ul>
+
+                    <h3>Ethereum Research</h3>
+                    <ul>
+                        <li>Topic: [brief description]</li>
+                        <li>Analysis: [key findings]</li>
+                        <li>Technical: [specs or proposals]</li>
+                    </ul>"""
                 },
                 {
                     "role": "user",
