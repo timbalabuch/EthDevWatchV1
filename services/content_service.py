@@ -121,7 +121,6 @@ class ContentService:
         parts = content.split('\n\n')
         title = self._clean_title(parts[0])
 
-        brief_summary = ''
         repo_updates = []
         tech_highlights = []
         next_steps = []
@@ -151,67 +150,13 @@ class ContentService:
                     next_steps.extend([step.strip() for step in part.split('\n')])
                 else:
                     next_steps.append(part)
-            elif not current_section and len(brief_summary) < 700:
-                brief_summary += ' ' + part
 
         return {
             'title': title,
-            'brief_summary': brief_summary.strip(),
-            'repo_updates': repo_updates,
+            'repository_updates': repo_updates,
             'tech_highlights': tech_highlights,
             'next_steps': next_steps
         }
-
-    def _format_article_content(self, summary_data: Dict) -> str:
-        """Format the article content with proper HTML structure."""
-        try:
-            article_html = f"""
-                <article class="ethereum-article">
-                    <div class="article-content mb-4">
-                        {summary_data.get('brief_summary', '')}
-                    </div>
-            """
-
-            # Repository updates section
-            if summary_data.get('repository_updates'):
-                article_html += f"""
-                    <div class="repository-updates mb-4">
-                        <h2 class="section-title">Repository Updates</h2>
-                        {self._format_repository_updates(summary_data.get('repository_updates', []))}
-                    </div>
-                """
-
-            # Forum discussions section
-            article_html += summary_data.get('forum_summary', '')
-
-
-            # Technical highlights section
-            if summary_data.get('technical_highlights'):
-                article_html += f"""
-                    <div class="technical-highlights mb-4">
-                        <h2 class="section-title">Technical Highlights</h2>
-                        {self._format_technical_highlights(summary_data.get('technical_highlights', []))}
-                    </div>
-                """
-
-            # Next steps section
-            if summary_data.get('next_steps'):
-                article_html += f"""
-                    <div class="next-steps mb-4">
-                        <h2 class="section-title">Next Steps</h2>
-                        <ul>
-                            {''.join(f"<li>{step}</li>" for step in summary_data.get('next_steps', []))}
-                        </ul>
-                    </div>
-                """
-
-            article_html += "</article>"
-            logger.info(f"Generated article HTML (length: {len(article_html)})")
-            return article_html
-
-        except Exception as e:
-            logger.error(f"Error formatting article content: {str(e)}")
-            raise
 
     def _format_repository_updates(self, updates: List[Union[str, Dict]]) -> str:
         """Format repository updates section.
@@ -244,33 +189,20 @@ class ContentService:
             formatted_updates.append(update_html)
         return '\n'.join(formatted_updates)
 
-    def _format_technical_highlights(self, highlights: List[Union[str, Dict]]) -> str:
-        """Format technical highlights section.
+    def _format_article_content(self, summary_data: Dict) -> str:
+        """Format the article content with proper HTML structure."""
+        try:
+            article_html = f"""
+                <article class="ethereum-article">
+                    {summary_data.get('repository_updates', '')}
+                </article>
+            """
+            logger.info(f"Generated article HTML (length: {len(article_html)})")
+            return article_html
 
-        Args:
-            highlights: List of technical highlights
-
-        Returns:
-            Formatted HTML for highlights section
-        """
-        formatted_highlights = []
-        for highlight in highlights:
-            if isinstance(highlight, str):
-                highlight_html = f"""
-                    <div class="highlight mb-3">
-                        <p>{highlight}</p>
-                    </div>
-                """
-            else:
-                highlight_html = f"""
-                    <div class="highlight mb-3">
-                        {f'<h3>{highlight.get("title")}</h3>' if highlight.get("title") else ''}
-                        <p>{highlight.get('description', '')}</p>
-                        {f'<div class="highlight-impact"><strong>Impact:</strong><p>{highlight.get("impact")}</p></div>' if highlight.get("impact") else ''}
-                    </div>
-                """
-            formatted_highlights.append(highlight_html)
-        return '\n'.join(formatted_highlights)
+        except Exception as e:
+            logger.error(f"Error formatting article content: {str(e)}")
+            raise
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
@@ -324,7 +256,7 @@ class ContentService:
 
             logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
 
-            # Generate article content using OpenAI
+            # Generate repository content using OpenAI
             messages = [
                 {
                     "role": "system",
@@ -332,42 +264,28 @@ class ContentService:
                     Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
 
                     Most important rules:
-                    1. Use plain language that anyone can understand
-                    2. Explain complex ideas in simple terms
-                    3. Focus on real-world impact and benefits
-                    4. Avoid technical jargon in titles
-                    5. Make concepts accessible to regular users
-
-                    Title requirements:
-                    - Create simple, clear titles that describe the main improvements
-                    - Write titles that anyone can understand
-                    - Combine multiple key changes in plain language
-                    - DO NOT include dates or week references
-                    - DO NOT use technical terms, parentheses, or quotation marks
-                    - Example: "Making Smart Contracts Better and Network Updates"
-                    - Example: "Network Speed Improvements and Better Security"
+                    1. Focus ONLY on repository updates and technical changes
+                    2. DO NOT include community discussions or forum content
+                    3. Explain complex ideas in simple terms
+                    4. Focus on real-world impact and benefits
+                    5. Keep explanations clear and simple
 
                     Required sections:
-                    1. A clear, simple title following the above format
-                    2. A detailed overview (at least 700 characters)
-                    3. Repository updates (start with 'Repository Updates:')
-                    4. Technical highlights (start with 'Technical Highlights:')
-                    5. Next Steps (start with 'Next Steps:')"""
+                    1. Repository Updates
+                    2. Technical Highlights
+                    3. Next Steps"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
+                    "content": f"""Create a technical summary about Ethereum repository updates for the week of {publication_date.strftime('%Y-%m-%d')}.
                     Remember:
-                    - Create clear, simple titles without technical terms
-                    - Explain the main improvements in plain language
-                    - Avoid technical jargon and quotation marks in titles
-                    - Use everyday language
-                    - Make complex ideas easy to understand
-                    - Focus on real-world benefits
+                    - Focus only on code changes and technical updates
+                    - Do not include community discussions
+                    - Use plain language
                     - Keep explanations clear and simple
                     - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
 
-                    Here are the technical updates to analyze:
+                    Here are the repository updates to analyze:
                     {json.dumps(repo_summaries, indent=2)}"""
                 }
             ]
@@ -390,48 +308,18 @@ class ContentService:
             # Extract and process content sections
             sections = self._extract_content_sections(content)
 
-            # Ensure minimum length for brief summary
-            if len(sections['brief_summary']) < 700:
-                logger.warning(f"Brief summary too short ({len(sections['brief_summary'])} chars), regenerating...")
-                messages[0]["content"] += "\n\nIMPORTANT: Your explanation MUST be at least 700 characters long."
-                response = self._retry_with_exponential_backoff(
-                    self.openai.chat.completions.create,
-                    model=self.model,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=2000
-                )
-                content = response.choices[0].message.content
-                sections = self._extract_content_sections(content)
-
-            # Format the content as HTML with the added forum summary or error message
-            forum_section = ""
-            if forum_summary:
-                forum_section = f"""
-                    <div class="forum-discussions mb-4">
-                        <h2 class="section-title">Community Discussions</h2>
-                        <div class="forum-summary">
-                            {forum_summary}
-                        </div>
-                    </div>
-                """
-            elif forum_error:
-                forum_section = f"""
-                    <div class="forum-discussions mb-4">
-                        <h2 class="section-title">Community Discussions</h2>
-                        <div class="alert alert-warning">
-                            <strong>Note:</strong> {forum_error}
-                        </div>
-                    </div>
-                """
-
+            # Format the repository updates as HTML
             content = self._format_article_content({
-                'title': sections['title'],
-                'brief_summary': sections['brief_summary'],
-                'repository_updates': [{'summary': update} for update in sections['repo_updates']],
-                'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps'],
-                'forum_summary': forum_section
+                'repository_updates': '\n'.join([
+                    '<h2 class="section-title">Repository Updates</h2>',
+                    self._format_repository_updates([{'summary': update} for update in sections['repository_updates']]),
+                    '<h2 class="section-title mt-5">Technical Highlights</h2>',
+                    self._format_repository_updates([{'summary': highlight} for highlight in sections['tech_highlights']]),
+                    '<h2 class="section-title mt-5">Next Steps</h2>',
+                    '<ul class="next-steps-list">',
+                    '\n'.join([f'<li>{step}</li>' for step in sections['next_steps']]),
+                    '</ul>'
+                ])
             })
 
             article = Article(
