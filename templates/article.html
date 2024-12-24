@@ -86,30 +86,22 @@
                 </div>
             </section>
 
-            <!-- Repository Updates Section -->
+            <!-- Repo Updates Section (Combined) -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h3 mb-4">Repository Updates</h2>
-                    <div class="repository-updates">
+                    <h2 class="h3 mb-4">Repo Updates</h2>
+
+                    <!-- Repository Updates -->
+                    <div class="repository-updates mb-4">
                         {{ article.repository_updates | safe }}
                     </div>
-                </div>
-            </section>
 
-            <!-- Technical Highlights Section -->
-            <section class="technical-highlights-section mb-5">
-                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h3 mb-4">Technical Highlights</h2>
-                    <div class="technical-highlights">
+                    <!-- Technical Highlights -->
+                    <div class="technical-highlights mb-4">
                         {{ article.technical_highlights | safe }}
                     </div>
-                </div>
-            </section>
 
-            <!-- Next Steps Section -->
-            <section class="next-steps-section mb-5">
-                <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h3 mb-4">Next Steps</h2>
+                    <!-- Next Steps -->
                     <div class="next-steps">
                         {% if article.next_steps %}
                             <ul class="list-unstyled">
