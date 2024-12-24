@@ -57,7 +57,7 @@ class Article(db.Model):
             return None
         soup = BeautifulSoup(self.content, 'lxml')
         overview = soup.find('div', class_='overview-content')
-        return overview.text.strip() if overview else None
+        return str(overview) if overview else None
 
     @property
     def repository_updates(self):
@@ -66,7 +66,7 @@ class Article(db.Model):
             return None
         soup = BeautifulSoup(self.content, 'lxml')
         updates = soup.find('div', class_='repository-updates')
-        return updates.text.strip() if updates else None
+        return str(updates) if updates else None
 
     @property
     def technical_highlights(self):
@@ -75,7 +75,7 @@ class Article(db.Model):
             return None
         soup = BeautifulSoup(self.content, 'lxml')
         highlights = soup.find('div', class_='technical-highlights')
-        return highlights.text.strip() if highlights else None
+        return str(highlights) if highlights else None
 
     @property
     def next_steps(self):
