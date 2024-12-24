@@ -9,6 +9,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    font-family: 'Titillium Web', sans-serif;
 }
 
 .hero-section {
@@ -24,6 +25,7 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
+    font-family: 'Titillium Web', sans-serif;
 }
 
 .hero-section .subtitle {
@@ -31,6 +33,7 @@ body {
     color: #94a3b8;
     max-width: 800px;
     margin: 0 auto;
+    font-weight: 300;
 }
 
 .card {
@@ -55,6 +58,7 @@ body {
     color: #e2e8f0;
     font-size: 1.5rem;
     font-weight: 600;
+    font-family: 'Titillium Web', sans-serif;
 }
 
 .progress-bar {
@@ -75,6 +79,11 @@ body {
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 0;
+}
+
+.navbar-brand {
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
 }
 
 .footer {
