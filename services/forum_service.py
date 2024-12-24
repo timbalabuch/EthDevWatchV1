@@ -49,115 +49,6 @@ class ForumService:
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
         return start_date, end_date
 
-    def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
-        """Fetch forum discussions for a specific week using the JSON API."""
-        try:
-            start_date, end_date = self._get_week_boundaries(week_date)
-            logger.info(f"Starting forum discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-            fetch_start_time = time.time()
-
-            all_discussions = []
-            seen_urls = set()  # Track unique URLs to prevent duplicates
-
-            for forum_name, forum_url in self.forum_urls.items():
-                logger.info(f"Fetching discussions from {forum_name}")
-
-                # Use the JSON API endpoint with retries
-                response = self._retry_with_backoff(
-                    self.session.get,
-                    forum_url,
-                    timeout=30
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                if 'topic_list' not in data or 'topics' not in data['topic_list']:
-                    logger.warning(f"No topics found in {forum_name} response")
-                    continue
-
-                topics = data['topic_list']['topics']
-                total_topics = len(topics)
-                logger.info(f"Found {total_topics} topics in {forum_name}")
-
-                for index, topic in enumerate(topics, 1):
-                    try:
-                        process_start_time = time.time()
-                        logger.info(f"Processing {forum_name} topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
-
-                        created_at = topic.get('created_at')
-                        if not created_at:
-                            logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
-                            continue
-
-                        try:
-                            post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
-                        except ValueError:
-                            try:
-                                post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
-                            except ValueError as e:
-                                logger.error(f"Error parsing date {created_at}: {str(e)}")
-                                continue
-
-                        if start_date <= post_date <= end_date:
-                            topic_id = topic.get('id')
-                            slug = topic.get('slug', str(topic_id))
-                            topic_url = f"https://{forum_name}.org/t/{slug}/{topic_id}.json"
-
-                            # Skip if we've already seen this URL
-                            if topic_url in seen_urls:
-                                logger.debug(f"Skipping duplicate topic URL: {topic_url}")
-                                continue
-                            seen_urls.add(topic_url)
-
-                            logger.debug(f"Fetching details for topic: {topic.get('title', 'Unknown')}")
-                            topic_fetch_start = time.time()
-
-                            # Fetch full topic content with retries
-                            topic_response = self._retry_with_backoff(
-                                self.session.get,
-                                topic_url,
-                                timeout=30
-                            )
-                            topic_response.raise_for_status()
-                            topic_data = topic_response.json()
-
-                            topic_fetch_time = time.time() - topic_fetch_start
-                            logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
-
-                            if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
-                                first_post = topic_data['post_stream']['posts'][0]
-                                content = first_post.get('cooked', '')
-
-                                # Clean HTML content
-                                content_soup = BeautifulSoup(content, 'lxml')
-                                clean_content = content_soup.get_text(strip=True)
-
-                                # Truncate content if too long
-                                if len(clean_content) > 5000:
-                                    clean_content = clean_content[:5000] + "..."
-
-                                all_discussions.append({
-                                    'title': topic.get('title', ''),
-                                    'content': clean_content,
-                                    'url': topic_url.replace('.json', ''),
-                                    'date': post_date,
-                                    'source': forum_name
-                                })
-                                process_time = time.time() - process_start_time
-                                logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
-
-                    except Exception as e:
-                        logger.error(f"Error processing topic: {str(e)}", exc_info=True)
-                        continue
-
-            total_fetch_time = time.time() - fetch_start_time
-            logger.info(f"Successfully fetched {len(all_discussions)} relevant discussions in {total_fetch_time:.2f} seconds")
-            return all_discussions
-
-        except Exception as e:
-            logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
-            return []
-
     def _wait_for_rate_limit(self):
         """Implement rate limiting for API calls."""
         now = time.time()
@@ -298,3 +189,112 @@ class ForumService:
         except Exception as e:
             logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
             return None
+
+    def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
+        """Fetch forum discussions for a specific week using the JSON API."""
+        try:
+            start_date, end_date = self._get_week_boundaries(week_date)
+            logger.info(f"Starting forum discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            fetch_start_time = time.time()
+
+            all_discussions = []
+            seen_urls = set()  # Track unique URLs to prevent duplicates
+
+            for forum_name, forum_url in self.forum_urls.items():
+                logger.info(f"Fetching discussions from {forum_name}")
+
+                # Use the JSON API endpoint with retries
+                response = self._retry_with_backoff(
+                    self.session.get,
+                    forum_url,
+                    timeout=30
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                if 'topic_list' not in data or 'topics' not in data['topic_list']:
+                    logger.warning(f"No topics found in {forum_name} response")
+                    continue
+
+                topics = data['topic_list']['topics']
+                total_topics = len(topics)
+                logger.info(f"Found {total_topics} topics in {forum_name}")
+
+                for index, topic in enumerate(topics, 1):
+                    try:
+                        process_start_time = time.time()
+                        logger.info(f"Processing {forum_name} topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
+
+                        created_at = topic.get('created_at')
+                        if not created_at:
+                            logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
+                            continue
+
+                        try:
+                            post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
+                        except ValueError:
+                            try:
+                                post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
+                            except ValueError as e:
+                                logger.error(f"Error parsing date {created_at}: {str(e)}")
+                                continue
+
+                        if start_date <= post_date <= end_date:
+                            topic_id = topic.get('id')
+                            slug = topic.get('slug', str(topic_id))
+                            topic_url = f"https://{forum_name}.org/t/{slug}/{topic_id}.json"
+
+                            # Skip if we've already seen this URL
+                            if topic_url in seen_urls:
+                                logger.debug(f"Skipping duplicate topic URL: {topic_url}")
+                                continue
+                            seen_urls.add(topic_url)
+
+                            logger.debug(f"Fetching details for topic: {topic.get('title', 'Unknown')}")
+                            topic_fetch_start = time.time()
+
+                            # Fetch full topic content with retries
+                            topic_response = self._retry_with_backoff(
+                                self.session.get,
+                                topic_url,
+                                timeout=30
+                            )
+                            topic_response.raise_for_status()
+                            topic_data = topic_response.json()
+
+                            topic_fetch_time = time.time() - topic_fetch_start
+                            logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
+
+                            if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
+                                first_post = topic_data['post_stream']['posts'][0]
+                                content = first_post.get('cooked', '')
+
+                                # Clean HTML content
+                                content_soup = BeautifulSoup(content, 'lxml')
+                                clean_content = content_soup.get_text(strip=True)
+
+                                # Truncate content if too long
+                                if len(clean_content) > 5000:
+                                    clean_content = clean_content[:5000] + "..."
+
+                                all_discussions.append({
+                                    'title': topic.get('title', ''),
+                                    'content': clean_content,
+                                    'url': topic_url.replace('.json', ''),
+                                    'date': post_date,
+                                    'source': forum_name
+                                })
+                                process_time = time.time() - process_start_time
+                                logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
+
+                    except Exception as e:
+                        logger.error(f"Error processing topic: {str(e)}", exc_info=True)
+                        continue
+
+            total_fetch_time = time.time() - fetch_start_time
+            logger.info(f"Successfully fetched {len(all_discussions)} relevant discussions in {total_fetch_time:.2f} seconds")
+            return all_discussions
+
+        except Exception as e:
+            logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
+            return []
