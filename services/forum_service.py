@@ -142,6 +142,7 @@ class ForumService:
                                 'url': full_url,
                                 'date': post_date
                             })
+                            logger.info(f"Added discussion: {title}")
 
                 except Exception as e:
                     logger.error(f"Error processing topic: {str(e)}")
@@ -160,6 +161,7 @@ class ForumService:
             return None
 
         try:
+            logger.info("Starting forum discussions summarization")
             # Prepare discussions text
             formatted_discussions = []
             for disc in discussions:
@@ -195,6 +197,7 @@ class ForumService:
                 }
             ]
 
+            logger.info("Sending request to OpenAI for forum discussion summary")
             # Generate summary
             response = self.openai.chat.completions.create(
                 model=self.model,
@@ -204,6 +207,7 @@ class ForumService:
             )
 
             summary = response.choices[0].message.content.strip()
+            logger.info("Successfully generated forum discussion summary")
 
             # If the summary doesn't include HTML tags, wrap it
             if not summary.startswith('<'):
