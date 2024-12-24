@@ -284,18 +284,22 @@ class ContentService:
         return f"""
         <div class="article-introduction mb-4">
             <div class="introduction-section">
+                <h2 class="section-title">Understanding This Week's Updates</h2>
                 <p>{intro_data.get('introduction', '')}</p>
             </div>
 
             <div class="significance-section">
+                <h3>Why These Changes Matter</h3>
                 <p>{intro_data.get('significance', '')}</p>
             </div>
 
             <div class="impact-section">
+                <h3>Impact on Users and Developers</h3>
                 <p>{intro_data.get('impact', '')}</p>
             </div>
 
             <div class="future-section">
+                <h3>Future Implications</h3>
                 <p>{intro_data.get('future_implications', '')}</p>
             </div>
         </div>
