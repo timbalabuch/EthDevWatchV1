@@ -10,11 +10,13 @@
     --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
     --text-color: #1e293b;
     --text-muted: #64748b;
+    --link-color: #2563eb;
 }
 
 [data-bs-theme="dark"] {
     --text-color: #e2e8f0;
     --text-muted: #94a3b8;
+    --link-color: #3b82f6;
 }
 
 /* Theme transition effects */
@@ -94,7 +96,7 @@ body {
 }
 
 .card-title a:hover {
-    color: var(--gradient-start) !important;
+    color: var(--link-color) !important;
     transition: color 0.3s ease;
 }
 
@@ -150,7 +152,7 @@ body {
 }
 
 .footer a {
-    color: var(--gradient-start);
+    color: var(--link-color);
     transition: color 0.3s ease;
 }
 
