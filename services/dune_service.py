@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta
 import requests
 import pytz
+import time
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,21 @@ class DuneService:
         }
         logger.info("DuneService initialized with API key and query IDs")
 
+    def _retry_with_backoff(self, func, max_retries=5, base_delay=1):
+        """Execute a function with exponential backoff retry logic"""
+        for attempt in range(max_retries):
+            try:
+                return func()
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Rate limit hit
+                    if attempt == max_retries - 1:
+                        raise
+                    delay = min(300, (base_delay * (2 ** attempt)) + (random.random() * 2))
+                    logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(delay)
+                else:
+                    raise
+
     def _execute_query(self, query_id, params=None):
         """Execute a Dune query and return the results"""
         try:
@@ -36,42 +53,49 @@ class DuneService:
 
             query_id, execution_id = query_id_parts
 
-            # Execute query
-            execution_endpoint = f"{self.base_url}/query/{query_id}/execute"
-            logger.info(f"Executing Dune query {query_id} with params: {params}")
+            def execute_request():
+                # Execute query
+                execution_endpoint = f"{self.base_url}/query/{query_id}/execute"
+                logger.info(f"Executing Dune query {query_id} with params: {params}")
 
-            execution_response = requests.post(
-                execution_endpoint,
-                headers=self.headers,
-                json={"parameters": params or {}}
-            )
-            execution_response.raise_for_status()
-            execution_id = execution_response.json().get('execution_id', execution_id)
+                execution_response = requests.post(
+                    execution_endpoint,
+                    headers=self.headers,
+                    json={"parameters": params or {}}
+                )
+                execution_response.raise_for_status()
+                return execution_response.json().get('execution_id', execution_id)
 
+            execution_id = self._retry_with_backoff(execute_request)
             logger.debug(f"Query {query_id} execution started with ID: {execution_id}")
 
-            # Get results
-            results_endpoint = f"{self.base_url}/execution/{execution_id}/results"
-            max_retries = 5
-            retry_count = 0
-
-            while retry_count < max_retries:
+            def get_results():
+                results_endpoint = f"{self.base_url}/execution/{execution_id}/results"
                 results_response = requests.get(results_endpoint, headers=self.headers)
                 results_response.raise_for_status()
-                result_data = results_response.json()
+                return results_response.json()
 
-                if result_data['state'] == 'QUERY_STATE_COMPLETED':
-                    logger.info(f"Query {query_id} completed successfully")
-                    logger.debug(f"Query {query_id} results: {json.dumps(result_data['result']['rows'], indent=2)}")
-                    return result_data['result']['rows']
-                elif result_data['state'] in ['QUERY_STATE_FAILED', 'QUERY_STATE_CANCELLED']:
-                    error_msg = f"Query failed with state: {result_data['state']}"
-                    logger.error(error_msg)
-                    raise Exception(error_msg)
+            # Poll for results with backoff
+            max_attempts = 10
+            for attempt in range(max_attempts):
+                try:
+                    result_data = self._retry_with_backoff(get_results)
+                    if result_data['state'] == 'QUERY_STATE_COMPLETED':
+                        logger.info(f"Query {query_id} completed successfully")
+                        logger.debug(f"Query {query_id} results: {json.dumps(result_data['result']['rows'], indent=2)}")
+                        return result_data['result']['rows']
+                    elif result_data['state'] in ['QUERY_STATE_FAILED', 'QUERY_STATE_CANCELLED']:
+                        error_msg = f"Query failed with state: {result_data['state']}"
+                        logger.error(error_msg)
+                        raise Exception(error_msg)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    delay = min(60, 2 ** attempt)
+                    logger.info(f"Waiting {delay} seconds before next attempt...")
+                    time.sleep(delay)
 
-                retry_count += 1
-                import time
-                time.sleep(5)  # Wait 5 seconds between retries
+            raise Exception("Maximum polling attempts reached")
 
         except Exception as e:
             logger.error(f"Error executing Dune query {query_id}: {str(e)}")

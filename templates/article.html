@@ -16,11 +16,12 @@
                     {{ article.content | safe }}
                 </div>
 
-                {% if article.metrics %}
+                {% if article.metrics and (article.metrics.active_addresses or article.metrics.contracts_deployed or article.metrics.eth_burned) %}
                 <div class="network-metrics mt-5">
                     <h2 class="section-title">Network Metrics</h2>
 
                     <div class="row">
+                        {% if article.metrics.active_addresses %}
                         <!-- Active Addresses Chart -->
                         <div class="col-md-6 mb-4">
                             <div class="metric-card">
@@ -28,7 +29,9 @@
                                 <canvas id="activeAddressesChart"></canvas>
                             </div>
                         </div>
+                        {% endif %}
 
+                        {% if article.metrics.contracts_deployed %}
                         <!-- Contract Deployments Chart -->
                         <div class="col-md-6 mb-4">
                             <div class="metric-card">
@@ -36,8 +39,10 @@
                                 <canvas id="contractsChart"></canvas>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
 
+                    {% if article.metrics.eth_burned %}
                     <!-- ETH Burned Stats -->
                     <div class="eth-burned-stats text-center mt-3 mb-4">
                         <div class="stat-card">
@@ -45,45 +50,30 @@
                             <div class="stat-value">{{ "%.2f"|format(article.metrics.eth_burned|float) }} ETH</div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
 
                 <!-- Load Chart.js -->
                 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 <script>
-                    // Helper function to format dates for the week
-                    function formatDate(dateStr) {
-                        const date = new Date(dateStr);
-                        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    }
+                    {% if article.metrics and article.metrics.active_addresses %}
+                    // Process active addresses data
+                    (function() {
+                        const data = {{ article.metrics.active_addresses|tojson }};
+                        const dates = Object.keys(data).sort();
+                        const values = dates.map(date => data[date]);
+                        const formattedDates = dates.map(date => {
+                            const d = new Date(date);
+                            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                        });
 
-                    // Create charts if metrics exist
-                    {% if article.metrics %}
-                        // Process metrics data
-                        const activeAddressesData = {{ article.metrics.active_addresses|tojson }};
-                        const contractsData = {{ article.metrics.contracts_deployed|tojson }};
-
-                        console.log("Raw active addresses data:", activeAddressesData);
-                        console.log("Raw contracts data:", contractsData);
-
-                        // Sort dates and prepare data for charts
-                        const dates = Object.keys(activeAddressesData).sort();
-                        const formattedDates = dates.map(formatDate);
-
-                        const activeAddressesValues = dates.map(date => activeAddressesData[date] || 0);
-                        const contractValues = dates.map(date => contractsData[date] || 0);
-
-                        console.log("Formatted dates:", formattedDates);
-                        console.log("Active addresses values:", activeAddressesValues);
-                        console.log("Contract values:", contractValues);
-
-                        // Active Addresses Chart
                         new Chart(document.getElementById('activeAddressesChart'), {
                             type: 'bar',
                             data: {
                                 labels: formattedDates,
                                 datasets: [{
                                     label: 'Active Addresses',
-                                    data: activeAddressesValues,
+                                    data: values,
                                     backgroundColor: 'rgba(54, 162, 235, 0.5)',
                                     borderColor: 'rgba(54, 162, 235, 1)',
                                     borderWidth: 1
@@ -119,15 +109,27 @@
                                 }
                             }
                         });
+                    })();
+                    {% endif %}
 
-                        // Contract Deployments Chart
+                    {% if article.metrics and article.metrics.contracts_deployed %}
+                    // Process contract deployments data
+                    (function() {
+                        const data = {{ article.metrics.contracts_deployed|tojson }};
+                        const dates = Object.keys(data).sort();
+                        const values = dates.map(date => data[date]);
+                        const formattedDates = dates.map(date => {
+                            const d = new Date(date);
+                            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                        });
+
                         new Chart(document.getElementById('contractsChart'), {
                             type: 'bar',
                             data: {
                                 labels: formattedDates,
                                 datasets: [{
                                     label: 'Contract Deployments',
-                                    data: contractValues,
+                                    data: values,
                                     backgroundColor: 'rgba(75, 192, 192, 0.5)',
                                     borderColor: 'rgba(75, 192, 192, 1)',
                                     borderWidth: 1
@@ -163,6 +165,7 @@
                                 }
                             }
                         });
+                    })();
                     {% endif %}
                 </script>
                 {% endif %}
