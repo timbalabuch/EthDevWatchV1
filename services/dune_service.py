@@ -31,6 +31,8 @@ class DuneService:
         try:
             # Execute query
             execution_endpoint = f"{self.base_url}/query/{query_id}/execute"
+            logger.info(f"Executing Dune query {query_id} with params: {params}")
+
             execution_response = requests.post(
                 execution_endpoint,
                 headers=self.headers,
@@ -38,6 +40,8 @@ class DuneService:
             )
             execution_response.raise_for_status()
             execution_id = execution_response.json()['execution_id']
+
+            logger.debug(f"Query {query_id} execution started with ID: {execution_id}")
 
             # Get results
             results_endpoint = f"{self.base_url}/execution/{execution_id}/results"
@@ -47,9 +51,12 @@ class DuneService:
                 result_data = results_response.json()
 
                 if result_data['state'] == 'QUERY_STATE_COMPLETED':
+                    logger.info(f"Query {query_id} completed successfully")
                     return result_data['result']['rows']
                 elif result_data['state'] in ['QUERY_STATE_FAILED', 'QUERY_STATE_CANCELLED']:
-                    raise Exception(f"Query failed with state: {result_data['state']}")
+                    error_msg = f"Query failed with state: {result_data['state']}"
+                    logger.error(error_msg)
+                    raise Exception(error_msg)
 
         except Exception as e:
             logger.error(f"Error executing Dune query {query_id}: {str(e)}")
@@ -70,6 +77,8 @@ class DuneService:
                 "end_date": end_str
             }
 
+            logger.info(f"Fetching metrics for period: {start_str} to {end_str}")
+
             # Fetch metrics using the specified query IDs
             active_addresses = self._execute_query(self.QUERY_IDS['active_addresses'], params)
             contract_deployments = self._execute_query(self.QUERY_IDS['contract_deployments'], params)
@@ -78,10 +87,11 @@ class DuneService:
             # Process and structure the data
             metrics = {
                 'active_addresses': self._process_daily_data(active_addresses),
-                'contract_deployments': self._process_daily_data(contract_deployments),
+                'contracts_deployed': self._process_daily_data(contract_deployments),
                 'eth_burned': sum(float(row['amount']) for row in eth_burned)
             }
 
+            logger.info(f"Successfully fetched metrics: {json.dumps(metrics, indent=2)}")
             return metrics
 
         except Exception as e:
@@ -90,4 +100,10 @@ class DuneService:
 
     def _process_daily_data(self, data):
         """Convert daily metrics into a structured format"""
-        return {row['date']: row['value'] for row in data}
+        try:
+            processed = {row['date']: row['value'] for row in data}
+            logger.debug(f"Processed daily data: {json.dumps(processed, indent=2)}")
+            return processed
+        except Exception as e:
+            logger.error(f"Error processing daily data: {str(e)}")
+            raise
