@@ -162,13 +162,66 @@ class ContentService:
             'next_steps': next_steps
         }
 
+    def _generate_overview_summary(self, content: Dict) -> str:
+        """Generate a concise overview summary of the article content."""
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": """You are a technical writer creating concise overviews of Ethereum development updates.
+                    Create a single paragraph that summarizes the key points, focusing on:
+                    1. Community discussions and their impact
+                    2. Major repository updates and their significance
+                    3. Technical highlights that matter to users
+
+                    Use plain language and focus on real-world impact."""
+                },
+                {
+                    "role": "user",
+                    "content": f"""Create a concise overview paragraph that summarizes:
+
+                    Forum Discussions:
+                    {content.get('forum_summary', 'No forum discussions available.')}
+
+                    Repository Updates:
+                    {' '.join(str(update.get('summary', '')) for update in content.get('repository_updates', []))}
+
+                    Technical Highlights:
+                    {' '.join(str(highlight.get('description', '')) for highlight in content.get('technical_highlights', []))}
+                    """
+                }
+            ]
+
+            response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=500
+            )
+
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                raise ValueError("Invalid response from OpenAI API")
+
+            overview = response.choices[0].message.content.strip()
+            return overview
+
+        except Exception as e:
+            logger.error(f"Error generating overview summary: {str(e)}")
+            return "Overview generation in progress..."
+
     def _format_article_content(self, summary_data: Dict) -> str:
         """Format the article content with proper HTML structure."""
         try:
+            # Generate overview summary
+            overview_summary = self._generate_overview_summary(summary_data)
+
             article_html = f"""
                 <article class="ethereum-article">
-                    <div class="article-content mb-4">
-                        {summary_data.get('brief_summary', '')}
+                    <div class="overview-section mb-4">
+                        <div class="overview-content">
+                            {overview_summary}
+                        </div>
                     </div>
             """
 
@@ -382,8 +435,6 @@ class ContentService:
 
             logger.info("Received response from OpenAI API")
             content = response.choices[0].message.content
-
-            # Extract and process content sections
             sections = self._extract_content_sections(content)
 
             # Ensure minimum length for brief summary
