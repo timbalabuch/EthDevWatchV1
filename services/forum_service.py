@@ -89,15 +89,17 @@ class ForumService:
         """Fetch forum discussions for a specific week."""
         try:
             start_date, end_date = self._get_week_boundaries(week_date)
-            logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')}")
+            logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
             # Download the forum page
+            logger.info(f"Sending request to {self.forum_base_url}")
             response = self._retry_with_backoff(
                 self.session.get,
                 self.forum_base_url,
                 timeout=30
             )
             response.raise_for_status()
+            logger.info(f"Received response with status code: {response.status_code}")
 
             # Parse HTML content
             soup = BeautifulSoup(response.text, 'lxml')
@@ -105,11 +107,14 @@ class ForumService:
 
             # Find all topic elements
             topics = soup.select('.topic-list-item')
+            logger.info(f"Found {len(topics)} topics on the page")
 
             for topic in topics:
                 try:
                     # Extract date
                     post_date = self._extract_date_from_forum_post(topic)
+                    if post_date:
+                        logger.debug(f"Found post with date: {post_date}")
 
                     if post_date and start_date <= post_date <= end_date:
                         # Extract title and content
@@ -121,10 +126,12 @@ class ForumService:
                         topic_link = title_elem.find('a') if title_elem else None
                         if topic_link and topic_link.has_attr('href'):
                             topic_url = topic_link['href']
+                            logger.debug(f"Processing topic: {title} with URL: {topic_url}")
 
                         if topic_url:
                             # Fetch full topic content
                             full_url = f"https://ethereum-magicians.org{topic_url}"
+                            logger.debug(f"Fetching full content from: {full_url}")
                             topic_response = self._retry_with_backoff(
                                 self.session.get,
                                 full_url,
@@ -142,17 +149,17 @@ class ForumService:
                                 'url': full_url,
                                 'date': post_date
                             })
-                            logger.info(f"Added discussion: {title}")
+                            logger.info(f"Successfully added discussion: {title}")
 
                 except Exception as e:
-                    logger.error(f"Error processing topic: {str(e)}")
+                    logger.error(f"Error processing topic: {str(e)}", exc_info=True)
                     continue
 
-            logger.info(f"Found {len(discussions)} relevant discussions")
+            logger.info(f"Successfully fetched {len(discussions)} relevant discussions for the week")
             return discussions
 
         except Exception as e:
-            logger.error(f"Error fetching forum discussions: {str(e)}")
+            logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
             return []
 
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
@@ -226,16 +233,18 @@ class ForumService:
             discussions = self.fetch_forum_discussions(date)
 
             if not discussions:
-                logger.info("No forum discussions found for the specified week")
+                logger.warning("No forum discussions found for the specified week")
                 return None
 
+            logger.info(f"Generating summary for {len(discussions)} discussions")
             summary = self.summarize_discussions(discussions)
             if not summary:
                 logger.warning("Failed to generate summary from forum discussions")
                 return None
 
+            logger.info("Successfully generated forum summary")
             return summary
 
         except Exception as e:
-            logger.error(f"Error getting weekly forum summary: {str(e)}")
+            logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
             return None
