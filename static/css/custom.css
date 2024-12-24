@@ -13,7 +13,7 @@
     --link-color: #2563eb;
     --btn-color: #1e293b;
     --btn-hover-color: #fff;
-    --search-bg: rgba(30, 41, 59, 0.05);
+    --search-bg: rgba(255, 255, 255, 0.9);
     --search-border: rgba(30, 41, 59, 0.2);
 }
 
@@ -78,10 +78,6 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.featured-article.card {
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
 .card:hover {
     transform: translateY(-2px);
     box-shadow: var(--glow-shadow), 0 4px 20px rgba(59, 130, 246, 0.2);
@@ -104,6 +100,16 @@ body {
 }
 
 .card-title a:hover {
+    color: var(--link-color) !important;
+    transition: color 0.3s ease;
+}
+
+.h5 a {
+    color: var(--text-color) !important;
+    text-decoration: none;
+}
+
+.h5 a:hover {
     color: var(--link-color) !important;
     transition: color 0.3s ease;
 }
