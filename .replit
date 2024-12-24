@@ -31,6 +31,10 @@ args = "Cleanup Future Articles"
 task = "workflow.run"
 args = "Fix Article Dates"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Remove Image URL"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -87,6 +91,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/fix_article_dates.py"
+
+[[workflows.workflow]]
+name = "Remove Image URL"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/remove_image_url.py"
 
 [[ports]]
 localPort = 5000
