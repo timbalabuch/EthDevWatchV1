@@ -15,7 +15,7 @@ def get_previous_week_dates():
     current_date = datetime.now(pytz.UTC)
     current_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Calculate previous week's Monday and Sunday
+    # Calculate previous week's Monday
     days_since_monday = current_date.weekday()
     previous_monday = current_date - timedelta(days=days_since_monday + 7)
     previous_sunday = previous_monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
@@ -29,7 +29,13 @@ def generate_weekly_article():
             # Get previous week's date range
             start_date, end_date = get_previous_week_dates()
 
-            logger.info(f"Generating article for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            # Only generate if it's Monday
+            current_date = datetime.now(pytz.UTC)
+            if current_date.weekday() != 0:
+                logger.info("Skipping article generation - not Monday")
+                return
+
+            logger.info(f"Generating article for week of {start_date.strftime('%Y-%m-%d')}")
 
             # Check if article already exists for this week
             existing = Article.query.filter(
@@ -38,29 +44,33 @@ def generate_weekly_article():
             ).first()
 
             if existing:
-                logger.info(f"Article already exists for week of {start_date.strftime('%Y-%m-%d')}: {existing.title}")
+                logger.info(f"Article already exists for week: {existing.title}")
                 return
 
             # Initialize services
             github_service = GitHubService()
             content_service = ContentService()
 
-            # Fetch content specifically for the previous week
+            # Fetch content for the previous week only
             github_content = github_service.fetch_recent_content(
                 start_date=start_date,
                 end_date=end_date
             )
 
             if github_content:
-                # Generate and publish article immediately
+                # Generate article for previous week
                 article = content_service.generate_weekly_summary(
                     github_content,
                     publication_date=start_date
                 )
 
                 if article:
+                    # Double check the article date is not in the future
+                    if article.publication_date > current_date:
+                        article.publication_date = start_date
+
                     article.status = 'published'
-                    article.published_date = datetime.now(pytz.UTC)
+                    article.published_date = current_date
                     db.session.commit()
                     logger.info(f"Generated and published article: {article.title}")
                 else:
@@ -75,7 +85,7 @@ def init_scheduler():
     """Initialize the scheduler with weekly article generation task"""
     scheduler = BackgroundScheduler()
 
-    # Generate articles every Monday at 9:00 UTC for the previous week
+    # Schedule article generation every Monday at 9:00 UTC
     scheduler.add_job(
         generate_weekly_article,
         trigger=CronTrigger(day_of_week='mon', hour=9, minute=0),

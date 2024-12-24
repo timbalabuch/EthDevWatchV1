@@ -26,14 +26,6 @@ def index():
         Article.publication_date <= current_date
     ).order_by(Article.publication_date.desc()).all()
 
-    # Calculate end dates for each article
-    for article in articles:
-        pub_date = article.publication_date.replace(tzinfo=pytz.UTC) if article.publication_date.tzinfo is None else article.publication_date
-        article.end_date = min(
-            pub_date + timedelta(days=6),
-            current_date
-        )
-
     return render_template('index.html', articles=articles)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -128,12 +120,6 @@ def article(article_id):
     article_date = article.publication_date.replace(tzinfo=pytz.UTC) if article.publication_date.tzinfo is None else article.publication_date
     if article_date > current_date:
         abort(404)
-
-    # Calculate end date for the article
-    article.end_date = min(
-        article_date + timedelta(days=6),
-        current_date
-    )
 
     return render_template('article.html', article=article)
 

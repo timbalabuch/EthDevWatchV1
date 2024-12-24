@@ -41,7 +41,7 @@ class ContentService:
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(600, (self.base_delay * (2 ** attempt)) + (random.random() * 5))  # Increased max delay to 10 minutes
+                delay = min(600, (self.base_delay * (2 ** attempt)) + (random.random() * 5))
                 logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
                 time.sleep(delay)
             except Exception as e:
@@ -55,19 +55,7 @@ class ContentService:
 
     def _find_existing_image_url(self, title):
         """Check if we have a similar article with an image we can reuse"""
-        try:
-            # First try exact title match
-            existing_article = Article.query.filter(
-                Article.image_url.isnot(None)
-            ).order_by(Article.publication_date.desc()).first()
-
-            if existing_article and existing_article.image_url:
-                logger.info(f"Reusing existing image from article: {existing_article.title}")
-                return existing_article.image_url
-            return None
-        except Exception as e:
-            logger.error(f"Error finding existing image: {str(e)}")
-            return None
+        return None  # Always generate new images for each article
 
     def generate_image_for_title(self, title):
         """Generate an image using DALL-E based on the article title"""
@@ -83,7 +71,8 @@ class ContentService:
                 "Theme: Ethereum blockchain, technological advancement, digital innovation. "
                 "Color requirement: Use vibrant emerald greens (#00FF7F) and electric blues (#0000FF) as the dominant colors "
                 "in the design, creating a high-tech, futuristic aesthetic. The image should have a dark background "
-                "with glowing green and blue elements to represent blockchain technology."
+                "with glowing green and blue elements to represent blockchain technology. "
+                f"Make it unique for this specific week's article about: {title}"
             )
 
             response = self._retry_with_exponential_backoff(
@@ -126,9 +115,9 @@ class ContentService:
                     logger.error(f"Cannot create article with future date: {publication_date}")
                     return None
 
-            # Filter content to only use items from the current week
+            # Filter content to only use items from the previous week
             current_week_content = []
-            week_start = publication_date or current_date
+            week_start = publication_date or current_date - timedelta(days=7)
             week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
             week_end = week_start + timedelta(days=7)
 
@@ -149,53 +138,22 @@ class ContentService:
                 logger.warning("No content found for the specified week")
                 return None
 
-            time.sleep(2)
-
-            logger.info("Preparing content for GPT processing")
-            week_str = publication_date.strftime("%Y-%m-%d") if publication_date else "current week"
-
-            week_prompt = f"""For the week of {week_str}, generate a comprehensive Ethereum ecosystem development update. 
-            Focus on creating unique content that would be realistic for that specific week, including:
-            - Technical progress in Layer 2 solutions
-            - Updates to the Ethereum protocol
-            - Development tooling improvements
-            - Community and governance updates
-
-            Make the content specific and detailed, as if these were real updates from that week.
-            """
+            week_str = week_start.strftime("%Y-%m-%d") if publication_date else "last week"
+            logger.info(f"Generating content for week of {week_str}")
 
             messages = [
                 {
                     "role": "system",
                     "content": """You are an expert in Ethereum ecosystem development. Create a weekly summary of development activities 
                     focused on meetings and technical updates. The title should be engaging and highlight the most important development 
-                    of the week. Include a concise 2-3 sentence summary that captures the key developments. Format the response as JSON with this structure:
-                    {
-                        "title": "Engaging title highlighting key development",
-                        "brief_summary": "2-3 sentence summary of key developments",
-                        "meetings": [
-                            {
-                                "title": "Meeting name",
-                                "key_points": ["point 1", "point 2"],
-                                "decisions": "Key decisions made"
-                            }
-                        ],
-                        "technical_updates": [
-                            {
-                                "area": "Component/Area name",
-                                "changes": "Technical changes and progress",
-                                "impact": "Impact on ecosystem"
-                            }
-                        ]
-                    }"""
+                    of the week. Include a concise 2-3 sentence summary that captures the key developments. Format the response as JSON."""
                 },
                 {
                     "role": "user",
-                    "content": week_prompt
+                    "content": f"For the week of {week_str}, generate a comprehensive Ethereum ecosystem development update."
                 }
             ]
 
-            logger.info(f"Sending request to OpenAI API for week of {week_str}")
             response = self._retry_with_exponential_backoff(
                 self.openai.chat.completions.create,
                 model=self.model,
@@ -208,14 +166,10 @@ class ContentService:
             if not response or not hasattr(response, 'choices') or not response.choices:
                 raise ValueError("Invalid response from OpenAI API")
 
-
-            logger.debug(f"Received response from OpenAI API: {response.choices[0].message.content[:200]}...")
-
             try:
                 summary_data = json.loads(response.choices[0].message.content)
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
-                logger.debug(f"Raw response content: {response.choices[0].message.content}")
                 raise ValueError("Invalid JSON response from OpenAI")
 
             content = f"""
@@ -229,7 +183,7 @@ class ContentService:
                 <div class="meeting-card mb-3">
                     <h3>{meeting['title']}</h3>
                     <ul class="key-points list-unstyled">
-                        {''.join(f'<li class="mb-2"><i class="fas fa-check text-success me-2"></i>{point}</li>' for point in meeting['key_points'])}
+                        {''.join(f'<li class="mb-2">{point}</li>' for point in meeting['key_points'])}
                     </ul>
                     <div class="decisions">
                         <strong>Key Decisions:</strong>
@@ -257,19 +211,16 @@ class ContentService:
             </div>
             """
 
-            logger.info("Creating new article with generated content")
-            image_url = self.generate_image_for_title(summary_data["title"])
-
+            # Create new article with the generated content
             article = Article(
                 title=summary_data["title"],
                 content=content,
                 publication_date=publication_date or current_date,
-                image_url=image_url,
-                status='published',  # Set as published immediately
+                status='published',
                 published_date=current_date
             )
 
-            # Add sources only from the current week
+            # Add sources from the current week
             for item in current_week_content:
                 source = Source(
                     url=item['url'],
