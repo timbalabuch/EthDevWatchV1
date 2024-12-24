@@ -160,8 +160,10 @@ def utility_processor():
         """Format a date object for display"""
         if not date:
             return ''
+
+        # Ensure date is timezone-aware
         if not date.tzinfo:
-            date = date.replace(tzinfo=pytz.UTC)
+            date = pytz.UTC.localize(date)
 
         # Calculate the Monday of the week (start)
         monday = date - timedelta(days=date.weekday())
