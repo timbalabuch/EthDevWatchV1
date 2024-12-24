@@ -25,6 +25,29 @@ class Article(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
 
+    # New columns for publishing workflow
+    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
+    scheduled_publish_date = db.Column(db.DateTime)
+    published_date = db.Column(db.DateTime)
+
+    @property
+    def is_published(self):
+        return self.status == 'published'
+
+    @property
+    def is_scheduled(self):
+        return self.status == 'scheduled'
+
+    def publish(self):
+        self.status = 'published'
+        self.published_date = datetime.utcnow()
+        db.session.commit()
+
+    def schedule(self, publish_date):
+        self.status = 'scheduled'
+        self.scheduled_publish_date = publish_date
+        db.session.commit()
+
 class Source(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String(500), nullable=False)
