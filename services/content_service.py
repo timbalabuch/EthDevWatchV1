@@ -40,7 +40,7 @@ class ContentService:
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(300, self.base_delay * (2 ** attempt) + (random.random() * 2))  # Add jitter
+                delay = min(600, (self.base_delay * (2 ** attempt)) + (random.random() * 5))  # Increased max delay to 10 minutes
                 logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
                 time.sleep(delay)
             except Exception as e:
@@ -48,17 +48,20 @@ class ContentService:
                 last_exception = e
                 if attempt == self.max_retries - 1:
                     raise last_exception
-                time.sleep(self.base_delay)
+                delay = min(300, (self.base_delay * (2 ** attempt)) + (random.random() * 2))
+                logger.info(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
 
     def _find_existing_image_url(self, title):
         """Check if we have a similar article with an image we can reuse"""
         try:
+            # First try exact title match
             existing_article = Article.query.filter(
-                Article.title.ilike(f"%{title.split(':')[0]}%")
-            ).filter(Article.image_url.isnot(None)).first()
+                Article.image_url.isnot(None)
+            ).order_by(Article.publication_date.desc()).first()
 
             if existing_article and existing_article.image_url:
-                logger.info(f"Found existing image for similar title: {existing_article.title}")
+                logger.info(f"Reusing existing image from article: {existing_article.title}")
                 return existing_article.image_url
             return None
         except Exception as e:
@@ -73,6 +76,9 @@ class ContentService:
             if existing_url:
                 logger.info("Reusing existing image")
                 return existing_url
+
+            # Add longer delay before image generation
+            time.sleep(5)  # Increased delay to avoid rate limits
 
             prompt = (
                 f"Create a sophisticated horizontal technology-themed illustration for an article titled: {title}. "
