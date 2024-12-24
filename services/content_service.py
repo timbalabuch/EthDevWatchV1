@@ -126,40 +126,40 @@ class ContentService:
             messages = [
                 {
                     "role": "system",
-                    "content": """You are an expert at explaining complex blockchain technology to complete beginners. 
-                    Your task is to create a weekly summary that makes Ethereum development understandable to everyone.
+                    "content": """You are a technical writer specializing in blockchain technology documentation. 
+                    Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
 
                     Most important rules:
-                    1. Write like you're explaining to a friend who knows nothing about blockchain
-                    2. Use everyday analogies for EVERY technical concept (e.g., "Smart contracts are like digital vending machines")
-                    3. NEVER use technical terms without explaining them in simple words
-                    4. Focus on why each change matters to regular users
-                    5. Use concrete, real-world examples for every feature
+                    1. Maintain a formal, professional tone throughout the summary
+                    2. Provide precise technical explanations with clear definitions
+                    3. Include technical terminology with concise explanations
+                    4. Focus on technical significance and practical implications
+                    5. Support technical concepts with concrete examples
 
                     Required sections:
-                    1. A clear, engaging title
-                    2. A detailed, friendly explanation (at least 700 characters) that helps regular people understand:
-                       - What changed this week in simple terms
-                       - Why these changes matter to users
-                       - How these improve the Ethereum network
-                       - Real examples of how users benefit
-                       - Simple analogies for technical concepts
-                    3. Repository updates (start with 'Repository Updates:') - explain each repository's changes simply
-                    4. Technical highlights (start with 'Technical Highlights:') - explain impact on users
-                    5. Future plans (start with 'Next Steps:') in simple terms"""
+                    1. A clear, formal title
+                    2. A detailed technical overview (at least 700 characters) that addresses:
+                       - Key technical developments and their implementation
+                       - Impact on network functionality and performance
+                       - Technical implications for the ecosystem
+                       - Practical benefits and improvements
+                       - Technical concepts with clear explanations
+                    3. Repository updates (start with 'Repository Updates:') - detail technical changes
+                    4. Technical highlights (start with 'Technical Highlights:') - analyze implementation impact
+                    5. Next steps (start with 'Next Steps:') with technical roadmap"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a beginner-friendly update about Ethereum development for the week of {week_str}.
+                    "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
                     Remember:
-                    - Explain everything as if talking to someone new to blockchain
-                    - Use everyday examples and analogies
-                    - Focus on why users should care about these changes
-                    - Keep it engaging and conversational
-                    - The explanation must be at least 700 characters
+                    - Maintain formal, professional language
+                    - Include precise technical details
+                    - Focus on implementation specifics
+                    - Keep explanations clear and structured
+                    - The overview must be at least 700 characters
                     - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
 
-                    Here are the technical updates to explain in simple terms:
+                    Here are the technical updates to analyze:
                     {json.dumps(repo_summaries, indent=2)}"""
                 }
             ]
