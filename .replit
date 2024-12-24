@@ -67,10 +67,6 @@ args = "Regenerate Articles with Tweets"
 task = "workflow.run"
 args = "Add Weekly Metrics Table"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Update Metrics"
-
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -253,20 +249,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_weekly_metrics.py"
-
-[[workflows.workflow]]
-name = "Update Metrics"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/update_metrics.py"
 
 [[ports]]
 localPort = 5000

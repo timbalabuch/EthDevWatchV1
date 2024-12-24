@@ -9,8 +9,7 @@ import pytz
 from openai import OpenAI, RateLimitError
 
 from app import db
-from models import Article, Source, WeeklyMetrics
-from services.dune_service import DuneService
+from models import Article, Source
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +24,9 @@ class ContentService:
             self.model = "gpt-4"
             self.max_retries = 5
             self.base_delay = 1
-            self.dune_service = DuneService()
-            logger.info("ContentService initialized with OpenAI and Dune clients")
+            logger.info("ContentService initialized with OpenAI client")
         except Exception as e:
-            logger.error(f"Failed to initialize services: {str(e)}")
+            logger.error(f"Failed to initialize ContentService: {str(e)}")
             raise
 
     def _retry_with_exponential_backoff(self, func, *args, **kwargs):
@@ -243,17 +241,6 @@ class ContentService:
             # Calculate week's end date
             end_date = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
-            # Fetch metrics from Dune
-            try:
-                metrics_data = self.dune_service.get_weekly_metrics(
-                    start_date=publication_date,
-                    end_date=end_date
-                )
-                logger.info("Successfully fetched metrics from Dune")
-            except Exception as e:
-                logger.error(f"Failed to fetch Dune metrics: {str(e)}")
-                metrics_data = None
-
             week_str = publication_date.strftime("%Y-%m-%d")
             logger.info(f"Generating content for week of {week_str}")
 
@@ -383,28 +370,6 @@ class ContentService:
                     article=article
                 )
                 db.session.add(source)
-
-            # Add metrics if available
-            if metrics_data:
-                logger.info(f"Adding metrics for article {article.id}")
-                logger.debug(f"Metrics data to be stored: {json.dumps(metrics_data, indent=2)}")
-
-                metrics = WeeklyMetrics(
-                    article=article,
-                    active_addresses=metrics_data.get('active_addresses'),
-                    contracts_deployed=metrics_data.get('contract_deployments'),
-                    eth_burned=metrics_data.get('eth_burned'),
-                    start_date=publication_date,
-                    end_date=end_date,
-                )
-                try:
-                    db.session.add(metrics)
-                    db.session.flush()  # Flush to get the ID
-                    logger.info(f"Successfully added metrics with ID {metrics.id}")
-                    logger.debug(f"Stored metrics object: {metrics.__dict__}")
-                except Exception as e:
-                    logger.error(f"Error storing metrics: {str(e)}")
-                    raise
 
             db.session.add(article)
             db.session.commit()
