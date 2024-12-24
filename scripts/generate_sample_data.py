@@ -28,15 +28,6 @@ def get_sunday_of_week(date):
     monday = get_monday_of_week(date)
     return monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
-def get_weeks_in_range(start_date, end_date):
-    """Get all Mondays between start_date and end_date"""
-    current = get_monday_of_week(start_date)
-    weeks = []
-    while current <= end_date:
-        weeks.append(current)
-        current += timedelta(days=7)
-    return weeks
-
 def check_existing_articles():
     """Check if we already have articles generated"""
     try:
@@ -73,12 +64,16 @@ def generate_sample_articles():
 
         logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
-        # Calculate all weeks up to current date
-        start_date = datetime(2024, 11, 1)  # Start from November 1st, 2024
+        # Start with just last 2 weeks for initial generation
+        start_date = datetime.utcnow() - timedelta(days=14)
         current_date = datetime.utcnow()
 
-        # Get all Monday dates up to current date
-        weeks = get_weeks_in_range(start_date, current_date)
+        # Get all Monday dates
+        weeks = []
+        current = get_monday_of_week(start_date)
+        while current <= current_date:
+            weeks.append(current)
+            current += timedelta(days=7)
 
         # Generate articles for each completed week
         success_count = 0
@@ -87,31 +82,27 @@ def generate_sample_articles():
         with app.app_context():
             for monday in weeks:
                 try:
-                    # Calculate the end of the week (Sunday at 23:59:59)
+                    # Calculate the end of the week
                     week_end = get_sunday_of_week(monday)
 
                     # Skip if week hasn't ended yet
                     if week_end > current_date:
-                        logger.info(f"Skipping incomplete week: {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}")
+                        logger.info(f"Skipping incomplete week: {monday.strftime('%Y-%m-%d')}")
                         continue
 
-                    logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')} ===")
+                    logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
 
-                    # Check if article already exists for this week
-                    existing_article = Article.query.filter(
-                        Article.publication_date >= monday,
-                        Article.publication_date <= week_end
-                    ).first()
-
-                    if existing_article:
-                        logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
-                        success_count += 1
-                        continue
+                    # Add significant delay between article generations
+                    if success_count > 0:
+                        delay = 30  # 30 seconds between generations
+                        logger.info(f"Waiting {delay} seconds before generating next article...")
+                        import time
+                        time.sleep(delay)
 
                     # Generate article with the stored image URL
                     article = content_service.generate_weekly_summary(github_content, monday)
 
-                    # If this is the first successful article, store its image URL for reuse
+                    # If this is the first successful article, store its image URL
                     if success_count == 0 and article and article.image_url:
                         image_url = article.image_url
                     elif image_url and article:
@@ -119,10 +110,7 @@ def generate_sample_articles():
                         article.image_url = image_url
                         db.session.commit()
 
-                    # Set the publication date to the end of the week
                     if article:
-                        article.publication_date = week_end
-                        db.session.commit()
                         success_count += 1
                         logger.info(f"Generated article for week of {monday.strftime('%Y-%m-%d')}: {article.title}")
 
@@ -131,9 +119,8 @@ def generate_sample_articles():
                     db.session.rollback()
                     continue
 
-        total_weeks = len([w for w in weeks if get_sunday_of_week(w) <= current_date])
         logger.info(f"=== Sample Data Generation Complete ===")
-        logger.info(f"Successfully generated {success_count} out of {total_weeks} articles.")
+        logger.info(f"Successfully generated {success_count} articles")
         return success_count > 0
 
     except Exception as e:
