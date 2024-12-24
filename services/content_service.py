@@ -7,6 +7,7 @@ from openai import OpenAI, RateLimitError
 import json
 from app import db
 from models import Article, Source
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -113,11 +114,17 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
-            # Ensure we're not using future dates
-            current_date = datetime.utcnow()
-            if publication_date and publication_date > current_date:
-                logger.error(f"Cannot create article with future date: {publication_date}")
-                return None
+            # Get current UTC time
+            current_date = datetime.now(pytz.UTC)
+
+            # If publication_date is provided, ensure it's timezone-aware
+            if publication_date:
+                if publication_date.tzinfo is None:
+                    publication_date = pytz.UTC.localize(publication_date)
+                # Ensure we're not using future dates
+                if publication_date > current_date:
+                    logger.error(f"Cannot create article with future date: {publication_date}")
+                    return None
 
             # Filter content to only use items from the current week
             current_week_content = []
@@ -131,8 +138,12 @@ class ContentService:
 
             for item in github_content:
                 item_date = item.get('created_at')
-                if item_date and week_start <= item_date <= week_end:
-                    current_week_content.append(item)
+                if item_date:
+                    # Convert item_date to timezone-aware if it's not
+                    if isinstance(item_date, datetime) and item_date.tzinfo is None:
+                        item_date = pytz.UTC.localize(item_date)
+                    if week_start <= item_date <= week_end:
+                        current_week_content.append(item)
 
             if not current_week_content:
                 logger.warning("No content found for the specified week")
@@ -252,10 +263,10 @@ class ContentService:
             article = Article(
                 title=summary_data["title"],
                 content=content,
-                publication_date=publication_date or datetime.utcnow(),
+                publication_date=publication_date or current_date,
                 image_url=image_url,
                 status='published',  # Set as published immediately
-                published_date=datetime.utcnow()
+                published_date=current_date
             )
 
             # Add sources only from the current week

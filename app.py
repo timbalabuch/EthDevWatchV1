@@ -4,6 +4,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+import pytz
+from datetime import datetime
 
 # Setup logging with more detailed format
 logging.basicConfig(
@@ -49,6 +51,15 @@ try:
         logger.info("Creating database tables...")
         db.create_all()
         logger.info("Database tables created successfully")
+
+        # Remove any future dated articles during startup
+        from models import Article
+        current_time = datetime.now(pytz.UTC)
+        future_articles = Article.query.filter(Article.publication_date > current_time).all()
+        for article in future_articles:
+            logger.info(f"Removing future dated article: {article.title}")
+            db.session.delete(article)
+        db.session.commit()
 
         # Import routes after db initialization
         from routes import *  # noqa: F403

@@ -2,6 +2,7 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
+import pytz
 from services.github_service import GitHubService
 from services.content_service import ContentService
 from app import db, app
@@ -11,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 def get_previous_week_dates():
     """Get the start and end dates for the previous week (Monday to Sunday)"""
-    current_date = datetime.utcnow()
+    current_date = datetime.now(pytz.UTC)
     current_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Calculate previous week's Monday and Sunday
     days_since_monday = current_date.weekday()
     previous_monday = current_date - timedelta(days=days_since_monday + 7)
-    previous_sunday = previous_monday + timedelta(days=6)
+    previous_sunday = previous_monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     return previous_monday, previous_sunday
 
@@ -59,7 +60,7 @@ def generate_weekly_article():
 
                 if article:
                     article.status = 'published'
-                    article.published_date = datetime.utcnow()
+                    article.published_date = datetime.now(pytz.UTC)
                     db.session.commit()
                     logger.info(f"Generated and published article: {article.title}")
                 else:

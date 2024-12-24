@@ -73,7 +73,7 @@ def new_article():
     if request.method == 'POST':
         try:
             pub_date = datetime.strptime(request.form['publication_date'], '%Y-%m-%d')
-            pub_date = pub_date.replace(tzinfo=pytz.UTC)
+            pub_date = pytz.UTC.localize(pub_date)
 
             if pub_date > get_current_utc():
                 flash('Publication date cannot be in the future', 'error')
@@ -102,7 +102,7 @@ def edit_article(article_id):
     if request.method == 'POST':
         try:
             pub_date = datetime.strptime(request.form['publication_date'], '%Y-%m-%d')
-            pub_date = pub_date.replace(tzinfo=pytz.UTC)
+            pub_date = pytz.UTC.localize(pub_date)
 
             if pub_date > get_current_utc():
                 flash('Publication date cannot be in the future', 'error')
