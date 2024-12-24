@@ -137,17 +137,21 @@ def utility_processor():
         if not date.tzinfo:
             date = date.replace(tzinfo=pytz.UTC)
 
-        # Calculate the week range
-        week_start = date - timedelta(days=date.weekday())  # Monday
-        week_end = week_start + timedelta(days=6)  # Sunday
+        # Calculate the Monday of the week (start)
+        monday = date - timedelta(days=date.weekday())
+        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Calculate the Sunday of the week (end)
+        sunday = monday + timedelta(days=6)
+        sunday = sunday.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         # Format as "Week of Month Day - Month Day, Year"
-        if week_start.month == week_end.month:
-            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%d')}, {week_start.strftime('%Y')}"
-        elif week_start.year == week_end.year:
-            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%B %d')}, {week_start.strftime('%Y')}"
+        if monday.month == sunday.month:
+            return f"Week of {monday.strftime('%B %d')} - {sunday.strftime('%d, %Y')}"
+        elif monday.year == sunday.year:
+            return f"Week of {monday.strftime('%B %d')} - {sunday.strftime('%B %d, %Y')}"
         else:
-            return f"Week of {week_start.strftime('%B %d, %Y')} - {week_end.strftime('%B %d, %Y')}"
+            return f"Week of {monday.strftime('%B %d, %Y')} - {sunday.strftime('%B %d, %Y')}"
 
     return dict(
         format_date=format_date,
