@@ -136,6 +136,43 @@ class ContentService:
                 }
                 repo_summaries.append(summary)
 
+            # Generate the introductory explanation first
+            intro_messages = [
+                {
+                    "role": "system",
+                    "content": """You are an expert in explaining blockchain technology to both technical 
+                    and non-technical audiences. Create a comprehensive introduction that explains:
+                    1. The significance of this week's Ethereum developments
+                    2. What these changes mean for the blockchain ecosystem
+                    3. The potential impact on users and developers
+                    4. Why these updates matter in simple terms
+
+                    Structure the response as JSON with:
+                    1. introduction: A welcoming paragraph that sets context
+                    2. significance: Why these changes matter
+                    3. impact: How these affect users and developers
+                    4. future_implications: What this means for Ethereum's future"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""Create an introductory explanation for the Ethereum ecosystem updates for the week of {week_str}.
+                    Here are the key updates to explain:
+                    {json.dumps(repo_summaries, indent=2)}"""
+                }
+            ]
+
+            intro_response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
+                model=self.model,
+                messages=intro_messages,
+                response_format={"type": "json_object"},
+                temperature=0.7,
+                max_tokens=1000
+            )
+
+            intro_data = json.loads(intro_response.choices[0].message.content)
+
+            # Then generate the technical summary
             messages = [
                 {
                     "role": "system",
@@ -183,7 +220,7 @@ class ContentService:
                 logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
                 raise ValueError("Invalid JSON response from OpenAI")
 
-            content = self._format_article_content(summary_data)
+            content = self._format_article_content(summary_data, intro_data)
             article = Article(
                 title=summary_data["title"],
                 content=content,
@@ -214,10 +251,39 @@ class ContentService:
             db.session.rollback()
             raise
 
-    def _format_article_content(self, summary_data):
+    def _format_article_content(self, summary_data, intro_data):
         """Format the article content with proper HTML structure"""
         return f"""
+        <div class="article-introduction mb-4">
+            <div class="introduction-section mb-4">
+                <h2 class="section-title">Understanding This Week's Updates</h2>
+                <p class="lead">{intro_data.get('introduction', '')}</p>
+            </div>
+
+            <div class="significance-section mb-4">
+                <h3>Why These Changes Matter</h3>
+                <p>{intro_data.get('significance', '')}</p>
+            </div>
+
+            <div class="impact-section mb-4">
+                <h3>Impact on Users and Developers</h3>
+                <p>{intro_data.get('impact', '')}</p>
+            </div>
+
+            <div class="future-section mb-4">
+                <h3>Future Implications</h3>
+                <p>{intro_data.get('future_implications', '')}</p>
+            </div>
+
+            <div class="divider mb-4">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="article-summary mb-4">
+            <h2 class="section-title">Technical Summary</h2>
             <p class="lead">{summary_data.get('brief_summary', '')}</p>
         </div>
 
