@@ -272,63 +272,6 @@ class ContentService:
             formatted_highlights.append(highlight_html)
         return '\n'.join(formatted_highlights)
 
-    def _generate_overview(self, sections: Dict, forum_summary: Optional[str] = None) -> str:
-        """Generate a comprehensive overview of the article content."""
-        try:
-            messages = [
-                {
-                    "role": "system",
-                    "content": """Create a comprehensive overview of Ethereum development updates. 
-                    Combine information from both repository changes and community discussions.
-                    Write in a clear, accessible style that helps readers understand:
-                    1. The main improvements and changes
-                    2. Important technical updates
-                    3. Key community discussions and decisions
-                    4. The real-world impact of these changes
-
-                    Keep the overview between 700-1000 characters.
-                    Focus on making technical concepts understandable to a general audience."""
-                },
-                {
-                    "role": "user",
-                    "content": f"""Create an overview combining these updates:
-
-                    Title: {sections['title']}
-
-                    Repository Updates:
-                    {sections['repo_updates']}
-
-                    Technical Highlights:
-                    {sections['tech_highlights']}
-
-                    Forum Discussions:
-                    {forum_summary if forum_summary else 'No forum discussions available yet.'}
-                    """
-                }
-            ]
-
-            logger.info("Generating article overview")
-            response = self._retry_with_exponential_backoff(
-                self.openai.chat.completions.create,
-                model=self.model,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=1000
-            )
-
-            if not response or not hasattr(response, 'choices') or not response.choices:
-                raise ValueError("Invalid response from OpenAI API")
-
-            overview = response.choices[0].message.content.strip()
-            logger.info(f"Successfully generated overview of length {len(overview)}")
-
-            # Wrap the overview in a div for styling
-            return f'<div class="article-overview">{overview}</div>'
-
-        except Exception as e:
-            logger.error(f"Error generating overview: {str(e)}")
-            return None
-
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
         if not github_content:
@@ -409,7 +352,7 @@ class ContentService:
                     2. A detailed overview (at least 700 characters)
                     3. Repository updates (start with 'Repository Updates:')
                     4. Technical highlights (start with 'Technical Highlights:')
-                    5. Next Steps (start with 'Next Steps:')\n\nIMPORTANT: Your explanation MUST be at least 700 characters long."""
+                    5. Next Steps (start with 'Next Steps:')"""
                 },
                 {
                     "role": "user",
@@ -461,9 +404,6 @@ class ContentService:
                 content = response.choices[0].message.content
                 sections = self._extract_content_sections(content)
 
-            # Generate overview that combines repository updates and forum discussions
-            overview = self._generate_overview(sections, forum_summary)
-
             # Format the content as HTML with the added forum summary or error message
             forum_section = ""
             if forum_summary:
@@ -496,7 +436,6 @@ class ContentService:
 
             article = Article(
                 title=sections['title'],
-                overview=overview,
                 content=content,
                 publication_date=publication_date,
                 status='published',

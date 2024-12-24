@@ -21,39 +21,20 @@
                 </div>
             </header>
 
-            {% if article.overview %}
-            <section class="article-overview mb-5">
-                <h2 class="h4 mb-4">Overview</h2>
-                <div class="content-section overview-content">
-                    {{ article.overview | safe }}
-                </div>
-            </section>
-            {% endif %}
-
-            <section class="repository-updates mb-5">
-                <h2 class="h4 mb-4">Repository Updates</h2>
-                <div class="content-section">
-                    {{ article.content | safe }}
-                </div>
-            </section>
+            <div class="article-content">
+                {{ article.content | safe }}
+            </div>
 
             {% if article.forum_summary %}
-            <section class="community-discussions">
-                <h2 class="h4 mb-4">Community Discussions</h2>
+            <div class="forum-discussions mt-5">
+                <h2 class="h4 mb-4">Forum Discussions</h2>
                 <div class="forum-content">
                     {{ article.forum_summary | safe }}
                 </div>
-                <div class="sources mt-3">
-                    <small class="text-muted">
-                        Sources: 
-                        <a href="https://ethereum-magicians.org" target="_blank" class="text-muted">Ethereum Magicians</a>,
-                        <a href="https://ethresear.ch" target="_blank" class="text-muted">Ethereum Research</a>
-                    </small>
-                </div>
-            </section>
+            </div>
             {% else %}
-            <section class="community-discussions">
-                <h2 class="h4 mb-4">Community Discussions</h2>
+            <div class="forum-discussions mt-5">
+                <h2 class="h4 mb-4">Forum Discussions</h2>
                 <div class="alert alert-info" role="alert">
                     <h4 class="alert-heading">Forum Discussions Processing</h4>
                     <div class="mb-3">
@@ -64,60 +45,58 @@
                     </div>
                     <p class="mb-2">Our system is currently:</p>
                     <ul class="mb-3">
-                        <li>Fetching discussions from Ethereum Magicians and Ethereum Research forums</li>
+                        <li>Fetching discussions from Ethereum Magicians forum</li>
                         <li>Processing and summarizing the content</li>
                         <li>Preparing a comprehensive overview of community discussions</li>
                     </ul>
                     <p class="mb-0">This process may take a few minutes. Please check back shortly.</p>
                 </div>
-            </section>
+            </div>
             {% endif %}
 
-            <section class="sources mt-5">
-                <div class="accordion" id="sourcesAccordion">
-                    <div class="accordion-item bg-dark text-light">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#sourcesList" aria-expanded="false" aria-controls="sourcesList">
-                                Sources
-                            </button>
-                        </h2>
-                        <div id="sourcesList" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-                            <div class="accordion-body">
-                                {% if article.sources %}
-                                    {% set repo_sources = {} %}
-                                    {% for source in article.sources %}
-                                        {% if repo_sources.get(source.repository) %}
-                                            {% set _ = repo_sources[source.repository].append(source) %}
-                                        {% else %}
-                                            {% set _ = repo_sources.update({source.repository: [source]}) %}
-                                        {% endif %}
-                                    {% endfor %}
+            <div class="accordion mt-5" id="sourcesAccordion">
+                <div class="accordion-item bg-dark text-light">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#sourcesList" aria-expanded="false" aria-controls="sourcesList">
+                            Sources
+                        </button>
+                    </h2>
+                    <div id="sourcesList" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+                        <div class="accordion-body">
+                            {% if article.sources %}
+                                {% set repo_sources = {} %}
+                                {% for source in article.sources %}
+                                    {% if repo_sources.get(source.repository) %}
+                                        {% set _ = repo_sources[source.repository].append(source) %}
+                                    {% else %}
+                                        {% set _ = repo_sources.update({source.repository: [source]}) %}
+                                    {% endif %}
+                                {% endfor %}
 
-                                    {% for repo, sources in repo_sources.items() %}
-                                        <div class="repository-group mb-4">
-                                            <h4 class="repository-name mb-3">{{ repo }}</h4>
-                                            <ul class="list-unstyled">
-                                                {% for source in sources %}
-                                                <li class="mb-2">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
-                                                            {{ source.title or 'Untitled' }}
-                                                        </a>
-                                                        <span class="badge bg-secondary ms-2">{{ source.type }}</span>
-                                                    </div>
-                                                </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <p class="text-muted">No sources available for this article.</p>
-                                {% endif %}
-                            </div>
+                                {% for repo, sources in repo_sources.items() %}
+                                    <div class="repository-group mb-4">
+                                        <h4 class="repository-name mb-3">{{ repo }}</h4>
+                                        <ul class="list-unstyled">
+                                            {% for source in sources %}
+                                            <li class="mb-2">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
+                                                        {{ source.title or 'Untitled' }}
+                                                    </a>
+                                                    <span class="badge bg-secondary ms-2">{{ source.type }}</span>
+                                                </div>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No sources available for this article.</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
     </div>
 </article>
@@ -161,58 +140,30 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.content-section, .overview-content {
-    padding: 1.5rem;
-    background: var(--bs-dark);
-    border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.btn {
+    --bs-btn-color: var(--bs-progress-bar-bg);
+    --bs-btn-border-color: var(--bs-progress-bar-bg);
+    --bs-btn-hover-color: var(--bs-dark);
+    --bs-btn-hover-bg: linear-gradient(90deg, var(--bs-progress-bar-bg) 0%, var(--bs-progress-bar-bg-secondary, var(--bs-progress-bar-bg)) 100%);
+    --bs-btn-hover-border-color: var(--bs-progress-bar-bg);
+    --bs-btn-active-color: var(--bs-dark);
+    --bs-btn-active-bg: linear-gradient(90deg, var(--bs-progress-bar-bg) 0%, var(--bs-progress-bar-bg-secondary, var(--bs-progress-bar-bg)) 100%);
+    --bs-btn-active-border-color: var(--bs-progress-bar-bg);
 }
 
-.community-discussions {
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.article-overview h2,
-.repository-updates h2,
-.community-discussions h2 {
-    color: var(--bs-info);
-    margin-bottom: 1.5rem;
-}
-
-.forum-content {
-    padding: 1.5rem;
-    background: var(--bs-dark);
-    border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.btn:hover {
+    background: var(--bs-btn-hover-bg);
 }
 
 .gap-2 {
     gap: 0.5rem !important;
 }
 
-.forum-content h3 {
-    color: var(--bs-info);
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-}
-
-.forum-content ul {
-    padding-left: 1.25rem;
-}
-
-.forum-content li {
-    margin-bottom: 0.5rem;
-}
-
-.sources {
-    color: var(--bs-text-muted);
-}
-
-.overview-content {
-    font-size: 1.1rem;
-    line-height: 1.6;
+.forum-discussions {
+    background: var(--bs-dark);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>
 {% endblock %}

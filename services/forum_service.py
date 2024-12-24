@@ -12,15 +12,12 @@ import os
 logger = logging.getLogger(__name__)
 
 class ForumService:
-    """Service for fetching and processing Ethereum forum discussions."""
+    """Service for fetching and processing Ethereum Magicians forum discussions."""
 
     def __init__(self):
         """Initialize the ForumService."""
         try:
-            self.forum_urls = {
-                'ethereum-magicians': "https://ethereum-magicians.org/c/protocol-calls/63.json",
-                'ethresearch': "https://ethresear.ch/c/protocol/7.json"
-            }
+            self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
@@ -56,33 +53,27 @@ class ForumService:
             logger.info(f"Starting forum discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
             fetch_start_time = time.time()
 
-            all_discussions = []
-            seen_urls = set()  # Track unique URLs to prevent duplicates
+            # Use the JSON API endpoint with retries
+            response = self._retry_with_backoff(
+                self.session.get,
+                self.forum_base_url,
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+            initial_fetch_time = time.time() - fetch_start_time
+            logger.info(f"Initial forum data fetch completed in {initial_fetch_time:.2f} seconds")
 
-            for forum_name, forum_url in self.forum_urls.items():
-                logger.info(f"Fetching discussions from {forum_name}")
-
-                # Use the JSON API endpoint with retries
-                response = self._retry_with_backoff(
-                    self.session.get,
-                    forum_url,
-                    timeout=30
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                if 'topic_list' not in data or 'topics' not in data['topic_list']:
-                    logger.warning(f"No topics found in {forum_name} response")
-                    continue
-
+            discussions = []
+            if 'topic_list' in data and 'topics' in data['topic_list']:
                 topics = data['topic_list']['topics']
                 total_topics = len(topics)
-                logger.info(f"Found {total_topics} topics in {forum_name}")
+                logger.info(f"Found {total_topics} topics to process")
 
                 for index, topic in enumerate(topics, 1):
                     try:
                         process_start_time = time.time()
-                        logger.info(f"Processing {forum_name} topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
+                        logger.info(f"Processing topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
 
                         created_at = topic.get('created_at')
                         if not created_at:
@@ -101,13 +92,7 @@ class ForumService:
                         if start_date <= post_date <= end_date:
                             topic_id = topic.get('id')
                             slug = topic.get('slug', str(topic_id))
-                            topic_url = f"https://{forum_name}.org/t/{slug}/{topic_id}.json"
-
-                            # Skip if we've already seen this URL
-                            if topic_url in seen_urls:
-                                logger.debug(f"Skipping duplicate topic URL: {topic_url}")
-                                continue
-                            seen_urls.add(topic_url)
+                            topic_url = f"https://ethereum-magicians.org/t/{slug}/{topic_id}.json"
 
                             logger.debug(f"Fetching details for topic: {topic.get('title', 'Unknown')}")
                             topic_fetch_start = time.time()
@@ -136,12 +121,11 @@ class ForumService:
                                 if len(clean_content) > 5000:
                                     clean_content = clean_content[:5000] + "..."
 
-                                all_discussions.append({
+                                discussions.append({
                                     'title': topic.get('title', ''),
                                     'content': clean_content,
-                                    'url': topic_url.replace('.json', ''),
-                                    'date': post_date,
-                                    'source': forum_name
+                                    'url': f"https://ethereum-magicians.org/t/{slug}/{topic_id}",
+                                    'date': post_date
                                 })
                                 process_time = time.time() - process_start_time
                                 logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
@@ -151,8 +135,8 @@ class ForumService:
                         continue
 
             total_fetch_time = time.time() - fetch_start_time
-            logger.info(f"Successfully fetched {len(all_discussions)} relevant discussions in {total_fetch_time:.2f} seconds")
-            return all_discussions
+            logger.info(f"Successfully fetched {len(discussions)} relevant discussions in {total_fetch_time:.2f} seconds")
+            return discussions
 
         except Exception as e:
             logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
@@ -203,22 +187,12 @@ class ForumService:
 
         try:
             logger.info("Starting forum discussions summarization")
-            # Group discussions by source
-            discussions_by_source = {}
-            for disc in discussions:
-                source = disc['source']
-                if source not in discussions_by_source:
-                    discussions_by_source[source] = []
-                discussions_by_source[source].append(disc)
-
             formatted_discussions = []
-            for source, source_discussions in discussions_by_source.items():
-                formatted_discussions.append(f"=== {source.title()} Discussions ===\n")
-                for disc in source_discussions:
-                    formatted_discussions.append(
-                        f"Title: {disc['title']}\nDate: {disc['date'].strftime('%Y-%m-%d')}\n"
-                        f"URL: {disc['url']}\nContent: {disc['content'][:1000]}..."
-                    )
+            for disc in discussions:
+                formatted_discussions.append(
+                    f"Title: {disc['title']}\nDate: {disc['date'].strftime('%Y-%m-%d')}\n"
+                    f"URL: {disc['url']}\nContent: {disc['content'][:1000]}..."
+                )
 
             combined_text = "\n\n---\n\n".join(formatted_discussions)
 
@@ -226,34 +200,18 @@ class ForumService:
                 {
                     "role": "system",
                     "content": """You are an expert in Ethereum protocol discussions. 
-                    Summarize the key points from Ethereum forum discussions in a clear, 
-                    accessible way. Format the output in sections by forum source.
-                    For each forum source (Ethereum Magicians, Ethereum Research):
-                    1. Create an <h3> header with the forum name
-                    2. Create an unordered list with:
-                       - Main topics discussed (brief bullet points)
-                       - Key decisions or proposals
-                       - Technical specifications mentioned
+                    Summarize the key points from Ethereum Magicians forum discussions in a clear, 
+                    accessible way. Focus on:
+                    1. Main topics discussed
+                    2. Important decisions or consensus reached
+                    3. Notable technical proposals
                     Keep the summary concise and use plain language.
 
-                    Example format:
-                    <h3>Ethereum Magicians</h3>
-                    <ul>
-                        <li>Topic: [brief description]</li>
-                        <li>Decision: [what was decided]</li>
-                        <li>Technical: [specs or proposals]</li>
-                    </ul>
-
-                    <h3>Ethereum Research</h3>
-                    <ul>
-                        <li>Topic: [brief description]</li>
-                        <li>Analysis: [key findings]</li>
-                        <li>Technical: [specs or proposals]</li>
-                    </ul>"""
+                    Format the output in HTML, using appropriate tags for structure."""
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize these Ethereum forum discussions:\n\n{combined_text}"
+                    "content": f"Summarize these Ethereum Magicians forum discussions:\n\n{combined_text}"
                 }
             ]
 
