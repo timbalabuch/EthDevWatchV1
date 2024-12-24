@@ -93,8 +93,11 @@ class TwitterService:
 
                 logger.info(f"Found {len(tweets)} tweets within the date range")
 
-            except tweepy.TweepError as e:
-                logger.error(f"Twitter API error: {str(e)}")
+            except (tweepy.errors.Unauthorized, tweepy.errors.Forbidden) as e:
+                logger.error(f"Authentication or permission error: {str(e)}")
+                return []
+            except tweepy.errors.NotFound as e:
+                logger.error(f"Twitter list not found: {str(e)}")
                 return []
             except Exception as e:
                 logger.error(f"Error fetching tweets: {str(e)}")
