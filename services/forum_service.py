@@ -139,7 +139,7 @@ class ForumService:
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(300, (self.base_delay * (2 ** attempt)))
+                delay = min(300, (self.base_delay * (2 ** attempt)))  # Cap at 5 minutes
                 logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
                 time.sleep(delay)
 

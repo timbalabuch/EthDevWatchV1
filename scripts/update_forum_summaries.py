@@ -14,16 +14,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def update_forum_summaries(force_update=True):
+def update_forum_summaries():
     """Update forum summaries for articles."""
     try:
         with app.app_context():
-            # Get all articles if force_update is True, otherwise only those without summaries
-            if force_update:
-                articles = Article.query.order_by(Article.publication_date.desc()).all()
-            else:
-                articles = Article.query.filter(Article.forum_summary.is_(None)).all()
-
+            # Get articles ordered by date
+            articles = Article.query.order_by(Article.publication_date.desc()).all()
             logger.info(f"Found {len(articles)} articles to process")
 
             if not articles:
@@ -40,17 +36,17 @@ def update_forum_summaries(force_update=True):
 
                     if summary:
                         article.forum_summary = summary
+                        db.session.commit()  # Commit after each successful update
                         logger.info(f"Successfully added forum summary for article dated {article.publication_date}")
                     else:
                         logger.warning(f"No forum summary generated for article dated {article.publication_date}")
 
                 except Exception as e:
                     logger.error(f"Error processing article {article.id}: {str(e)}")
+                    db.session.rollback()
                     continue
 
-            # Commit all changes
-            db.session.commit()
-            logger.info("Successfully updated forum summaries")
+            logger.info("Successfully completed forum summaries update")
 
     except Exception as e:
         logger.error(f"Error updating forum summaries: {str(e)}")
@@ -58,4 +54,4 @@ def update_forum_summaries(force_update=True):
 
 if __name__ == '__main__':
     logger.info("Starting forum summaries update")
-    update_forum_summaries(force_update=True)
+    update_forum_summaries()
