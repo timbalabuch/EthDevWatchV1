@@ -76,18 +76,30 @@ class Article(db.Model):
         """Extract Ethereum Magicians discussions."""
         if not self.forum_summary:
             return None
-        soup = BeautifulSoup(self.forum_summary, 'lxml')
-        magicians = soup.find_all('div', {'data-source': 'ethereum-magicians.org'})
-        return '\n'.join(str(div) for div in magicians) if magicians else None
+        try:
+            soup = BeautifulSoup(self.forum_summary, 'lxml')
+            content = soup.find('div', class_='forum-discussion-summary')
+            if content and 'Ethereum Magicians Forum Discussion' in content.get_text():
+                return str(content)
+            return None
+        except Exception as e:
+            print(f"Error extracting magicians discussions: {e}")
+            return None
 
     @property
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
         if not self.forum_summary:
             return None
-        soup = BeautifulSoup(self.forum_summary, 'lxml')
-        research = soup.find_all('div', {'data-source': 'ethresear.ch'})
-        return '\n'.join(str(div) for div in research) if research else None
+        try:
+            soup = BeautifulSoup(self.forum_summary, 'lxml')
+            content = soup.find('div', class_='forum-discussion-summary')
+            if content and 'Ethereum Research Discussion' in content.get_text():
+                return str(content)
+            return None
+        except Exception as e:
+            print(f"Error extracting research discussions: {e}")
+            return None
 
     @property
     def repository_updates(self):

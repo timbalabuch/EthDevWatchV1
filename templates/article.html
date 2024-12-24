@@ -35,52 +35,36 @@
             <section class="community-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Community Discussions</h2>
-                    {% if article.forum_summary %}
+                    {% if article.magicians_discussions or article.ethresearch_discussions %}
                         <div class="forum-content">
-                            <div class="ethereum-magicians mb-4">
-                                <h3 class="h4 mb-3">
-                                    <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
-                                        Ethereum Magicians
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    </a>
-                                </h3>
-                                {% if article.magicians_discussions %}
+                            {% if article.magicians_discussions %}
+                                <div class="ethereum-magicians mb-4">
+                                    <h3 class="h4 mb-3">
+                                        <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
+                                            Ethereum Magicians
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        </a>
+                                    </h3>
                                     {{ article.magicians_discussions | safe }}
-                                {% else %}
-                                    <p class="text-muted">No discussions from Ethereum Magicians for this period.</p>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% endif %}
 
-                            <div class="ethresearch mb-4">
-                                <h3 class="h4 mb-3">
-                                    <a href="https://ethresear.ch" target="_blank" class="text-info text-decoration-none">
-                                        Ethereum Research
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    </a>
-                                </h3>
-                                {% if article.ethresearch_discussions %}
+                            {% if article.ethresearch_discussions %}
+                                <div class="ethresearch mb-4">
+                                    <h3 class="h4 mb-3">
+                                        <a href="https://ethresear.ch" target="_blank" class="text-info text-decoration-none">
+                                            Ethereum Research
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        </a>
+                                    </h3>
                                     {{ article.ethresearch_discussions | safe }}
-                                {% else %}
-                                    <p class="text-muted">No discussions from Ethereum Research for this period.</p>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% endif %}
                         </div>
                     {% else %}
                         <div class="alert alert-info">
-                            <h4 class="alert-heading h5 mb-3">Community Discussions Processing</h4>
-                            <div class="mb-3">
-                                <div class="spinner-border spinner-border-sm text-info me-2" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <span>Community discussions are being processed</span>
-                            </div>
-                            <p class="mb-2">Our system is currently:</p>
-                            <ul class="mb-3">
-                                <li>Fetching discussions from Ethereum Magicians and Ethereum Research forums</li>
-                                <li>Processing and summarizing the content</li>
-                                <li>Preparing a comprehensive overview of community discussions</li>
-                            </ul>
-                            <p class="mb-0">The complete process typically takes 2-3 minutes. Please check back shortly.</p>
+                            <h4 class="alert-heading h5 mb-3">Community Discussions</h4>
+                            <p class="mb-0">No community discussions are available for this period.</p>
                         </div>
                     {% endif %}
                 </div>
