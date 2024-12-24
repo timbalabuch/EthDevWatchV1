@@ -44,28 +44,23 @@ def generate_sample_articles():
     try:
         logger.info("=== Starting Sample Data Generation ===")
 
-        # Check if articles already exist
-        if check_existing_articles():
-            logger.info("Articles already exist, skipping generation")
-            return True
-
         # Initialize services
         logger.info("Initializing services...")
         github_service = GitHubService()
         content_service = ContentService()
 
-        # Get real GitHub content for reference
+        # Get real GitHub content
         logger.info("Fetching GitHub content...")
         github_content = github_service.fetch_recent_content()
 
         if not github_content:
-            logger.error("No content fetched from GitHub. Cannot generate sample articles.")
+            logger.error("No content fetched from GitHub")
             return False
 
         logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
-        # Start with just last 2 weeks for initial generation
-        start_date = datetime.utcnow() - timedelta(days=14)
+        # Start with the last 4 weeks
+        start_date = datetime.utcnow() - timedelta(days=28)  # 4 weeks
         current_date = datetime.utcnow()
 
         # Get all Monday dates
@@ -90,23 +85,33 @@ def generate_sample_articles():
                         logger.info(f"Skipping incomplete week: {monday.strftime('%Y-%m-%d')}")
                         continue
 
+                    # Check if article already exists for this week
+                    existing = Article.query.filter(
+                        Article.publication_date >= monday,
+                        Article.publication_date <= week_end
+                    ).first()
+
+                    if existing:
+                        logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
+                        success_count += 1
+                        continue
+
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
 
-                    # Add significant delay between article generations
+                    # Add delay between article generations to handle rate limits
                     if success_count > 0:
-                        delay = 30  # 30 seconds between generations
+                        delay = 60  # 60 seconds between generations
                         logger.info(f"Waiting {delay} seconds before generating next article...")
                         import time
                         time.sleep(delay)
 
-                    # Generate article with the stored image URL
+                    # Generate article
                     article = content_service.generate_weekly_summary(github_content, monday)
 
-                    # If this is the first successful article, store its image URL
+                    # Save and reuse the first successful image URL
                     if success_count == 0 and article and article.image_url:
                         image_url = article.image_url
                     elif image_url and article:
-                        # Reuse the stored image URL for subsequent articles
                         article.image_url = image_url
                         db.session.commit()
 

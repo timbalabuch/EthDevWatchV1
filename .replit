@@ -5,7 +5,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "python scripts/create_admin.py && python scripts/generate_one_article.py"]
+run = ["sh", "-c", "python scripts/generate_sample_data.py"]
 
 [workflows]
 runButton = "Project"
@@ -50,7 +50,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scripts/create_admin.py && python scripts/generate_one_article.py"
+args = "python scripts/generate_sample_data.py"
 
 [[ports]]
 localPort = 5000
