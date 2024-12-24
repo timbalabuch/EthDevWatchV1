@@ -182,15 +182,8 @@ class ContentService:
                 """
 
             # Forum discussions section
-            if summary_data.get('forum_summary'):
-                article_html += f"""
-                    <div class="forum-discussions mb-4">
-                        <h2 class="section-title">Community Discussions</h2>
-                        <div class="forum-summary">
-                            {summary_data.get('forum_summary', '')}
-                        </div>
-                    </div>
-                """
+            article_html += summary_data.get('forum_summary', '')
+
 
             # Technical highlights section
             if summary_data.get('technical_highlights'):
@@ -300,8 +293,17 @@ class ContentService:
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
-            # Get forum discussions summary
-            forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
+            # Get forum discussions summary with error handling
+            forum_summary = None
+            forum_error = None
+            try:
+                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
+                if not forum_summary:
+                    forum_error = "No forum discussions found for this week"
+                    logger.warning(forum_error)
+            except Exception as e:
+                forum_error = f"Error fetching forum discussions: {str(e)}"
+                logger.error(forum_error)
 
             repo_content = self.organize_content_by_repository(github_content)
             if not repo_content:
@@ -402,14 +404,34 @@ class ContentService:
                 content = response.choices[0].message.content
                 sections = self._extract_content_sections(content)
 
-            # Format the content as HTML with the added forum summary
+            # Format the content as HTML with the added forum summary or error message
+            forum_section = ""
+            if forum_summary:
+                forum_section = f"""
+                    <div class="forum-discussions mb-4">
+                        <h2 class="section-title">Community Discussions</h2>
+                        <div class="forum-summary">
+                            {forum_summary}
+                        </div>
+                    </div>
+                """
+            elif forum_error:
+                forum_section = f"""
+                    <div class="forum-discussions mb-4">
+                        <h2 class="section-title">Community Discussions</h2>
+                        <div class="alert alert-warning">
+                            <strong>Note:</strong> {forum_error}
+                        </div>
+                    </div>
+                """
+
             content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
                 'next_steps': sections['next_steps'],
-                'forum_summary': forum_summary
+                'forum_summary': forum_section
             })
 
             article = Article(
@@ -418,7 +440,7 @@ class ContentService:
                 publication_date=publication_date,
                 status='published',
                 published_date=current_date,
-                forum_summary=forum_summary  # Save the forum summary in the new field
+                forum_summary=forum_summary if forum_summary else forum_error
             )
 
             # Add sources
