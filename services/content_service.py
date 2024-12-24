@@ -113,16 +113,20 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
-            # Check if we already have an article for this week
-            if publication_date:
-                existing_article = Article.query.filter(
-                    Article.publication_date >= publication_date,
-                    Article.publication_date <= publication_date + timedelta(days=7)
-                ).first()
+            # Filter content to only use items from the current week
+            current_week_content = []
+            week_start = publication_date or datetime.utcnow()
+            week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=7)
 
-                if existing_article:
-                    logger.info(f"Article already exists for week of {publication_date.strftime('%Y-%m-%d')}")
-                    return existing_article
+            for item in github_content:
+                item_date = item.get('created_at')
+                if item_date and week_start <= item_date <= week_end:
+                    current_week_content.append(item)
+
+            if not current_week_content:
+                logger.warning("No content found for the current week")
+                return None
 
             time.sleep(2)
 
@@ -239,10 +243,13 @@ class ContentService:
                 title=summary_data["title"],
                 content=content,
                 publication_date=publication_date or datetime.utcnow(),
-                image_url=image_url
+                image_url=image_url,
+                status='published',  # Set as published immediately
+                published_date=datetime.utcnow()
             )
 
-            for item in github_content:
+            # Add sources only from the current week
+            for item in current_week_content:
                 source = Source(
                     url=item['url'],
                     type='github',
