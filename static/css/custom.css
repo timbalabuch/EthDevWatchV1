@@ -51,14 +51,19 @@ body {
 }
 
 .card-body {
-    padding: 2rem;  /* Increased padding from default */
+    padding: 2rem;
 }
 
 .card-title {
     color: #e2e8f0;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
     font-family: 'Titillium Web', sans-serif;
+}
+
+.card-title a:hover {
+    color: #3b82f6 !important;
+    transition: color 0.3s ease;
 }
 
 .progress-bar {
