@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
+import pytz
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,7 +21,7 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    publication_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
 
@@ -39,7 +40,7 @@ class Article(db.Model):
 
     def publish(self):
         self.status = 'published'
-        self.published_date = datetime.utcnow()
+        self.published_date = datetime.now(pytz.UTC)
         db.session.commit()
 
     def schedule(self, publish_date):
@@ -54,4 +55,4 @@ class Source(db.Model):
     title = db.Column(db.String(200))
     repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
-    fetch_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
