@@ -99,6 +99,7 @@ class Article(db.Model):
                     if title.string and ('ethereum-magicians.org' in str(title.next_sibling) if title.next_sibling else False):
                         discussion = title.parent
                         discussions.append(str(discussion))
+                        logger.debug(f"Found magicians discussion: {title.string}")
 
                 if discussions:
                     logger.info(f"Successfully extracted {len(discussions)} magicians discussions")
