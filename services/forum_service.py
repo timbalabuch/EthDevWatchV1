@@ -47,21 +47,25 @@ class ForumService:
     def _extract_date_from_forum_post(self, post_element: Union[Tag, BeautifulSoup]) -> Optional[datetime]:
         """Extract date from a forum post element."""
         try:
-            date_elem = post_element.select_one('.post-date, .topic-date')
+            # Look for the date element with class 'relative-date'
+            date_elem = post_element.select_one('time.relative-date, span.relative-date')
             if not date_elem:
                 logger.debug("No date element found in post")
                 return None
 
-            if not date_elem.has_attr('title'):
-                logger.debug("Date element has no title attribute")
+            if not date_elem.has_attr('datetime'):
+                logger.debug("Date element has no datetime attribute")
                 return None
 
-            date_str = date_elem['title']
+            date_str = date_elem['datetime']
             try:
-                return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
-            except ValueError as e:
-                logger.error(f"Error parsing date string '{date_str}': {str(e)}")
-                return None
+                return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                try:
+                    return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+                except ValueError as e:
+                    logger.error(f"Error parsing date string '{date_str}': {str(e)}")
+                    return None
 
         except Exception as e:
             logger.error(f"Error extracting date from forum post: {str(e)}")
@@ -91,11 +95,16 @@ class ForumService:
             start_date, end_date = self._get_week_boundaries(week_date)
             logger.info(f"Fetching forum discussions for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
-            # Download the forum page
-            logger.info(f"Sending request to {self.forum_base_url}")
+            # Download the forum page with proper headers
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5'
+            }
             response = self._retry_with_backoff(
                 self.session.get,
                 self.forum_base_url,
+                headers=headers,
                 timeout=30
             )
             response.raise_for_status()
@@ -105,8 +114,8 @@ class ForumService:
             soup = BeautifulSoup(response.text, 'lxml')
             discussions = []
 
-            # Find all topic elements
-            topics = soup.select('.topic-list-item')
+            # Find all topic elements with the correct class
+            topics = soup.select('.topic-list tr.topic-list-item')
             logger.info(f"Found {len(topics)} topics on the page")
 
             for topic in topics:
@@ -117,36 +126,35 @@ class ForumService:
                         logger.debug(f"Found post with date: {post_date}")
 
                     if post_date and start_date <= post_date <= end_date:
-                        # Extract title and content
-                        title_elem = topic.select_one('.title')
+                        # Extract title and URL
+                        title_elem = topic.select_one('.topic-title, .title')
                         title = title_elem.get_text(strip=True) if title_elem else ''
 
-                        # Get topic URL
                         topic_url = None
-                        topic_link = title_elem.find('a') if title_elem else None
-                        if topic_link and topic_link.has_attr('href'):
-                            topic_url = topic_link['href']
-                            logger.debug(f"Processing topic: {title} with URL: {topic_url}")
+                        if title_elem:
+                            link = title_elem.find('a')
+                            if link and link.has_attr('href'):
+                                topic_url = f"https://ethereum-magicians.org{link['href']}"
+                                logger.debug(f"Processing topic: {title} with URL: {topic_url}")
 
                         if topic_url:
                             # Fetch full topic content
-                            full_url = f"https://ethereum-magicians.org{topic_url}"
-                            logger.debug(f"Fetching full content from: {full_url}")
                             topic_response = self._retry_with_backoff(
                                 self.session.get,
-                                full_url,
+                                topic_url,
+                                headers=headers,
                                 timeout=30
                             )
                             topic_response.raise_for_status()
 
                             topic_soup = BeautifulSoup(topic_response.text, 'lxml')
-                            content_elem = topic_soup.select_one('.topic-body')
+                            content_elem = topic_soup.select_one('.topic-body .contents')
                             content = content_elem.get_text(strip=True) if content_elem else ''
 
                             discussions.append({
                                 'title': title,
                                 'content': content,
-                                'url': full_url,
+                                'url': topic_url,
                                 'date': post_date
                             })
                             logger.info(f"Successfully added discussion: {title}")
