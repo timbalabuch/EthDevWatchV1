@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
@@ -18,7 +19,7 @@ def update_forum_summaries():
     """Update forum summaries for articles."""
     try:
         with app.app_context():
-            # Get articles ordered by date
+            # Get articles ordered by date, focusing on recent ones first
             articles = Article.query.order_by(Article.publication_date.desc()).all()
             logger.info(f"Found {len(articles)} articles to process")
 
@@ -38,12 +39,16 @@ def update_forum_summaries():
                         article.forum_summary = summary
                         db.session.commit()  # Commit after each successful update
                         logger.info(f"Successfully added forum summary for article dated {article.publication_date}")
+                        # Add a small delay between articles to avoid rate limits
+                        time.sleep(2)
                     else:
                         logger.warning(f"No forum summary generated for article dated {article.publication_date}")
 
                 except Exception as e:
                     logger.error(f"Error processing article {article.id}: {str(e)}")
                     db.session.rollback()
+                    # Add a longer delay after errors
+                    time.sleep(5)
                     continue
 
             logger.info("Successfully completed forum summaries update")

@@ -24,12 +24,15 @@ class ForumService:
 
             self.openai = OpenAI(api_key=api_key)
             self.model = "gpt-4"  # Using a more powerful model for better summaries
-            self.max_retries = 3
-            self.base_delay = 1
+            self.max_retries = 5
+            self.base_delay = 2  # Starting with a 2-second delay
             self.session = requests.Session()
             self.session.headers.update({
                 'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
             })
+            # Keep track of last API call to implement rate limiting
+            self.last_api_call = 0
+            self.min_time_between_calls = 1  # Minimum seconds between API calls
             logger.info("ForumService initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize ForumService: {str(e)}")
@@ -128,20 +131,41 @@ class ForumService:
             logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
             return []
 
+    def _wait_for_rate_limit(self):
+        """Implement rate limiting for API calls."""
+        now = time.time()
+        time_since_last_call = now - self.last_api_call
+        if time_since_last_call < self.min_time_between_calls:
+            sleep_time = self.min_time_between_calls - time_since_last_call
+            logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+        self.last_api_call = time.time()
+
     def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute a function with exponential backoff retry logic."""
+        max_retries = self.max_retries
+        base_delay = self.base_delay
         last_error = None
-        for attempt in range(self.max_retries):
+        for attempt in range(max_retries):
             try:
                 return func(*args, **kwargs)
-            except Exception as e:
+            except requests.exceptions.RequestException as e:
                 last_error = e
-                if attempt == self.max_retries - 1:
-                    logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
+                if attempt == max_retries - 1:
+                    logger.error(f"Max retries ({max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(300, (self.base_delay * (2 ** attempt)))  # Cap at 5 minutes
+                delay = min(300, (base_delay * (2 ** attempt)))  # Cap at 5 minutes
                 logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
                 time.sleep(delay)
+            except Exception as e:
+                last_error = e
+                if attempt == max_retries -1:
+                    logger.error(f"Max retries ({max_retries}) exceeded: {str(e)}")
+                    raise
+                delay = min(300, (base_delay * (2 ** attempt)))
+                logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
+                time.sleep(delay)
+
 
         if last_error:
             raise last_error
@@ -190,9 +214,14 @@ class ForumService:
             ]
 
             logger.info("Sending request to OpenAI for forum discussion summary")
-            # Generate summary with retries
-            for attempt in range(3):  # 3 retries for OpenAI
+
+            # Implement exponential backoff with rate limiting
+            max_retries = 5
+            base_delay = 5  # Start with 5 seconds
+
+            for attempt in range(max_retries):
                 try:
+                    self._wait_for_rate_limit()
                     response = self.openai.chat.completions.create(
                         model=self.model,
                         messages=messages,
@@ -210,11 +239,14 @@ class ForumService:
                     return summary
 
                 except Exception as e:
-                    if attempt == 2:  # Last attempt
+                    if attempt == max_retries - 1:  # Last attempt
                         logger.error(f"Error generating forum discussion summary: {str(e)}")
                         return None
-                    logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
-                    time.sleep(20)  # Wait longer between OpenAI retries
+
+                    delay = min(300, base_delay * (2 ** attempt))  # Cap at 5 minutes
+                    logger.warning(f"API call failed (attempt {attempt + 1}/{max_retries}): {str(e)}. "
+                                 f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
 
         except Exception as e:
             logger.error(f"Error generating forum discussion summary: {str(e)}")
