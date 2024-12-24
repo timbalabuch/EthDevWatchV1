@@ -140,42 +140,50 @@ class ContentService:
             messages = [
                 {
                     "role": "system",
-                    "content": """You are an expert in explaining blockchain technology to both technical 
-                    and non-technical audiences. Generate a comprehensive weekly summary that includes:
+                    "content": """You are an expert at explaining complex blockchain technology to complete beginners. 
+                    Your task is to create a weekly summary that makes Ethereum development understandable to everyone.
 
-                    1. A detailed brief summary (MINIMUM 700 characters) that:
-                       - Explains the week's developments in simple, accessible language
-                       - Breaks down technical terms and concepts for non-technical readers
-                       - Uses real-world analogies to explain complex ideas
-                       - Connects technical changes to practical benefits
-                       - Explains why these updates matter to the average user
+                    Most important rules:
+                    1. Write like you're explaining to a friend who knows nothing about blockchain
+                    2. Use everyday analogies for EVERY technical concept (e.g., "Smart contracts are like digital vending machines")
+                    3. NEVER use technical terms without explaining them in simple words
+                    4. Focus on why each change matters to regular users
+                    5. Use concrete, real-world examples for every feature
 
-                    2. Repository updates with clear explanations of changes
-                    3. Technical highlights that explain complex concepts simply
-                    4. Next steps in plain language
-
-                    Structure the response as JSON with the following sections:
-                    1. brief_summary: A detailed, user-friendly explanation (minimum 700 characters)
-                    2. repository_updates: Array of updates from each repository
-                    3. technical_highlights: Key technical changes and their impact
-                    4. next_steps: Expected next steps or ongoing discussions
-
-                    Keep the focus on making complex technical concepts accessible to all readers."""
+                    Required format (JSON):
+                    {
+                        "title": "Clear, engaging title",
+                        "brief_summary": "Detailed, friendly explanation (MUST be 700+ characters) that helps regular people understand:
+                            - What changed this week in simple terms
+                            - Why these changes matter to users
+                            - How these improve the Ethereum network
+                            - Real examples of how users benefit
+                            - Simple analogies for technical concepts",
+                        "repository_updates": [{
+                            "repository": "name",
+                            "summary": "Simple explanation of changes",
+                            "changes": ["List of key changes in plain language"]
+                        }],
+                        "technical_highlights": [{
+                            "title": "Simple title",
+                            "description": "Plain language explanation",
+                            "impact": "How this benefits users"
+                        }],
+                        "next_steps": ["Future plans in simple terms"]
+                    }"""
                 },
                 {
                     "role": "user",
-                    "content": f"""Generate a comprehensive Ethereum ecosystem development update for the week of {week_str}.
-                    Make sure to explain everything in simple terms that anyone can understand.
-
-                    Repository Activity Summary:
-                    {json.dumps(repo_summaries, indent=2)}
-
-                    Requirements:
+                    "content": f"""Create a beginner-friendly update about Ethereum development for the week of {week_str}.
+                    Remember:
+                    - Explain everything as if talking to someone new to blockchain
+                    - Use everyday examples and analogies
+                    - Focus on why users should care about these changes
+                    - Keep it engaging and conversational
                     - The brief summary must be at least 700 characters
-                    - Explain all technical terms
-                    - Use real-world analogies
-                    - Make it engaging and easy to understand
-                    - Connect technical changes to practical benefits"""
+
+                    Here are the technical updates to explain in simple terms:
+                    {json.dumps(repo_summaries, indent=2)}"""
                 }
             ]
 
