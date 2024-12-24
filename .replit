@@ -27,6 +27,10 @@ args = "Initialize Database"
 task = "workflow.run"
 args = "Cleanup Future Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Fix Article Dates"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -69,6 +73,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/cleanup_future_articles.py"
+
+[[workflows.workflow]]
+name = "Fix Article Dates"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/fix_article_dates.py"
 
 [[ports]]
 localPort = 5000
