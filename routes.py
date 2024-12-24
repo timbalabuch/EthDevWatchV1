@@ -162,16 +162,17 @@ def utility_processor():
             return ''
 
         # Ensure date is timezone-aware
-        if not date.tzinfo:
+        if date.tzinfo is None:
             date = pytz.UTC.localize(date)
 
-        # Calculate the Monday of the week (start)
-        monday = date - timedelta(days=date.weekday())
-        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Get the Monday of the week
+        monday = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        monday = monday - timedelta(days=monday.weekday())
 
-        # Calculate the Sunday of the week (end)
-        sunday = monday + timedelta(days=6)
-        sunday = sunday.replace(hour=23, minute=59, second=59, microsecond=999999)
+        # Get the Sunday of the week
+        sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+        logger.debug(f"Formatting date - Original: {date}, Monday: {monday}, Sunday: {sunday}")
 
         # Format as "Week of Month Day - Month Day, Year"
         if monday.month == sunday.month:
