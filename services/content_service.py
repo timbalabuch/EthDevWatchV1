@@ -137,11 +137,12 @@ class ContentService:
                     5. Support technical concepts with concrete examples
 
                     Title requirements:
-                    - Create a specific title that reflects the key technical developments covered in the article
-                    - Include the most significant technical changes or improvements
-                    - Avoid generic titles like "Weekly Update" alone
-                    - Format: "Ethereum Development: [Key Technical Focus] - Week of [Date]"
-                    - Example: "Ethereum Development: Layer 2 Scaling and EIP-4844 Progress - Week of December 16"
+                    - Create a highly specific title that captures the most important technical developments
+                    - Title must highlight key protocol changes, improvements, or technical milestones
+                    - Include multiple significant developments when relevant (e.g. "Layer 2 Scaling Solutions and EIP-4844 Protocol Enhancements")
+                    - DO NOT include dates or week references in the title
+                    - Format: "Ethereum Development: [Detailed Technical Focus Areas]"
+                    - Example: "Ethereum Development: Consensus Layer Optimizations and EVM Upgrades"
 
                     Required sections:
                     1. A clear, formal title following the above format
@@ -159,7 +160,8 @@ class ContentService:
                     "role": "user",
                     "content": f"""Create a technically focused update about Ethereum development for the week of {week_str}.
                     Remember:
-                    - Title must reflect the key technical developments
+                    - Create highly descriptive titles without dates
+                    - Title must capture multiple key technical developments
                     - Maintain formal, professional language
                     - Include precise technical details
                     - Focus on implementation specifics
