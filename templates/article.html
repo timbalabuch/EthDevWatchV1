@@ -13,8 +13,33 @@
                     {{ format_date(article.publication_date) }}
                 </p>
 
-                <div class="article-content mb-4">
-                    {{ article.content | safe }}
+                <div class="article-introduction mb-5">
+                    <div class="introduction-section mb-4">
+                        <h2 class="section-title">Understanding This Week's Updates</h2>
+                        <div class="lead introduction-content"></div>
+                    </div>
+
+                    <div class="significance-section mb-4">
+                        <h3>Why These Changes Matter</h3>
+                        <div class="significance-content"></div>
+                    </div>
+
+                    <div class="impact-section mb-4">
+                        <h3>Impact on Users and Developers</h3>
+                        <div class="impact-content"></div>
+                    </div>
+
+                    <div class="future-section mb-4">
+                        <h3>Future Implications</h3>
+                        <div class="future-content"></div>
+                    </div>
+                </div>
+
+                <div class="technical-content mb-4">
+                    <h2 class="section-title">Technical Details</h2>
+                    <div class="article-content mb-4">
+                        {{ article.content | safe }}
+                    </div>
                 </div>
 
                 <div class="sources-section p-4 rounded">
@@ -59,4 +84,37 @@
         </article>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse the article content HTML
+    const parser = new DOMParser();
+    const content = document.querySelector('.article-content').innerHTML;
+    const doc = parser.parseFromString(content, 'text/html');
+
+    // Find and move introduction content
+    const introSection = doc.querySelector('.introduction-section p');
+    if (introSection) {
+        document.querySelector('.introduction-content').innerHTML = introSection.innerHTML;
+    }
+
+    // Find and move significance content
+    const sigSection = doc.querySelector('.significance-section p');
+    if (sigSection) {
+        document.querySelector('.significance-content').innerHTML = sigSection.innerHTML;
+    }
+
+    // Find and move impact content
+    const impactSection = doc.querySelector('.impact-section p');
+    if (impactSection) {
+        document.querySelector('.impact-content').innerHTML = impactSection.innerHTML;
+    }
+
+    // Find and move future implications content
+    const futureSection = doc.querySelector('.future-section p');
+    if (futureSection) {
+        document.querySelector('.future-content').innerHTML = futureSection.innerHTML;
+    }
+});
+</script>
 {% endblock %}

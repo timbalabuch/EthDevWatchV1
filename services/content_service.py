@@ -283,30 +283,20 @@ class ContentService:
         """Format the article content with proper HTML structure"""
         return f"""
         <div class="article-introduction mb-4">
-            <div class="introduction-section mb-4">
-                <h2 class="section-title">Understanding This Week's Updates</h2>
-                <p class="lead">{intro_data.get('introduction', '')}</p>
+            <div class="introduction-section">
+                <p>{intro_data.get('introduction', '')}</p>
             </div>
 
-            <div class="significance-section mb-4">
-                <h3>Why These Changes Matter</h3>
+            <div class="significance-section">
                 <p>{intro_data.get('significance', '')}</p>
             </div>
 
-            <div class="impact-section mb-4">
-                <h3>Impact on Users and Developers</h3>
+            <div class="impact-section">
                 <p>{intro_data.get('impact', '')}</p>
             </div>
 
-            <div class="future-section mb-4">
-                <h3>Future Implications</h3>
+            <div class="future-section">
                 <p>{intro_data.get('future_implications', '')}</p>
-            </div>
-
-            <div class="divider mb-4">
-                <div class="progress-bar">
-                    <div class="progress-bar-fill" style="width: 100%"></div>
-                </div>
             </div>
         </div>
 
