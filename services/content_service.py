@@ -140,29 +140,42 @@ class ContentService:
             messages = [
                 {
                     "role": "system",
-                    "content": """You are an expert in Ethereum ecosystem development. Create a comprehensive weekly summary 
-                    of development activities across multiple Ethereum repositories. Focus on:
+                    "content": """You are an expert in explaining blockchain technology to both technical 
+                    and non-technical audiences. Generate a comprehensive weekly summary that includes:
 
-                    1. Core protocol development (ethereum/pm)
-                    2. EIP proposals and changes (ethereum/EIPs)
-                    3. API specifications (ethereum/execution-apis)
-                    4. Implementation specifications (ethereum/execution-specs, ethereum/consensus-specs)
+                    1. A detailed brief summary (MINIMUM 700 characters) that:
+                       - Explains the week's developments in simple, accessible language
+                       - Breaks down technical terms and concepts for non-technical readers
+                       - Uses real-world analogies to explain complex ideas
+                       - Connects technical changes to practical benefits
+                       - Explains why these updates matter to the average user
+
+                    2. Repository updates with clear explanations of changes
+                    3. Technical highlights that explain complex concepts simply
+                    4. Next steps in plain language
 
                     Structure the response as JSON with the following sections:
-                    1. title: An engaging title highlighting key developments
-                    2. brief_summary: 2-3 sentences capturing main updates
-                    3. repository_updates: Array of updates from each repository
-                    4. technical_highlights: Key technical changes and their impact
-                    5. next_steps: Expected next steps or ongoing discussions
+                    1. brief_summary: A detailed, user-friendly explanation (minimum 700 characters)
+                    2. repository_updates: Array of updates from each repository
+                    3. technical_highlights: Key technical changes and their impact
+                    4. next_steps: Expected next steps or ongoing discussions
 
-                    Keep the focus on technical accuracy and ecosystem impact."""
+                    Keep the focus on making complex technical concepts accessible to all readers."""
                 },
                 {
                     "role": "user",
                     "content": f"""Generate a comprehensive Ethereum ecosystem development update for the week of {week_str}.
+                    Make sure to explain everything in simple terms that anyone can understand.
 
                     Repository Activity Summary:
-                    {json.dumps(repo_summaries, indent=2)}"""
+                    {json.dumps(repo_summaries, indent=2)}
+
+                    Requirements:
+                    - The brief summary must be at least 700 characters
+                    - Explain all technical terms
+                    - Use real-world analogies
+                    - Make it engaging and easy to understand
+                    - Connect technical changes to practical benefits"""
                 }
             ]
 
@@ -180,6 +193,21 @@ class ContentService:
 
             try:
                 summary_data = json.loads(response.choices[0].message.content)
+
+                # Verify brief summary length
+                brief_summary_length = len(summary_data.get('brief_summary', ''))
+                if brief_summary_length < 700:
+                    logger.warning(f"Brief summary length ({brief_summary_length}) is less than required (700 characters). Regenerating...")
+                    messages[0]["content"] += "\n\nIMPORTANT: Your brief_summary MUST be at least 700 characters long."
+                    response = self._retry_with_exponential_backoff(
+                        self.openai.chat.completions.create,
+                        model=self.model,
+                        messages=messages,
+                        response_format={"type": "json_object"},
+                        temperature=0.7,
+                        max_tokens=2000
+                    )
+                    summary_data = json.loads(response.choices[0].message.content)
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}")
                 raise ValueError("Invalid JSON response from OpenAI")
