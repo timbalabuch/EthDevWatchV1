@@ -1,7 +1,8 @@
 import logging
 import os
 import time
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from openai import OpenAI, RateLimitError
 import json
 from app import db
@@ -39,7 +40,7 @@ class ContentService:
                 if attempt == self.max_retries - 1:
                     logger.error(f"Max retries ({self.max_retries}) exceeded: {str(e)}")
                     raise
-                delay = min(300, self.base_delay * (2 ** attempt))  # Cap at 5 minutes
+                delay = min(300, self.base_delay * (2 ** attempt) + (random.random() * 2))  # Add jitter
                 logger.warning(f"Rate limit hit, retrying in {delay} seconds (attempt {attempt + 1}/{self.max_retries})")
                 time.sleep(delay)
             except Exception as e:
@@ -111,14 +112,22 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
-            # Add delay between article generations to avoid rate limits
+            # Check if we already have an article for this week
+            if publication_date:
+                existing_article = Article.query.filter(
+                    Article.publication_date >= publication_date,
+                    Article.publication_date <= publication_date + timedelta(days=7)
+                ).first()
+
+                if existing_article:
+                    logger.info(f"Article already exists for week of {publication_date.strftime('%Y-%m-%d')}")
+                    return existing_article
+
             time.sleep(2)
 
-            # Prepare content for GPT
             logger.info("Preparing content for GPT processing")
             week_str = publication_date.strftime("%Y-%m-%d") if publication_date else "current week"
 
-            # Create a simulated week-specific prompt
             week_prompt = f"""For the week of {week_str}, generate a comprehensive Ethereum ecosystem development update. 
             Focus on creating unique content that would be realistic for that specific week, including:
             - Technical progress in Layer 2 solutions
@@ -129,7 +138,6 @@ class ContentService:
             Make the content specific and detailed, as if these were real updates from that week.
             """
 
-            # System prompt for consistent formatting
             messages = [
                 {
                     "role": "system",
@@ -174,6 +182,7 @@ class ContentService:
             if not response or not hasattr(response, 'choices') or not response.choices:
                 raise ValueError("Invalid response from OpenAI API")
 
+
             logger.debug(f"Received response from OpenAI API: {response.choices[0].message.content[:200]}...")
 
             try:
@@ -183,7 +192,6 @@ class ContentService:
                 logger.debug(f"Raw response content: {response.choices[0].message.content}")
                 raise ValueError("Invalid JSON response from OpenAI")
 
-            # Format the content with improved HTML structure
             content = f"""
             <div class="article-summary mb-4">
                 <p class="lead">{summary_data['brief_summary']}</p>
@@ -224,10 +232,8 @@ class ContentService:
             """
 
             logger.info("Creating new article with generated content")
-            # Generate an image based on the title
             image_url = self.generate_image_for_title(summary_data["title"])
 
-            # Create new article
             article = Article(
                 title=summary_data["title"],
                 content=content,
@@ -235,7 +241,6 @@ class ContentService:
                 image_url=image_url
             )
 
-            # Add sources
             for item in github_content:
                 source = Source(
                     url=item['url'],
