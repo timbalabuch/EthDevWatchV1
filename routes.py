@@ -147,11 +147,15 @@ def article(article_id):
         logger.warning(f"Attempted to access future article {article_id} with date {article_date}")
         abort(404)
 
-    # Add debug logging for metrics
+    # Add detailed logging for metrics
     if article.metrics:
-        logger.debug(f"Article {article_id} metrics: {article.metrics.__dict__}")
+        logger.info(f"Article {article_id} has metrics data")
+        logger.debug(f"Active addresses: {article.metrics.active_addresses}")
+        logger.debug(f"Contract deployments: {article.metrics.contracts_deployed}")
+        logger.debug(f"ETH burned: {article.metrics.eth_burned}")
+        logger.debug(f"Metrics period: {article.metrics.start_date} to {article.metrics.end_date}")
     else:
-        logger.debug(f"No metrics found for article {article_id}")
+        logger.warning(f"No metrics found for article {article_id}")
 
     return render_template('article.html', article=article)
 

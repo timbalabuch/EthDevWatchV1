@@ -9,7 +9,7 @@ import pytz
 from openai import OpenAI, RateLimitError
 
 from app import db
-from models import Article, Source, WeeklyMetrics # Assumed to exist
+from models import Article, Source, WeeklyMetrics
 from services.dune_service import DuneService
 
 logger = logging.getLogger(__name__)
@@ -386,6 +386,9 @@ class ContentService:
 
             # Add metrics if available
             if metrics_data:
+                logger.info(f"Adding metrics for article {article.id}")
+                logger.debug(f"Metrics data to be stored: {json.dumps(metrics_data, indent=2)}")
+
                 metrics = WeeklyMetrics(
                     article=article,
                     active_addresses=metrics_data.get('active_addresses'),
@@ -394,7 +397,14 @@ class ContentService:
                     start_date=publication_date,
                     end_date=end_date,
                 )
-                db.session.add(metrics)
+                try:
+                    db.session.add(metrics)
+                    db.session.flush()  # Flush to get the ID
+                    logger.info(f"Successfully added metrics with ID {metrics.id}")
+                    logger.debug(f"Stored metrics object: {metrics.__dict__}")
+                except Exception as e:
+                    logger.error(f"Error storing metrics: {str(e)}")
+                    raise
 
             db.session.add(article)
             db.session.commit()

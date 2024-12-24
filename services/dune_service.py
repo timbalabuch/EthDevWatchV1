@@ -19,12 +19,13 @@ class DuneService:
             "Content-Type": "application/json"
         }
 
-        # Define query IDs from the dashboard
+        # Define query IDs for each metric
         self.QUERY_IDS = {
             'active_addresses': '1619273',
             'contract_deployments': '1619273',
             'eth_burned': '1725751'
         }
+        logger.info("DuneService initialized with API key and query IDs")
 
     def _execute_query(self, query_id, params=None):
         """Execute a Dune query and return the results"""
@@ -52,6 +53,7 @@ class DuneService:
 
                 if result_data['state'] == 'QUERY_STATE_COMPLETED':
                     logger.info(f"Query {query_id} completed successfully")
+                    logger.debug(f"Query {query_id} results: {json.dumps(result_data['result']['rows'], indent=2)}")
                     return result_data['result']['rows']
                 elif result_data['state'] in ['QUERY_STATE_FAILED', 'QUERY_STATE_CANCELLED']:
                     error_msg = f"Query failed with state: {result_data['state']}"
@@ -80,18 +82,23 @@ class DuneService:
             logger.info(f"Fetching metrics for period: {start_str} to {end_str}")
 
             # Fetch metrics using the specified query IDs
+            logger.info("Fetching active addresses data...")
             active_addresses = self._execute_query(self.QUERY_IDS['active_addresses'], params)
+
+            logger.info("Fetching contract deployments data...")
             contract_deployments = self._execute_query(self.QUERY_IDS['contract_deployments'], params)
+
+            logger.info("Fetching ETH burned data...")
             eth_burned = self._execute_query(self.QUERY_IDS['eth_burned'], params)
 
             # Process and structure the data
             metrics = {
                 'active_addresses': self._process_daily_data(active_addresses),
                 'contracts_deployed': self._process_daily_data(contract_deployments),
-                'eth_burned': sum(float(row['amount']) for row in eth_burned)
+                'eth_burned': sum(float(row['amount']) for row in eth_burned) if eth_burned else 0
             }
 
-            logger.info(f"Successfully fetched metrics: {json.dumps(metrics, indent=2)}")
+            logger.info(f"Successfully fetched and processed metrics: {json.dumps(metrics, indent=2)}")
             return metrics
 
         except Exception as e:
@@ -101,6 +108,10 @@ class DuneService:
     def _process_daily_data(self, data):
         """Convert daily metrics into a structured format"""
         try:
+            if not data:
+                logger.warning("No data received for processing")
+                return {}
+
             processed = {row['date']: row['value'] for row in data}
             logger.debug(f"Processed daily data: {json.dumps(processed, indent=2)}")
             return processed
