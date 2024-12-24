@@ -27,9 +27,16 @@
 
             {% if article.forum_summary %}
             <div class="forum-discussions mt-5">
-                <h2 class="h4 mb-4">Forum Discussions</h2>
+                <h2 class="h4 mb-4">Community Discussions</h2>
                 <div class="forum-content">
                     {{ article.forum_summary | safe }}
+                </div>
+                <div class="sources mt-3">
+                    <small class="text-muted">
+                        Sources: 
+                        <a href="https://ethereum-magicians.org" target="_blank" class="text-muted">Ethereum Magicians</a>,
+                        <a href="https://ethresear.ch" target="_blank" class="text-muted">Ethereum Research</a>
+                    </small>
                 </div>
             </div>
             {% else %}
@@ -45,7 +52,7 @@
                     </div>
                     <p class="mb-2">Our system is currently:</p>
                     <ul class="mb-3">
-                        <li>Fetching discussions from Ethereum Magicians forum</li>
+                        <li>Fetching discussions from Ethereum Magicians and Ethereum Research forums</li>
                         <li>Processing and summarizing the content</li>
                         <li>Preparing a comprehensive overview of community discussions</li>
                     </ul>
