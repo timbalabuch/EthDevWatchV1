@@ -40,7 +40,7 @@
                             {{ article.forum_summary | safe }}
                         </div>
                     {% else %}
-                        <div class="alert alert-info" role="alert">
+                        <div class="alert alert-info">
                             <h4 class="alert-heading h5 mb-3">Community Discussions Processing</h4>
                             <div class="mb-3">
                                 <div class="spinner-border spinner-border-sm text-info me-2" role="status">
@@ -67,7 +67,7 @@
             </section>
 
             <!-- Source Section -->
-            <section class="repository-section">
+            <section class="source-section">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Source</h2>
                     {% if article.sources %}
@@ -133,18 +133,29 @@
     border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
-/* Overview section styling */
-.overview-content {
+/* Content styling */
+.overview-content,
+.forum-content {
     font-size: 1.1rem;
     line-height: 1.8;
     color: var(--bs-light);
 }
 
-.overview-content p {
+.overview-content p,
+.forum-content p {
     margin-bottom: 1.5rem;
 }
 
-/* Repository section styling */
+.forum-content ul {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.forum-content li {
+    margin-bottom: 0.75rem;
+}
+
+/* Source section styling */
 .repository-name {
     color: var(--bs-info);
     font-size: 1.1rem;
@@ -161,7 +172,7 @@
     color: var(--bs-info-text) !important;
 }
 
-/* Accordion customization */
+/* Accordion styling */
 .accordion-item {
     background: transparent !important;
     border-radius: 0.5rem;
@@ -186,25 +197,6 @@
 .accordion-body {
     padding: 1.25rem;
     background: rgba(0, 0, 0, 0.2);
-}
-
-/* Community section styling */
-.forum-content {
-    font-size: 1.1rem;
-    line-height: 1.8;
-}
-
-.forum-content p {
-    margin-bottom: 1.5rem;
-}
-
-.forum-content ul {
-    margin-bottom: 1.5rem;
-    padding-left: 1.5rem;
-}
-
-.forum-content li {
-    margin-bottom: 0.75rem;
 }
 
 /* Alert styling */
