@@ -71,17 +71,12 @@ class ContentService:
     def generate_image_for_title(self, title):
         """Generate an image using DALL-E based on the article title"""
         try:
-            # First check if we can reuse an existing image
-            existing_url = self._find_existing_image_url(title)
-            if existing_url:
-                logger.info("Reusing existing image")
-                return existing_url
-
             # Add longer delay before image generation
             time.sleep(5)  # Increased delay to avoid rate limits
 
+            # Enhanced prompt to ensure consistent tech theme with green and blue colors
             prompt = (
-                f"Create a sophisticated horizontal technology-themed illustration for an article titled: {title}. "
+                f"Create a unique horizontal technology-themed illustration for an article titled: {title}. "
                 "Style: modern, professional, tech-focused with dominant green and blue color scheme. "
                 "Must be in landscape orientation with a 16:9 aspect ratio. "
                 "Theme: Ethereum blockchain, technological advancement, digital innovation. "
@@ -101,7 +96,7 @@ class ContentService:
             )
 
             if response and hasattr(response, 'data') and len(response.data) > 0:
-                logger.info("Successfully generated image for article")
+                logger.info("Successfully generated unique image for article")
                 return response.data[0].url
             else:
                 logger.error("Invalid response format from DALL-E API")

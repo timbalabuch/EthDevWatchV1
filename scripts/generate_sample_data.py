@@ -72,7 +72,6 @@ def generate_sample_articles():
 
         # Generate articles for each completed week
         success_count = 0
-        image_url = None  # Store the first generated image URL for reuse
 
         with app.app_context():
             for monday in weeks:
@@ -107,13 +106,6 @@ def generate_sample_articles():
 
                     # Generate article
                     article = content_service.generate_weekly_summary(github_content, monday)
-
-                    # Save and reuse the first successful image URL
-                    if success_count == 0 and article and article.image_url:
-                        image_url = article.image_url
-                    elif image_url and article:
-                        article.image_url = image_url
-                        db.session.commit()
 
                     if article:
                         success_count += 1
