@@ -17,7 +17,14 @@ class GitHubService:
         else:
             logger.info("Initializing GitHub client with authentication")
             self.github = Github(self.github_token)
-        self.pm_repo = "ethereum/pm"
+
+        self.repositories = [
+            "ethereum/pm",
+            "ethereum/EIPs",
+            "ethereum/execution-apis",
+            "ethereum/execution-specs",
+            "ethereum/consensus-specs"
+        ]
         self.max_retries = 3
         self.retry_delay = 5  # seconds
 
@@ -36,13 +43,62 @@ class GitHubService:
             return pytz.UTC.localize(dt)
         return dt.astimezone(pytz.UTC)
 
+    def _fetch_repository_content(self, repo_name, start_date, end_date):
+        """Fetch content from a single repository"""
+        content = []
+        try:
+            logger.info(f"Fetching content from {repo_name}")
+            repo = self.github.get_repo(repo_name)
+
+            # Get recent issues and pull requests
+            try:
+                issues = repo.get_issues(state='all', since=start_date)
+                for issue in issues:
+                    issue_date = self._make_timezone_aware(issue.created_at)
+                    if start_date <= issue_date <= end_date:
+                        content.append({
+                            'type': 'issue',
+                            'title': issue.title,
+                            'url': issue.html_url,
+                            'body': issue.body,
+                            'created_at': issue_date.replace(tzinfo=None),
+                            'repository': repo_name
+                        })
+                        logger.debug(f"Fetched issue from {repo_name}: {issue.title}")
+            except RateLimitExceededException:
+                self._handle_rate_limit()
+
+            # Get recent commits
+            try:
+                commits = repo.get_commits(since=start_date, until=end_date)
+                for commit in commits:
+                    commit_date = self._make_timezone_aware(commit.commit.author.date)
+                    if start_date <= commit_date <= end_date:
+                        content.append({
+                            'type': 'commit',
+                            'title': commit.commit.message,
+                            'url': commit.html_url,
+                            'body': commit.commit.message,
+                            'created_at': commit_date.replace(tzinfo=None),
+                            'repository': repo_name
+                        })
+                        logger.debug(f"Fetched commit from {repo_name}: {commit.sha[:7]}")
+            except RateLimitExceededException:
+                self._handle_rate_limit()
+
+            logger.info(f"Successfully fetched {len(content)} items from {repo_name}")
+            return content
+
+        except GithubException as e:
+            logger.error(f"Error fetching content from {repo_name}: {str(e)}")
+            return []
+
     def fetch_recent_content(self, start_date=None, end_date=None):
         """
-        Fetch content from Ethereum PM repository for a specific date range.
+        Fetch content from all Ethereum repositories for a specific date range.
         If no dates provided, defaults to the previous week.
         """
         if start_date is None:
-            # Get previous week's Monday to Sunday
             current_date = datetime.utcnow()
             end_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
             start_date = end_date - timedelta(days=7)
@@ -52,67 +108,22 @@ class GitHubService:
         end_date = self._make_timezone_aware(end_date)
 
         logger.info(f"Fetching content from {start_date} to {end_date}")
+        all_content = []
 
-        for attempt in range(self.max_retries):
-            try:
-                logger.info(f"Fetching content from {self.pm_repo} (Attempt {attempt + 1}/{self.max_retries})")
-                repo = self.github.get_repo(self.pm_repo)
-                content = []
-
-                # Get recent issues and pull requests
+        for repo_name in self.repositories:
+            for attempt in range(self.max_retries):
                 try:
-                    issues = repo.get_issues(state='all', since=start_date)
-                    for issue in issues:
-                        issue_date = self._make_timezone_aware(issue.created_at)
-                        if start_date <= issue_date <= end_date:
-                            content.append({
-                                'type': 'issue',
-                                'title': issue.title,
-                                'url': issue.html_url,
-                                'body': issue.body,
-                                'created_at': issue_date.replace(tzinfo=None)
-                            })
-                            logger.debug(f"Fetched issue: {issue.title}")
-                except RateLimitExceededException:
-                    self._handle_rate_limit()
+                    logger.info(f"Fetching from {repo_name} (Attempt {attempt + 1}/{self.max_retries})")
+                    content = self._fetch_repository_content(repo_name, start_date, end_date)
+                    all_content.extend(content)
+                    break
+                except Exception as e:
+                    logger.error(f"Error fetching from {repo_name} (Attempt {attempt + 1}/{self.max_retries}): {str(e)}")
+                    if attempt < self.max_retries - 1:
+                        sleep_time = self.retry_delay * (attempt + 1)
+                        logger.info(f"Retrying in {sleep_time} seconds...")
+                        time.sleep(sleep_time)
                     continue
 
-                # Get recent commits
-                try:
-                    commits = repo.get_commits(since=start_date, until=end_date)
-                    for commit in commits:
-                        commit_date = self._make_timezone_aware(commit.commit.author.date)
-                        if start_date <= commit_date <= end_date:
-                            content.append({
-                                'type': 'commit',
-                                'title': commit.commit.message,
-                                'url': commit.html_url,
-                                'body': commit.commit.message,
-                                'created_at': commit_date.replace(tzinfo=None)
-                            })
-                            logger.debug(f"Fetched commit: {commit.sha[:7]}")
-                except RateLimitExceededException:
-                    self._handle_rate_limit()
-                    continue
-
-                logger.info(f"Successfully fetched {len(content)} items from GitHub")
-                return content
-
-            except GithubException as e:
-                logger.error(f"GitHub API error (Attempt {attempt + 1}/{self.max_retries}): {str(e)}")
-                if attempt < self.max_retries - 1:
-                    sleep_time = self.retry_delay * (attempt + 1)
-                    logger.info(f"Retrying in {sleep_time} seconds...")
-                    time.sleep(sleep_time)
-                continue
-
-            except Exception as e:
-                logger.error(f"Unexpected error fetching GitHub content: {str(e)}")
-                if attempt < self.max_retries - 1:
-                    sleep_time = self.retry_delay * (attempt + 1)
-                    logger.info(f"Retrying in {sleep_time} seconds...")
-                    time.sleep(sleep_time)
-                continue
-
-        logger.error("All retry attempts failed")
-        return []
+        logger.info(f"Successfully fetched total of {len(all_content)} items from all repositories")
+        return all_content
