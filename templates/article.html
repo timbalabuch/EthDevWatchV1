@@ -47,6 +47,7 @@
                     </div>
                 </div>
 
+                <!-- Load Chart.js -->
                 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 <script>
                     // Helper function to get dates array for the week
@@ -64,16 +65,18 @@
                     // Create charts if metrics exist
                     {% if article.metrics %}
                         const weekDates = getWeekDates('{{ article.metrics.start_date }}');
+                        console.log("Week dates:", weekDates);
+                        console.log("Active addresses data:", {{ article.metrics.active_addresses|tojson }});
+                        console.log("Contracts data:", {{ article.metrics.contracts_deployed|tojson }});
 
                         // Active Addresses Chart
-                        const activeAddressesData = {{ article.metrics.active_addresses|tojson }};
                         new Chart(document.getElementById('activeAddressesChart'), {
                             type: 'bar',
                             data: {
                                 labels: weekDates,
                                 datasets: [{
                                     label: 'Active Addresses',
-                                    data: Object.values(activeAddressesData),
+                                    data: Object.values({{ article.metrics.active_addresses|tojson }}),
                                     backgroundColor: 'rgba(54, 162, 235, 0.5)',
                                     borderColor: 'rgba(54, 162, 235, 1)',
                                     borderWidth: 1
@@ -111,14 +114,13 @@
                         });
 
                         // Contract Deployments Chart
-                        const contractsData = {{ article.metrics.contracts_deployed|tojson }};
                         new Chart(document.getElementById('contractsChart'), {
                             type: 'bar',
                             data: {
                                 labels: weekDates,
                                 datasets: [{
                                     label: 'Contract Deployments',
-                                    data: Object.values(contractsData),
+                                    data: Object.values({{ article.metrics.contracts_deployed|tojson }}),
                                     backgroundColor: 'rgba(75, 192, 192, 0.5)',
                                     borderColor: 'rgba(75, 192, 192, 1)',
                                     borderWidth: 1
@@ -302,6 +304,12 @@
 
 .accordion-item {
     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Chart Styles */
+canvas {
+    max-width: 100%;
+    height: auto;
 }
 </style>
 {% endblock %}
