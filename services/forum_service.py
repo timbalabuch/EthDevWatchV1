@@ -117,15 +117,19 @@ class ForumService:
                 {
                     "role": "system",
                     "content": """You are an expert in Ethereum protocol discussions. 
-                    Summarize the key points from Ethereum forum discussions in a clear, 
-                    accessible way. Format the output in sections by forum source.
+                    Analyze and summarize the forum discussions in a clear, structured format.
+
                     For each forum source (Ethereum Magicians, Ethereum Research):
                     1. Create an <h3> header with the forum name
-                    2. List the main topics discussed
-                    3. Important decisions or consensus reached
-                    4. Notable technical proposals
-                    Keep the summary concise and use plain language.
-                    Use HTML formatting for structure."""
+                    2. List key discussion points and decisions
+                    3. Include technical proposals and their implications
+                    4. Note important consensus or disagreements
+
+                    Keep the language clear and accessible.
+                    Structure the output in HTML format with appropriate tags.
+
+                    At the start, provide a brief overview paragraph summarizing the key points 
+                    across all forums for the week."""
                 },
                 {
                     "role": "user",
@@ -142,7 +146,7 @@ class ForumService:
                         model=self.model,
                         messages=messages,
                         temperature=0.7,
-                        max_tokens=1000
+                        max_tokens=1500
                     )
 
                     summary = response.choices[0].message.content.strip()
