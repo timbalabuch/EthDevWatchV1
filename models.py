@@ -114,24 +114,30 @@ class Article(db.Model):
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
         if not self.forum_summary:
-            logger.debug("No forum summary available for research discussions")
-            return None
+            error_msg = "No forum summary available for research discussions"
+            logger.error(error_msg)
+            return f'<div class="alert alert-warning">{error_msg}</div>'
         try:
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             
-            # Look for forum-discussion-item divs
-            discussions = soup.find_all('div', class_='forum-discussion-item')
+            # Look specifically for ethresear.ch content
+            discussions = []
+            for disc in soup.find_all('div', class_='forum-discussion-item'):
+                if 'ethresear.ch' in str(disc):
+                    discussions.append(disc)
+            
             if discussions:
                 return ''.join(str(disc) for disc in discussions)
             
-            logger.debug("No research discussions found in forum summary")
-            return None
+            error_msg = "No ethresear.ch discussions found for this period"
+            logger.warning(error_msg)
+            return f'<div class="alert alert-info">{error_msg}</div>'
+            
         except Exception as e:
-            logger.error(f"Error extracting research discussions: {e}", exc_info=True)
-            return None
-        except Exception as e:
-            logger.error(f"Error extracting research discussions: {e}", exc_info=True)
+            error_msg = f"Error processing ethresear.ch discussions: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return f'<div class="alert alert-danger">{error_msg}</div>'
             return None
 
     @property
