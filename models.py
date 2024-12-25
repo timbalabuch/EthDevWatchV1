@@ -94,8 +94,8 @@ class Article(db.Model):
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
             
-            # Look for discussions in both formats (raw and summarized)
-            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section']):
+            # Look for discussions in both formats
+            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethereum-magicians.org' in str(item):
                     discussions.append(str(item))
             
@@ -107,9 +107,6 @@ class Article(db.Model):
         except Exception as e:
             logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
-        except Exception as e:
-            logger.error(f"Error extracting magicians discussions: {e}", exc_info=True)
-            return None
 
     @property
     def ethresearch_discussions(self):
@@ -122,8 +119,8 @@ class Article(db.Model):
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
             
-            # Look for discussions in both formats (raw and summarized)
-            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section']):
+            # Look for discussions in both formats
+            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethresear.ch' in str(item):
                     discussions.append(str(item))
             
