@@ -9,6 +9,19 @@
     --shadow-color: rgba(59, 130, 246, 0.1);
     --alert-info-bg: rgba(59, 130, 246, 0.1);
     --alert-info-text: #3b82f6;
+    --link-color: var(--accent-primary);
+    --link-hover-color: var(--accent-secondary);
+}
+
+/* Override Bootstrap's color variables */
+:root[data-bs-theme=dark] {
+    --bs-link-color: var(--link-color);
+    --bs-link-hover-color: var(--link-hover-color);
+    --bs-primary: var(--accent-primary);
+    --bs-secondary: var(--accent-secondary);
+    --bs-body-color: var(--text-primary);
+    --bs-body-bg: var(--bg-primary);
+    --bs-border-color: var(--border-color);
 }
 
 body {
@@ -23,6 +36,16 @@ body {
 
 .text-info {
     color: var(--accent-primary) !important;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
 }
 
 .ethereum-article, .article-content {
@@ -281,7 +304,6 @@ body {
 .source-link:hover {
     color: var(--accent-secondary);
 }
-
 
 .section-title {
     color: var(--text-primary);
