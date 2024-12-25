@@ -79,7 +79,6 @@
                 </div>
             </section>
 
-            <!-- Repo Updates Section -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Repo Updates</h2>
@@ -97,7 +96,23 @@
                         </div>
                     {% endif %}
 
-                    {% if not article.repository_updates and not article.technical_highlights %}
+                    {% if article.next_steps %}
+                        <div class="next-steps mb-4">
+                            <h3 class="h4 mb-3">Next Steps</h3>
+                            <ul class="list-unstyled">
+                                {% for step in article.next_steps %}
+                                    <li class="mb-2 d-flex align-items-start">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2 mt-1">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                        {{ step }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
                         <div class="alert alert-info">
                             <h5 class="alert-heading">Content Update in Progress</h5>
                             <p class="mb-0">
@@ -109,7 +124,6 @@
                 </div>
             </section>
 
-            <!-- Source Section -->
             <section class="source-section">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Sources</h2>
@@ -129,91 +143,19 @@
                             {% endfor %}
 
                             {% if ns.issues %}
-                            <div class="accordion-item border-light border-opacity-10 mb-2">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#issuesCollapse">
-                                        Issues ({{ ns.issues|length }})
-                                    </button>
-                                </h2>
-                                <div id="issuesCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-                                    <div class="accordion-body">
-                                        {% for source in ns.issues %}
-                                            <div class="source-item mb-2">
-                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
-                                                    <span>{{ source.title }}</span>
-                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
-                                                </a>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                                {% include '_source_section.html' with context %}
                             {% endif %}
 
                             {% if ns.commits %}
-                            <div class="accordion-item border-light border-opacity-10 mb-2">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#commitsCollapse">
-                                        Commits ({{ ns.commits|length }})
-                                    </button>
-                                </h2>
-                                <div id="commitsCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-                                    <div class="accordion-body">
-                                        {% for source in ns.commits %}
-                                            <div class="source-item mb-2">
-                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
-                                                    <span>{{ source.title }}</span>
-                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
-                                                </a>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                                {% include '_source_section.html' with context %}
                             {% endif %}
 
                             {% if ns.discussions %}
-                            <div class="accordion-item border-light border-opacity-10 mb-2">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#discussionsCollapse">
-                                        Discussions ({{ ns.discussions|length }})
-                                    </button>
-                                </h2>
-                                <div id="discussionsCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-                                    <div class="accordion-body">
-                                        {% for source in ns.discussions %}
-                                            <div class="source-item mb-2">
-                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
-                                                    <span>{{ source.title }}</span>
-                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
-                                                </a>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                                {% include '_source_section.html' with context %}
                             {% endif %}
 
                             {% if ns.other %}
-                            <div class="accordion-item border-light border-opacity-10 mb-2">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#otherCollapse">
-                                        Other Sources ({{ ns.other|length }})
-                                    </button>
-                                </h2>
-                                <div id="otherCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-                                    <div class="accordion-body">
-                                        {% for source in ns.other %}
-                                            <div class="source-item mb-2">
-                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
-                                                    <span>{{ source.title }}</span>
-                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
-                                                </a>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                                {% include '_source_section.html' with context %}
                             {% endif %}
                         </div>
                     {% else %}
