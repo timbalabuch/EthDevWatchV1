@@ -109,14 +109,23 @@ class ForumService:
                             logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
 
                             if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
-                                first_post = topic_data['post_stream']['posts'][0]
-                                content = first_post.get('cooked', '')
+                    first_post = topic_data['post_stream']['posts'][0]
+                    content = first_post.get('cooked', '')
 
-                                content_soup = BeautifulSoup(content, 'lxml')
-                                clean_content = content_soup.get_text(strip=True)
-
-                                if len(clean_content) > 5000:
-                                    clean_content = clean_content[:5000] + "..."
+                    # Preserve HTML structure but clean it
+                    content_soup = BeautifulSoup(content, 'lxml')
+                    
+                    # Remove unwanted elements
+                    for element in content_soup.find_all(['script', 'style']):
+                        element.decompose()
+                    
+                    # Format the content with proper HTML structure
+                    clean_content = f'<div class="forum-content">{str(content_soup)}</div>'
+                    
+                    if len(clean_content) > 8000:
+                        # Truncate while preserving HTML structure
+                        truncated_soup = BeautifulSoup(clean_content[:8000], 'lxml')
+                        clean_content = str(truncated_soup) + "..."
 
                                 discussions.append({
                                     'title': topic.get('title', ''),
