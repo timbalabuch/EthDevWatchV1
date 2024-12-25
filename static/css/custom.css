@@ -264,6 +264,33 @@ a:hover {
     border-radius: 0.5rem;
 }
 
+.section-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.section-container h2 {
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.overview-section {
+    background: linear-gradient(145deg, rgba(52, 211, 153, 0.1), rgba(59, 130, 246, 0.1));
+}
+
+.community-section {
+    background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(52, 211, 153, 0.1));
+}
+
+.repo-updates-section {
+    background: linear-gradient(145deg, rgba(52, 211, 153, 0.1), rgba(59, 130, 246, 0.1));
+}
+
 .alert-info {
     background: var(--alert-info-bg);
     border-color: var(--accent-secondary);
