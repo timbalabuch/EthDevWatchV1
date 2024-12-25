@@ -184,6 +184,24 @@
     transition: color 0.3s ease;
 }
 
+.ethresearch-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ethresearch-item .discussion-title {
+    color: var(--text-color);
+    font-size: 1.2rem;
+}
+
+.ethresearch-item .forum-content {
+    color: var(--text-color);
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
 .card-title a:hover {
     color: var(--link-color);
 }

@@ -170,19 +170,24 @@ class ForumService:
                                 for element in content_soup.find_all(['script', 'style']):
                                     element.decompose()
                                 
+                                # Clean and extract text content
+                                clean_content = content_soup.get_text(strip=True)
+                                # Truncate content to a reasonable length for brief
+                                brief_content = clean_content[:500] + ('...' if len(clean_content) > 500 else '')
+                                
                                 # Format content with proper structure
                                 formatted_content = f"""
-                                <div class="forum-discussion-item ethresearch-item">
-                                    <h4 class="discussion-title">{topic.get('title', '').replace('html', '').replace('HTML', '')}</h4>
-                                    <div class="meta-info">
+                                <div class="forum-discussion-item ethresearch-item mb-4">
+                                    <h4 class="discussion-title mb-2">{topic.get('title', '').replace('html', '').replace('HTML', '')}</h4>
+                                    <div class="meta-info mb-2">
                                         <span class="date">{post_date.strftime('%Y-%m-%d')}</span>
-                                        <span class="source">ethresear.ch</span>
+                                        <span class="badge bg-info ms-2">ethresear.ch</span>
                                     </div>
-                                    <div class="forum-content">{str(content_soup).replace('html', '').replace('HTML', '')}</div>
+                                    <div class="forum-content mb-3">{brief_content}</div>
                                     <a href="https://ethresear.ch/t/{topic.get('slug')}/{topic.get('id')}" 
                                        target="_blank" 
-                                       class="forum-link btn btn-outline-info btn-sm mt-2">
-                                        Read full discussion on ethresear.ch →
+                                       class="forum-link btn btn-outline-info btn-sm">
+                                        Read full discussion →
                                     </a>
                                 </div>
                                 """
