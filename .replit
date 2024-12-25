@@ -233,6 +233,10 @@ task = "shell.exec"
 args = "python migrations/add_blockchain_terms.py"
 
 [[ports]]
+localPort = 3000
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
