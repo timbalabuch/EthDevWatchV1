@@ -66,15 +66,24 @@ class ForumService:
                 response = self._retry_with_backoff(
                     self.session.get,
                     self.ethresear_base_url,
-                    timeout=30
+                    timeout=60  # Increased timeout
                 )
                 response.raise_for_status()
                 data = response.json()
+                
+                if not data or 'topic_list' not in data:
+                    logger.error("Invalid response format from ethresear.ch")
+                    logger.debug(f"Response content: {str(data)[:1000]}")
+                    return []
+                    
             except requests.RequestException as e:
                 logger.error(f"Failed to fetch ethresear.ch data: {str(e)}")
                 if hasattr(e, 'response'):
                     logger.error(f"Status code: {e.response.status_code}")
-                    logger.error(f"Response text: {e.response.text[:1000]}")  # Log first 1000 chars
+                    logger.error(f"Response text: {e.response.text[:1000]}")
+                return []
+            except ValueError as e:
+                logger.error(f"Invalid JSON from ethresear.ch: {str(e)}")
                 return []
             initial_fetch_time = time.time() - fetch_start_time
             logger.info(f"Initial ethresear.ch data fetch completed in {initial_fetch_time:.2f} seconds")
