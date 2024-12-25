@@ -55,6 +55,20 @@
     color: var(--text-color) !important;
 }
 
+@media (max-width: 768px) {
+    .navbar .container {
+        justify-content: center !important;
+    }
+    
+    #searchForm {
+        display: none !important;
+    }
+    
+    .navbar-brand {
+        margin: 0;
+    }
+}
+
 .eth-logo {
     width: 40px;
     height: 40px;
