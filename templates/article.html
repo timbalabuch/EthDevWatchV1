@@ -47,7 +47,13 @@
                                 {% if article.forum_summary %}
                                     {{ article.forum_summary | safe }}
                                 {% else %}
-                                    <p class="text-muted">No discussions from Ethereum Magicians for this period.</p>
+                                    <div class="alert alert-info">
+                                        <p><i class="fas fa-info-circle"></i> No forum discussions available for this period.</p>
+                                        <small class="text-muted">
+                                            Status: {{ "Content found" if article.forum_summary else "No content" }} | 
+                                            Forum data: {{ "Present" if article.forum_summary else "Missing" }}
+                                        </small>
+                                    </div>
                                 {% endif %}
                             </div>
 

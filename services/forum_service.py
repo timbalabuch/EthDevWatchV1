@@ -113,19 +113,27 @@ class ForumService:
                                 content = first_post.get('cooked', '')
                                 
                                 # Create proper forum discussion format
+                                # Parse and clean content
+                                content_soup = BeautifulSoup(content, 'lxml')
+                                
+                                # Remove script and style elements
+                                for element in content_soup.find_all(['script', 'style']):
+                                    element.decompose()
+                                
+                                # Format content with proper structure
                                 formatted_content = f"""
                                 <div class="forum-discussion-item">
                                     <h4>{topic.get('title', '')}</h4>
-                                    <div class="forum-content">{content}</div>
+                                    <div class="forum-content">{str(content_soup)}</div>
                                     <a href="https://ethresear.ch/t/{topic.get('slug')}/{topic.get('id')}" target="_blank" class="forum-link">
                                         Read more on ethresear.ch →
                                     </a>
                                 </div>
                                 """
-                                
+
                                 discussions.append({
                                     'title': topic.get('title', ''),
-                                    'content': clean_content,
+                                    'content': formatted_content,
                                     'url': f"https://ethresear.ch/t/{slug}/{topic_id}",
                                     'date': post_date,
                                     'source': 'ethresear.ch'
