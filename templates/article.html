@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -35,149 +36,71 @@
             <section class="community-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Community Discussions</h2>
-                    {% if article.forum_summary %}
-                        <div class="forum-content">
-                            <div class="ethereum-magicians mb-4">
-                                <h3 class="h4 mb-3">
-                                    <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
-                                        Ethereum Magicians
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    </a>
-                                </h3>
-                                {% if article.forum_summary %}
-                                    {{ article.forum_summary | safe }}
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <p><i class="fas fa-info-circle"></i> No forum discussions available for this period.</p>
-                                        <small class="text-muted">
-                                            Status: No content | 
-                                            Forum data: Missing
-                                        </small>
-                                    </div>
-                                {% endif %}
-                            </div>
+                    <div class="forum-content">
+                        <div class="ethereum-magicians mb-4">
+                            <h3 class="h4 mb-3">
+                                <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
+                                    Ethereum Magicians
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                </a>
+                            </h3>
+                            {% if article.forum_summary %}
+                                {{ article.forum_summary | safe }}
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <p><i class="fas fa-info-circle"></i> No forum discussions available for this period.</p>
+                                </div>
+                            {% endif %}
+                        </div>
 
-                            <div class="ethresearch mb-4">
-                                <h3 class="h4 mb-3">
-                                    <a href="https://ethresear.ch" target="_blank" class="text-info text-decoration-none">
-                                        Ethereum Research
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    </a>
-                                </h3>
-                                {% if article.forum_summary %}
-                                    {% if article.ethresearch_discussions %}
-                                        {{ article.ethresearch_discussions | safe }}
-                                    {% else %}
-                                        <div class="alert alert-info">
-                                            <h5 class="alert-heading">No Active Discussions</h5>
-                                            <p class="mb-0">
-                                                There are no active discussions on ethresear.ch for this week. Research discussions 
-                                                appear here when there are new protocol research topics or technical proposals 
-                                                being discussed. Check back next week for updates!
-                                            </p>
-                                            <hr>
-                                            <p class="mb-0">
-                                                <small class="text-muted">
-                                                    Last checked: {{ format_date(article.publication_date) }}
-                                                </small>
-                                            </p>
-                                        </div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="alert alert-warning">
-                                        <h5 class="alert-heading">Content Loading</h5>
-                                        <p class="mb-0">
-                                            The forum content is currently being fetched. This may take a few moments.
-                                            If the content doesn't appear after refreshing, there may be an issue with
-                                            the ethresear.ch API.
-                                        </p>
-                                    </div>
-                                {% endif %}
-                                    {% if config.DEBUG %}
-                                    <div class="debug-info mt-3">
-                                        <small class="text-muted">
-                                            Debug info: Forum summary length: {{ article.forum_summary|length if article.forum_summary else 0 }} chars
-                                            {% if article.forum_summary %}
-                                            <br>Content preview: {{ article.forum_summary[:200] }}...
-                                            <br>Contains ethresear.ch: {{ 'Yes' if 'ethresear.ch' in article.forum_summary else 'No' }}
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                    {% endif %}
-                                        {% if config.DEBUG %}
-                                        <div class="debug-info mt-3">
-                                            <small class="text-muted">
-                                                Debug info: Forum summary length: {{ article.forum_summary|length if article.forum_summary else 0 }} chars
-                                                {% if article.forum_summary %}
-                                                <br>Content preview: {{ article.forum_summary[:200] }}...
-                                                <br>Contains ethresear.ch: {{ 'Yes' if 'ethresear.ch' in article.forum_summary else 'No' }}
-                                                <br>Contains ethereum-magicians.org: {{ 'Yes' if 'ethereum-magicians.org' in article.forum_summary else 'No' }}
-                                                {% endif %}
-                                            </small>
-                                        </div>
-                                        {% endif %}
-                                    {% endif %}
-                            </div>
+                        <div class="ethresearch mb-4">
+                            <h3 class="h4 mb-3">
+                                <a href="https://ethresear.ch" target="_blank" class="text-info text-decoration-none">
+                                    Ethereum Research
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                </a>
+                            </h3>
+                            {% if article.ethresearch_discussions %}
+                                {{ article.ethresearch_discussions | safe }}
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <h5 class="alert-heading">No Active Discussions</h5>
+                                    <p class="mb-0">
+                                        There are no active discussions on ethresear.ch for this week.
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
-                    {% else %}
-                        <div class="alert alert-info">
-                            <h4 class="alert-heading h5 mb-3">Community Discussions</h4>
-                            <p class="mb-0">No community discussions are available for this period.</p>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
             </section>
 
-            <!-- Repo Updates Section (Combined) -->
+            <!-- Repo Updates Section -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repo Updates</h2>
-
-                    <!-- Repository Updates -->
                     {% if article.repository_updates %}
-                    <div class="repository-updates mb-4">
-                        <h3 class="h4 mb-3">Latest Changes</h3>
-                        {{ article.repository_updates | safe }}
-                    </div>
+                        <div class="repository-updates mb-4">
+                            <h3 class="h4 mb-3">Latest Changes</h3>
+                            {{ article.repository_updates | safe }}
+                        </div>
                     {% endif %}
 
-                    <!-- Technical Highlights -->
                     {% if article.technical_highlights %}
-                    <div class="technical-highlights mb-4">
-                        <h3 class="h4 mb-3">Technical Highlights</h3>
-                        {{ article.technical_highlights | safe }}
-                    </div>
+                        <div class="technical-highlights mb-4">
+                            <h3 class="h4 mb-3">Technical Highlights</h3>
+                            {{ article.technical_highlights | safe }}
+                        </div>
                     {% endif %}
 
-                    <!-- Next Steps -->
-                    {% if article.next_steps %}
-                    <div class="next-steps">
-                        <h3 class="h4 mb-3">Next Steps</h3>
-                        <ul class="list-unstyled">
-                            {% for step in article.next_steps %}
-                                <li class="mb-3 d-flex align-items-start">
-                                    <span class="step-bullet me-3">•</span>
-                                    <span>{{ step }}</span>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
-                    <div class="alert alert-info">
-                        <h5 class="alert-heading">Content Update in Progress</h5>
-                        <p class="mb-0">
-                            We're currently gathering and processing the latest Ethereum development updates. 
-                            Please check back in a few minutes to see the complete information.
-                        </p>
-                        <hr>
-                        <p class="mb-0">
-                            <small class="text-muted">
-                                Last attempt: {{ format_date(article.publication_date) }}
-                            </small>
-                        </p>
-                    </div>
+                    {% if not article.repository_updates and not article.technical_highlights %}
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Content Update in Progress</h5>
+                            <p class="mb-0">
+                                We're currently gathering and processing the latest Ethereum development updates.
+                                Please check back in a few minutes.
+                            </p>
+                        </div>
                     {% endif %}
                 </div>
             </section>
@@ -185,51 +108,20 @@
             <!-- Source Section -->
             <section class="source-section">
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
-                    <h2 class="h3 mb-4">Source</h2>
+                    <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
-                        {% set repo_sources = {} %}
-                        {% for source in article.sources %}
-                            {% if repo_sources.get(source.repository) %}
-                                {% set _ = repo_sources[source.repository].append(source) %}
-                            {% else %}
-                                {% set _ = repo_sources.update({source.repository: [source]}) %}
-                            {% endif %}
-                        {% endfor %}
-
-                        <div class="accordion" id="repositoryAccordion">
-                            {% for repo, sources in repo_sources.items() %}
-                                <div class="accordion-item bg-dark border-light border-opacity-10 mb-3">
-                                    <h3 class="accordion-header">
-                                        <button class="accordion-button bg-dark text-light collapsed" type="button"
-                                                data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}"
-                                                aria-expanded="false" aria-controls="collapse{{ loop.index }}">
-                                            <span class="h5 repository-name mb-0">{{ repo }}</span>
-                                            <span class="badge bg-info rounded-pill ms-2">{{ sources|length }} updates</span>
-                                        </button>
-                                    </h3>
-                                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
-                                         data-bs-parent="#repositoryAccordion">
-                                        <div class="accordion-body">
-                                            <ul class="list-unstyled mb-0">
-                                                {% for source in sources %}
-                                                    <li class="mb-3">
-                                                        <div class="d-flex justify-content-between align-items-start">
-                                                            <a href="{{ source.url }}" target="_blank"
-                                                               class="text-info text-decoration-none source-link">
-                                                                {{ source.title or 'Untitled' }}
-                                                            </a>
-                                                            <span class="badge bg-secondary ms-2">{{ source.type }}</span>
-                                                        </div>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    </div>
+                        <div class="source-list">
+                            {% for source in article.sources %}
+                                <div class="source-item mb-3">
+                                    <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
+                                        {{ source.title }}
+                                        <small class="text-muted">({{ source.type }})</small>
+                                    </a>
                                 </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">No repository updates available for this article.</p>
+                        <p class="text-muted">No sources available for this article.</p>
                     {% endif %}
                 </div>
             </section>
@@ -238,7 +130,7 @@
 </article>
 
 <style>
-/* General section styling */
+/* Keeping the existing styles */
 .ethereum-article {
     max-width: 900px;
     margin: 0 auto;
@@ -258,12 +150,10 @@
     transform: translateY(-2px);
 }
 
-/* Typography */
 .overview-content,
 .forum-content,
 .repository-updates,
-.technical-highlights,
-.next-steps {
+.technical-highlights {
     color: var(--bs-light);
 }
 
@@ -273,113 +163,14 @@ h2.h3 {
     letter-spacing: -0.02em;
 }
 
-/* Content sections */
-.overview-content p,
-.forum-content p,
-.repository-updates p,
-.technical-highlights p {
-    margin-bottom: 1.5rem;
+.source-item {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
 }
 
-.forum-content ul,
-.next-steps ul {
-    margin-bottom: 1.5rem;
-}
-
-.forum-content li,
-.next-steps li {
-    margin-bottom: 0.75rem;
-}
-
-/* Step bullet styling */
-.step-bullet {
-    color: var(--bs-info);
-    font-size: 1.5em;
-    line-height: 1;
-}
-
-/* Source section styling */
-.repository-name {
-    color: var(--bs-info);
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.source-link {
-    font-size: 1rem;
-    line-height: 1.5;
-    transition: all 0.2s ease;
-}
-
-.source-link:hover {
-    color: var(--bs-info-text) !important;
-    transform: translateX(4px);
-}
-
-/* Accordion styling */
-.accordion-item {
-    background: transparent !important;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.accordion-button {
-    padding: 1rem;
-    border-radius: 0.5rem !important;
-    transition: all 0.3s ease;
-}
-
-.accordion-button:not(.collapsed) {
-    color: var(--bs-light);
-    background: rgba(var(--bs-info-rgb), 0.1);
-    box-shadow: none;
-}
-
-.accordion-button::after {
-    filter: brightness(0) invert(1);
-}
-
-.accordion-body {
-    padding: 1.25rem;
-    background: rgba(0, 0, 0, 0.2);
-}
-
-/* Alert styling */
-.alert-info {
-    background-color: rgba(var(--bs-info-rgb), 0.1);
-    border-color: rgba(var(--bs-info-rgb), 0.2);
-}
-
-/* Card styling */
-.card {
-    border-radius: 1rem;
-    backdrop-filter: blur(10px);
-}
-
-.card-body {
-    padding: 2rem;
-}
-
-/* Utility classes */
-.gap-2 {
-    gap: 0.5rem !important;
-}
-
-/* Link styling */
-a.text-info {
-    transition: all 0.2s ease;
-}
-
-a.text-info:hover {
-    color: var(--bs-info-text) !important;
-    text-decoration: none;
-}
-
-/* Badge styling */
-.badge {
-    font-weight: 500;
-    padding: 0.5em 0.8em;
+.source-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 </style>
 {% endblock %}
