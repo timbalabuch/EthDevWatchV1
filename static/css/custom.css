@@ -5,18 +5,6 @@
     --gradient-end: #34d399;
 }
 
-[data-bs-theme="light"] {
-    --card-bg: rgba(255, 255, 255, 0.9);
-    --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-    --text-color: #1e293b;
-    --text-muted: #64748b;
-    --link-color: #18f491;
-    --btn-color: #1e293b;
-    --btn-hover-color: #fff;
-    --search-bg: rgba(255, 255, 255, 0.9);
-    --search-border: rgba(30, 41, 59, 0.2);
-}
-
 [data-bs-theme="dark"] {
     --text-color: #e2e8f0;
     --text-muted: #94a3b8;
