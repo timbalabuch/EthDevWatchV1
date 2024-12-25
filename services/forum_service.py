@@ -219,6 +219,7 @@ class ForumService:
         try:
             start_date, end_date = self._get_week_boundaries(week_date)
             logger.info(f"Starting forum discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            self._wait_for_rate_limit()  # Ensure we respect rate limits
             fetch_start_time = time.time()
 
             # Use the JSON API endpoint with retries

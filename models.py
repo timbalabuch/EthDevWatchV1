@@ -87,25 +87,32 @@ class Article(db.Model):
     def magicians_discussions(self):
         """Extract Ethereum Magicians discussions."""
         if not self.forum_summary:
-            logger.debug("No forum summary available for magicians discussions")
-            return None
+            error_msg = "Content is still being fetched from ethereum-magicians.org. Please check back later."
+            logger.info(error_msg)
+            return f'<div class="alert alert-info"><i class="fas fa-sync-alt"></i> {error_msg}</div>'
         try:
             logger.info("Processing magicians discussions from forum summary")
-            # Remove markdown code blocks
-            clean_summary = re.sub(r'```[^`]*```', '', self.forum_summary)
-            soup = BeautifulSoup(clean_summary, 'lxml')
+            soup = BeautifulSoup(self.forum_summary, 'lxml')
             
-            # Extract only the content div
+            # Look specifically for ethereum-magicians content
+            discussions = []
             content_div = soup.find('div', class_='forum-discussion-summary')
-            if not content_div:
-                return None
-                
-            content = str(content_div)
-            if 'ethereum-magicians.org' in content:
-                return content
-                
-            logger.debug("No magicians discussions found in forum summary")
-            return None
+            if content_div:
+                for disc in content_div.find_all('div', class_='forum-discussion-item'):
+                    if 'ethereum-magicians.org' in str(disc):
+                        discussions.append(disc)
+            
+            if discussions:
+                return ''.join(str(disc) for disc in discussions)
+            
+            error_msg = "No discussions found on ethereum-magicians.org for this time period"
+            logger.warning(error_msg)
+            return f'<div class="alert alert-info"><i class="fas fa-info-circle"></i> {error_msg}</div>'
+            
+        except Exception as e:
+            error_msg = f"Error retrieving ethereum-magicians.org discussions: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return f'<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {error_msg}</div>'
         except Exception as e:
             logger.error(f"Error extracting magicians discussions: {e}", exc_info=True)
             return None
