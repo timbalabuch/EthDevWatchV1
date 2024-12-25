@@ -118,32 +118,17 @@ class Article(db.Model):
             return None
         try:
             logger.info("Processing research discussions from forum summary")
-            
-            # First check if ethresear.ch is mentioned at all
-            if 'ethresear.ch' not in self.forum_summary:
-                logger.debug("No ethresear.ch mentions found in forum summary")
-                return None
-                
-            # Parse the forum summary
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             
-            # Find the content within forum-discussion-summary div
-            summary_div = soup.find('div', class_='forum-discussion-summary')
-            if not summary_div:
-                logger.debug("No forum-discussion-summary div found")
-                return None
-                
-            # Get all text blocks that mention ethresear.ch
-            research_content = []
-            for element in summary_div.find_all(['p', 'div', 'li']):
-                if 'ethresear.ch' in element.text:
-                    # Get the parent paragraph or list item containing the link
-                    research_content.append(str(element))
+            # Look for forum-discussion-item divs
+            discussions = soup.find_all('div', class_='forum-discussion-item')
+            if discussions:
+                return ''.join(str(disc) for disc in discussions)
             
-            if research_content:
-                return '<div class="forum-discussion-summary">' + ''.join(research_content) + '</div>'
-            
-            logger.debug("No research discussions found in parsed content")
+            logger.debug("No research discussions found in forum summary")
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting research discussions: {e}", exc_info=True)
             return None
         except Exception as e:
             logger.error(f"Error extracting research discussions: {e}", exc_info=True)

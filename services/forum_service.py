@@ -109,24 +109,20 @@ class ForumService:
                             logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
 
                             if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
-                    first_post = topic_data['post_stream']['posts'][0]
-                    content = first_post.get('cooked', '')
-
-                    # Preserve HTML structure but clean it
-                    content_soup = BeautifulSoup(content, 'lxml')
-                    
-                    # Remove unwanted elements
-                    for element in content_soup.find_all(['script', 'style']):
-                        element.decompose()
-                    
-                    # Format the content with proper HTML structure
-                    clean_content = f'<div class="forum-content">{str(content_soup)}</div>'
-                    
-                    if len(clean_content) > 8000:
-                        # Truncate while preserving HTML structure
-                        truncated_soup = BeautifulSoup(clean_content[:8000], 'lxml')
-                        clean_content = str(truncated_soup) + "..."
-
+                                first_post = topic_data['post_stream']['posts'][0]
+                                content = first_post.get('cooked', '')
+                                
+                                # Create proper forum discussion format
+                                formatted_content = f"""
+                                <div class="forum-discussion-item">
+                                    <h4>{topic.get('title', '')}</h4>
+                                    <div class="forum-content">{content}</div>
+                                    <a href="https://ethresear.ch/t/{topic.get('slug')}/{topic.get('id')}" target="_blank" class="forum-link">
+                                        Read more on ethresear.ch →
+                                    </a>
+                                </div>
+                                """
+                                
                                 discussions.append({
                                     'title': topic.get('title', ''),
                                     'content': clean_content,
