@@ -2,7 +2,6 @@
 import logging
 from app import app
 
-# Setup logging with more detailed format
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
