@@ -1,25 +1,34 @@
-
 :root {
-    --card-bg: rgba(17, 25, 40, 0.75);
-    --text-color: #ffffff;
-    --text-muted: #9ca3af;
-    --link-color: #34d399;
-    --btn-color: #ffffff;
-    --btn-hover-color: #ffffff;
-    --search-bg: rgba(17, 25, 40, 0.75);
-    --search-border: rgba(255, 255, 255, 0.1);
-    --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-    --gradient-start: #3b82f6;
-    --gradient-end: #34d399;
-    --title-color: var(--text-color);
+    --bg-primary: #111928;
+    --bg-secondary: rgba(17, 25, 40, 0.75);
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --accent-primary: #34d399;
+    --accent-secondary: #3b82f6;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(59, 130, 246, 0.1);
+    --alert-info-bg: rgba(59, 130, 246, 0.1);
+    --alert-info-text: #3b82f6;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Titillium Web', sans-serif;
 }
 
 .text-muted {
-    color: var(--text-muted) !important;
+    color: var(--text-secondary) !important;
+}
+
+.text-info {
+    color: var(--accent-primary) !important;
 }
 
 .ethereum-article, .article-content {
-    color: var(--text-color);
+    color: var(--text-primary);
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .progress-bar {
@@ -31,7 +40,7 @@
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    background: linear-gradient(to right, var(--accent-secondary), var(--accent-primary));
     border-radius: 2px;
     animation: gradientShift 3s ease infinite;
     background-size: 200% 100%;
@@ -44,30 +53,16 @@
 }
 
 .navbar {
-    background: var(--card-bg);
+    background: var(--bg-secondary);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 0;
 }
 
 .navbar-brand {
     font-family: 'Titillium Web', sans-serif;
     font-weight: 600;
-    color: var(--text-color) !important;
-}
-
-@media (max-width: 768px) {
-    .navbar .container {
-        justify-content: center !important;
-    }
-    
-    #searchForm {
-        display: none !important;
-    }
-    
-    .navbar-brand {
-        margin: 0;
-    }
+    color: var(--text-primary) !important;
 }
 
 .eth-logo {
@@ -82,7 +77,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(17, 25, 40, 0.9);
+    background: var(--bg-secondary);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -102,51 +97,42 @@
 
 .footer {
     margin-top: auto;
-    background: var(--card-bg);
+    background: var(--bg-secondary);
     backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
 }
 
 .footer a {
-    color: var(--link-color);
+    color: var(--accent-primary);
     transition: color 0.3s ease;
 }
 
 .footer a:hover {
-    color: var(--gradient-end);
+    color: var(--accent-secondary);
 }
 
 .form-control {
-    background: var(--search-bg);
-    border: 1px solid var(--search-border);
-    color: var(--text-color);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 .form-control:focus {
-    background: var(--search-bg);
-    border-color: var(--link-color);
-    color: var(--text-color);
-    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.25rem var(--shadow-color);
 }
 
-.btn {
-    --bs-btn-color: var(--btn-color);
-    --bs-btn-border-color: var(--btn-color);
-    --bs-btn-hover-color: var(--btn-hover-color);
-    --bs-btn-hover-bg: linear-gradient(90deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-    --bs-btn-hover-border-color: transparent;
-    --bs-btn-active-color: var(--btn-hover-color);
-    --bs-btn-active-bg: linear-gradient(90deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-    --bs-btn-active-border-color: transparent;
+.btn-outline-light {
+    color: var(--text-primary);
+    border-color: var(--border-color);
 }
 
-.btn:hover {
-    background: var(--bs-btn-hover-bg);
+.btn-outline-light:hover {
+    background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
     border-color: transparent;
-}
-
-.gap-2 {
-    gap: 0.5rem !important;
+    color: var(--text-primary);
 }
 
 .pagination {
@@ -154,22 +140,22 @@
 }
 
 .page-link {
-    background: var(--card-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-color);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
 .page-link:hover {
-    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    background: linear-gradient(to right, var(--accent-secondary), var(--accent-primary));
     border-color: transparent;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .hero-section h1 {
     font-size: 4rem;
     font-weight: 700;
-    background: linear-gradient(to right, var(--text-color), var(--text-muted));
+    background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
@@ -178,176 +164,56 @@
 
 .hero-section .subtitle {
     font-size: 1.5rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     max-width: 800px;
     margin: 0 auto;
     font-weight: 300;
 }
 
 .card {
-    background: var(--card-bg);
+    background: var(--bg-secondary);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--glow-shadow);
+    box-shadow: var(--shadow-color);
 }
 
 .card-title {
-    color: #ffffff;
+    color: var(--text-primary);
     font-family: 'Titillium Web', sans-serif;
     font-weight: 600;
 }
 
 .card-title a {
-    color: var(--title-color);
+    color: var(--text-primary);
     text-decoration: none;
     transition: color 0.3s ease;
+}
+
+.card-title a:hover {
+    color: var(--accent-primary);
 }
 
 .ethresearch-item {
     background: rgba(0, 0, 0, 0.2);
     padding: 1.5rem;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
 }
 
 .ethresearch-item .discussion-title {
-    color: var(--text-color);
+    color: var(--text-primary);
     font-size: 1.2rem;
 }
 
 .ethresearch-item .forum-content {
-    color: var(--text-color);
+    color: var(--text-primary);
     opacity: 0.9;
     line-height: 1.6;
-}
-
-.card-title a:hover {
-    color: var(--link-color);
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .hero-section h1 {
-        font-size: 2.2rem;
-    }
-    
-    .hero-section .subtitle {
-        font-size: 1.1rem;
-        padding: 0 1rem;
-    }
-    
-    .card {
-        margin: 0.5rem;
-    }
-    
-    .weekly-metrics {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .btn-group {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .btn-group .btn {
-        width: 100%;
-        margin: 0.25rem 0;
-    }
-    
-    .navbar-brand {
-        font-size: 1.1rem;
-    }
-    
-    .form-control {
-        max-width: 200px;
-    }
-    
-    .forum-discussion-item h4 {
-        font-size: 1.2rem;
-    }
-    
-    .forum-content {
-        font-size: 0.95rem;
-        padding: 0.75rem;
-        line-height: 1.6;
-    }
-}
-
-@media (max-width: 576px) {
-    .hero-section h1 {
-        font-size: 1.8rem;
-    }
-    
-    .container {
-        padding: 0.75rem;
-    }
-    
-    .article-summary {
-        font-size: 0.85rem;
-        line-height: 1.5;
-    }
-    
-    .card-title {
-        font-size: 1.1rem;
-    }
-    
-    .metric-value {
-        font-size: 1.6rem;
-    }
-    
-    .metric-label {
-        font-size: 0.8rem;
-    }
-    
-    .meta-info {
-        font-size: 0.8rem;
-    }
-}
-
-.hero-section {
-    padding: 4rem 0;
-    text-align: center;
-}
-
-.article-list {
-    margin-top: 2rem;
-}
-
-.featured-article {
-    margin-bottom: 3rem;
-}
-
-.article-summary {
-    color: var(--text-muted);
-    line-height: 1.6;
-}
-
-.areas {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.badge {
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-}
-
-.source-link {
-    color: var(--link-color);
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.source-link:hover {
-    color: var(--gradient-end);
 }
 
 .forum-discussion-item {
@@ -355,7 +221,7 @@
     padding: 2rem;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     transition: all 0.3s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -366,32 +232,8 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.forum-discussion-item h4 {
-    color: var(--text-color);
-    margin-bottom: 1rem;
-    font-size: 1.4rem;
-    font-weight: 600;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 0.75rem;
-}
-
-.meta-info {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.meta-info span {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
 .forum-content {
-    color: var(--text-muted);
-    margin: 1rem 0;
+    color: var(--text-secondary);
     line-height: 1.8;
     font-size: 1.05rem;
     padding: 1rem;
@@ -399,21 +241,50 @@
     border-radius: 0.5rem;
 }
 
-.forum-link {
-    color: var(--link-color);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
+.alert-info {
+    background: var(--alert-info-bg);
+    border-color: var(--accent-secondary);
+    color: var(--alert-info-text);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+}
+
+.bg-dark {
+    background-color: var(--bg-primary) !important;
+}
+
+.bg-secondary {
+    background-color: var(--bg-secondary) !important;
+}
+
+.article-summary {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.areas {
+    display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.source-link {
+    color: var(--accent-primary);
+    text-decoration: none;
     transition: color 0.3s ease;
 }
 
-.forum-link:hover {
-    color: var(--gradient-end);
+.source-link:hover {
+    color: var(--accent-secondary);
 }
 
+
 .section-title {
-    color: var(--text-color);
+    color: var(--text-primary);
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
     font-family: 'Titillium Web', sans-serif;
@@ -440,11 +311,123 @@
 .metric-value {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-color);
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .metric-label {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero-section .subtitle {
+        font-size: 1.1rem;
+        padding: 0 1rem;
+    }
+    .card {
+        margin: 0.5rem;
+    }
+    .weekly-metrics {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    .btn-group .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    .form-control {
+        max-width: 200px;
+    }
+
+}
+
+@media (max-width: 576px) {
+    .hero-section h1 {
+        font-size: 1.8rem;
+    }
+
+    .container {
+        padding: 0.75rem;
+    }
+
+    .article-summary {
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+    }
+
+    .metric-value {
+        font-size: 1.6rem;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+    }
+
+    .meta-info {
+        font-size: 0.8rem;
+    }
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+.forum-discussion-item h4 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.meta-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.meta-info span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.forum-link {
+    color: var(--accent-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.forum-link:hover {
+    color: var(--accent-secondary);
+}
+
+.article-list {
+    margin-top: 2rem;
+}
+
+.featured-article {
+    margin-bottom: 3rem;
 }
