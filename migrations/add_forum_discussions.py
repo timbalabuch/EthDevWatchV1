@@ -1,55 +1,17 @@
-import logging
-from flask_migrate import Migrate
-from app import app, db
+"""Add forum discussions columns
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+Revision ID: add_forum_discussions
+Create Date: 2024-12-25
+"""
+from alembic import op
+import sqlalchemy as sa
 
 def upgrade():
-    """Add forum discussions columns to article table."""
-    try:
-        with app.app_context():
-            # Add columns if they don't exist
-            db.session.execute("""
-                DO $$ 
-                BEGIN 
-                    BEGIN
-                        ALTER TABLE article ADD COLUMN magicians_discussions TEXT;
-                    EXCEPTION
-                        WHEN duplicate_column THEN 
-                        RAISE NOTICE 'magicians_discussions column already exists';
-                    END;
-                    
-                    BEGIN
-                        ALTER TABLE article ADD COLUMN ethresearch_discussions TEXT;
-                    EXCEPTION
-                        WHEN duplicate_column THEN 
-                        RAISE NOTICE 'ethresearch_discussions column already exists';
-                    END;
-                END $$;
-            """)
-            db.session.commit()
-            logger.info("Successfully added forum discussions columns")
-    except Exception as e:
-        logger.error(f"Error adding forum discussions columns: {str(e)}")
-        raise
+    # Add magicians_discussions and ethresearch_discussions columns
+    op.add_column('article', sa.Column('magicians_discussions', sa.Text(), nullable=True))
+    op.add_column('article', sa.Column('ethresearch_discussions', sa.Text(), nullable=True))
 
 def downgrade():
-    """Remove forum discussions columns from article table."""
-    try:
-        with app.app_context():
-            db.session.execute("""
-                ALTER TABLE article 
-                DROP COLUMN IF EXISTS magicians_discussions,
-                DROP COLUMN IF EXISTS ethresearch_discussions;
-            """)
-            db.session.commit()
-            logger.info("Successfully removed forum discussions columns")
-    except Exception as e:
-        logger.error(f"Error removing forum discussions columns: {str(e)}")
-        raise
-
-if __name__ == '__main__':
-    logger.info("Running forum discussions migration")
-    upgrade()
+    # Remove the columns
+    op.drop_column('article', 'magicians_discussions')
+    op.drop_column('article', 'ethresearch_discussions')
