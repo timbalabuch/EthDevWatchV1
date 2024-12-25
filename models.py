@@ -114,9 +114,9 @@ class Article(db.Model):
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
         if not self.forum_summary:
-            error_msg = "Forum content is still being fetched"
+            error_msg = "Content is still being fetched from ethresear.ch. Please check back later."
             logger.info(error_msg)
-            return None
+            return f'<div class="alert alert-info"><i class="fas fa-sync-alt"></i> {error_msg}</div>'
         try:
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
@@ -130,15 +130,14 @@ class Article(db.Model):
             if discussions:
                 return ''.join(str(disc) for disc in discussions)
             
-            error_msg = "No ethresear.ch discussions found for this period"
+            error_msg = "No discussions found on ethresear.ch for this time period"
             logger.warning(error_msg)
-            return f'<div class="alert alert-info">{error_msg}</div>'
+            return f'<div class="alert alert-info"><i class="fas fa-info-circle"></i> {error_msg}</div>'
             
         except Exception as e:
-            error_msg = f"Error processing ethresear.ch discussions: {str(e)}"
+            error_msg = f"Error retrieving ethresear.ch discussions: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            return f'<div class="alert alert-danger">{error_msg}</div>'
-            return None
+            return f'<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {error_msg}</div>'
 
     @property
     def repository_updates(self):
