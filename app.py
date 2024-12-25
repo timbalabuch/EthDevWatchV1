@@ -1,4 +1,36 @@
-import os
+def fetch_ethresear_discussions(self, week_date: datetime) -> List[Dict]:
+    """Fetch forum discussions from ethresear.ch for a specific week."""
+    try:
+        start_date, end_date = self._get_week_boundaries(week_date)
+        logger.info(f"Starting ethresear.ch discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+        fetch_start_time = time.time()
+
+        try:
+            response = self._retry_with_backoff(
+                self.session.get,
+                self.ethresear_base_url,
+                timeout=60  # Increased timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            logger.debug("Response data from ethresear.ch: %s", data)  # Added logging
+
+            if not data or 'topic_list' not in data:
+                logger.error("Invalid response format from ethresear.ch")
+                logger.debug(f"Response content: {str(data)[:1000]}")
+                return []
+
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch ethresear.ch data: {str(e)}")
+            if hasattr(e, 'response'):
+                logger.error(f"Status code: {e.response.status_code}")
+                logger.error(f"Response text: {e.response.text[:1000]}")
+            return []
+        except ValueError as e:
+            logger.error(f"Invalid JSON from ethresear.ch: {str(e)}")
+            return []
+        
+        # Continue with data processing...import os
 import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
