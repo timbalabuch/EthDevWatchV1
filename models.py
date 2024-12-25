@@ -86,33 +86,27 @@ class Article(db.Model):
     @property
     def magicians_discussions(self):
         """Extract Ethereum Magicians discussions."""
-        if not self.forum_summary:
-            error_msg = "Content is still being fetched from ethereum-magicians.org. Please check back later."
-            logger.info(error_msg)
-            return f'<div class="alert alert-info"><i class="fas fa-sync-alt"></i> {error_msg}</div>'
         try:
-            logger.info("Processing magicians discussions from forum summary")
+            if not self.forum_summary:
+                logger.info("No forum summary available")
+                return '<div class="alert alert-info">No forum discussions available for this period.</div>'
+
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            
-            # Look specifically for ethereum-magicians content
             discussions = []
-            content_div = soup.find('div', class_='forum-discussion-summary')
-            if content_div:
-                for disc in content_div.find_all('div', class_='forum-discussion-item'):
-                    if 'ethereum-magicians.org' in str(disc):
-                        discussions.append(disc)
+            
+            # Look for discussions in both formats (raw and summarized)
+            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section']):
+                if 'ethereum-magicians.org' in str(item):
+                    discussions.append(str(item))
             
             if discussions:
-                return ''.join(str(disc) for disc in discussions)
+                return ''.join(discussions)
             
-            error_msg = "No discussions found on ethereum-magicians.org for this time period"
-            logger.warning(error_msg)
-            return f'<div class="alert alert-info"><i class="fas fa-info-circle"></i> {error_msg}</div>'
+            return '<div class="alert alert-info">No discussions found on ethereum-magicians.org for this period.</div>'
             
         except Exception as e:
-            error_msg = f"Error retrieving ethereum-magicians.org discussions: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return f'<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {error_msg}</div>'
+            logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
+            return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
         except Exception as e:
             logger.error(f"Error extracting magicians discussions: {e}", exc_info=True)
             return None
@@ -120,33 +114,27 @@ class Article(db.Model):
     @property
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
-        if not self.forum_summary:
-            error_msg = "Content is still being fetched from ethresear.ch. Please check back later."
-            logger.info(error_msg)
-            return f'<div class="alert alert-info"><i class="fas fa-sync-alt"></i> {error_msg}</div>'
         try:
-            logger.info("Processing research discussions from forum summary")
+            if not self.forum_summary:
+                logger.info("No forum summary available")
+                return '<div class="alert alert-info">No research discussions available for this period.</div>'
+
             soup = BeautifulSoup(self.forum_summary, 'lxml')
-            
-            # Look specifically for ethresear.ch content
             discussions = []
-            content_div = soup.find('div', class_='forum-discussion-summary')
-            if content_div:
-                for disc in content_div.find_all('div', class_='forum-discussion-item'):
-                    if 'ethresear.ch' in str(disc):
-                        discussions.append(disc)
+            
+            # Look for discussions in both formats (raw and summarized)
+            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section']):
+                if 'ethresear.ch' in str(item):
+                    discussions.append(str(item))
             
             if discussions:
-                return ''.join(str(disc) for disc in discussions)
+                return ''.join(discussions)
             
-            error_msg = "No discussions found on ethresear.ch for this time period"
-            logger.warning(error_msg)
-            return f'<div class="alert alert-info"><i class="fas fa-info-circle"></i> {error_msg}</div>'
+            return '<div class="alert alert-info">No discussions found on ethresear.ch for this period.</div>'
             
         except Exception as e:
-            error_msg = f"Error retrieving ethresear.ch discussions: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return f'<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {error_msg}</div>'
+            logger.error(f"Error processing research discussions: {str(e)}", exc_info=True)
+            return '<div class="alert alert-warning">Unable to load research discussions at this time.</div>'
 
     @property
     def repository_updates(self):
