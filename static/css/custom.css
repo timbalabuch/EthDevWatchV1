@@ -371,6 +371,7 @@ a:hover {
     background: transparent;
     color: var(--text-primary);
     border: none;
+    padding: 0.75rem 1rem;
 }
 
 .accordion-button:not(.collapsed) {
@@ -379,7 +380,16 @@ a:hover {
 }
 
 .accordion-button::after {
-    filter: invert(1);
+    filter: brightness(0) saturate(100%) invert(83%) sepia(31%) saturate(464%) hue-rotate(95deg) brightness(95%) contrast(88%);
+}
+
+.accordion-body {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.source-item:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .section-title {
