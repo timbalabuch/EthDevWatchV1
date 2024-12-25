@@ -310,15 +310,15 @@ a:hover {
 }
 
 .overview-section {
-    background: linear-gradient(145deg, rgba(52, 211, 153, 0.1), rgba(59, 130, 246, 0.1));
+    background: var(--bg-secondary);
 }
 
 .community-section {
-    background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(52, 211, 153, 0.1));
+    background: var(--bg-secondary);
 }
 
 .repo-updates-section {
-    background: linear-gradient(145deg, rgba(52, 211, 153, 0.1), rgba(59, 130, 246, 0.1));
+    background: var(--bg-secondary);
 }
 
 .alert-info {
