@@ -19,12 +19,16 @@ class ForumService:
         try:
             self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
             self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
+            self.model = "gpt-4"
+            
+            # Initialize OpenAI client if API key is available
             api_key = os.environ.get('OPENAI_API_KEY')
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY environment variable is not set")
-
-            self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4"  # Using a more powerful model for better summaries
+            if api_key:
+                self.openai = OpenAI(api_key=api_key)
+                logger.info("OpenAI client initialized successfully")
+            else:
+                self.openai = None
+                logger.warning("OPENAI_API_KEY not set - summarization features will be disabled")
             self.max_retries = 5
             self.base_delay = 5  # Increased initial delay to 5 seconds
             self.session = requests.Session()
@@ -75,19 +79,31 @@ class ForumService:
                         process_start_time = time.time()
                         logger.info(f"Processing ethresear.ch topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
 
-                        created_at = topic.get('created_at')
-                        if not created_at:
-                            logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
+                        # Validate required topic fields
+                        required_fields = ['created_at', 'id', 'title']
+                        missing_fields = [field for field in required_fields if not topic.get(field)]
+                        
+                        if missing_fields:
+                            logger.warning(f"Skipping topic due to missing fields: {', '.join(missing_fields)}")
                             continue
-
+                            
+                        created_at = topic['created_at']
+                        
                         try:
-                            post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
-                        except ValueError:
-                            try:
-                                post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
-                            except ValueError as e:
-                                logger.error(f"Error parsing date {created_at}: {str(e)}")
+                            # Try different date formats
+                            for date_format in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ']:
+                                try:
+                                    post_date = datetime.strptime(created_at, date_format).replace(tzinfo=pytz.UTC)
+                                    break
+                                except ValueError:
+                                    continue
+                            else:
+                                logger.error(f"Could not parse date {created_at} in any known format")
                                 continue
+                                
+                        except Exception as e:
+                            logger.error(f"Unexpected error parsing date {created_at}: {str(e)}")
+                            continue
 
                         if start_date <= post_date <= end_date:
                             topic_id = topic.get('id')
@@ -182,19 +198,31 @@ class ForumService:
                         process_start_time = time.time()
                         logger.info(f"Processing topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
 
-                        created_at = topic.get('created_at')
-                        if not created_at:
-                            logger.debug(f"No created_at field for topic: {topic.get('title', 'Unknown')}")
+                        # Validate required topic fields
+                        required_fields = ['created_at', 'id', 'title']
+                        missing_fields = [field for field in required_fields if not topic.get(field)]
+                        
+                        if missing_fields:
+                            logger.warning(f"Skipping topic due to missing fields: {', '.join(missing_fields)}")
                             continue
-
+                            
+                        created_at = topic['created_at']
+                        
                         try:
-                            post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
-                        except ValueError:
-                            try:
-                                post_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
-                            except ValueError as e:
-                                logger.error(f"Error parsing date {created_at}: {str(e)}")
+                            # Try different date formats
+                            for date_format in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ']:
+                                try:
+                                    post_date = datetime.strptime(created_at, date_format).replace(tzinfo=pytz.UTC)
+                                    break
+                                except ValueError:
+                                    continue
+                            else:
+                                logger.error(f"Could not parse date {created_at} in any known format")
                                 continue
+                                
+                        except Exception as e:
+                            logger.error(f"Unexpected error parsing date {created_at}: {str(e)}")
+                            continue
 
                         if start_date <= post_date <= end_date:
                             topic_id = topic.get('id')
@@ -292,6 +320,10 @@ class ForumService:
         if not discussions:
             logger.warning("No discussions provided for summarization")
             return None
+            
+        if not self.openai:
+            logger.warning("OpenAI client not initialized - returning raw discussion content")
+            return self._format_raw_discussions(discussions)
 
         try:
             logger.info("Starting forum discussions summarization")
@@ -386,3 +418,20 @@ class ForumService:
         except Exception as e:
             logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
             return None
+    def _format_raw_discussions(self, discussions: List[Dict]) -> str:
+        """Format discussions without OpenAI summarization."""
+        formatted_content = []
+        for disc in discussions:
+            formatted_content.append(f"""
+                <div class="forum-discussion-item">
+                    <h4>{disc['title']}</h4>
+                    <p>Source: {disc['source']}</p>
+                    <p>Date: {disc['date'].strftime('%Y-%m-%d')}</p>
+                    <div class="forum-content">{disc['content'][:500]}...</div>
+                    <a href="{disc['url']}" target="_blank" class="forum-link">
+                        Read more →
+                    </a>
+                </div>
+            """)
+        
+        return '<div class="forum-discussion-summary">' + ''.join(formatted_content) + '</div>'
