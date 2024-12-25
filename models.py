@@ -123,9 +123,11 @@ class Article(db.Model):
             
             # Look specifically for ethresear.ch content
             discussions = []
-            for disc in soup.find_all('div', class_='forum-discussion-item'):
-                if 'ethresear.ch' in str(disc):
-                    discussions.append(disc)
+            content_div = soup.find('div', class_='forum-discussion-summary')
+            if content_div:
+                for disc in content_div.find_all('div', class_='forum-discussion-item'):
+                    if 'ethresear.ch' in str(disc):
+                        discussions.append(disc)
             
             if discussions:
                 return ''.join(str(disc) for disc in discussions)
