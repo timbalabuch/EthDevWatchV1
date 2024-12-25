@@ -8,19 +8,20 @@
 {% endfor %}
 
 {% for repository, repo_sources in repositories.items() %}
-<div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+<div class="accordion-item bg-transparent border border-opacity-10 mb-1">
     <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#{{ repository | replace('/', '_') }}Collapse">
-            {{ repository }} ({{ repo_sources|length }})
+        <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#{{ repository | replace('/', '_') }}Collapse">
+            <span class="text-accent-primary">{{ repository }}</span>
+            <span class="ms-2 badge bg-secondary">{{ repo_sources|length }}</span>
         </button>
     </h2>
     <div id="{{ repository | replace('/', '_') }}Collapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
-        <div class="accordion-body">
+        <div class="accordion-body py-2 px-3">
             {% for source in repo_sources %}
-                <div class="source-item mb-2">
-                    <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
-                        <span>{{ source.title }}</span>
-                        <span class="ms-2 badge bg-secondary">{{ source.type }}</span>
+                <div class="source-item py-1">
+                    <a href="{{ source.url }}" target="_blank" class="source-link d-flex align-items-center gap-2">
+                        <span class="text-light">{{ source.title }}</span>
+                        <span class="badge bg-dark text-secondary small">{{ source.type }}</span>
                     </a>
                 </div>
             {% endfor %}

@@ -353,13 +353,33 @@ a:hover {
 }
 
 .source-link {
-    color: var(--accent-primary);
+    color: var(--text-secondary);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .source-link:hover {
-    color: var(--accent-secondary);
+    color: var(--accent-primary);
+}
+
+.source-link:hover .badge {
+    background: var(--accent-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.accordion-button {
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+}
+
+.accordion-button:not(.collapsed) {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+}
+
+.accordion-button::after {
+    filter: invert(1);
 }
 
 .section-title {
