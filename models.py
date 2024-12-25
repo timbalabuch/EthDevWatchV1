@@ -114,9 +114,9 @@ class Article(db.Model):
     def ethresearch_discussions(self):
         """Extract Ethereum Research discussions."""
         if not self.forum_summary:
-            error_msg = "No forum summary available for research discussions"
-            logger.error(error_msg)
-            return f'<div class="alert alert-warning">{error_msg}</div>'
+            error_msg = "Forum content is still being fetched"
+            logger.info(error_msg)
+            return None
         try:
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')

@@ -64,23 +64,35 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                                     </a>
                                 </h3>
-                                {% if article.ethresearch_discussions %}
-                                    {{ article.ethresearch_discussions | safe }}
+                                {% if article.forum_summary %}
+                                    {% if article.ethresearch_discussions %}
+                                        {{ article.ethresearch_discussions | safe }}
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <h5 class="alert-heading">No Active Discussions</h5>
+                                            <p class="mb-0">
+                                                There are no active discussions on ethresear.ch for this week. Research discussions 
+                                                appear here when there are new protocol research topics or technical proposals 
+                                                being discussed. Check back next week for updates!
+                                            </p>
+                                            <hr>
+                                            <p class="mb-0">
+                                                <small class="text-muted">
+                                                    Last checked: {{ format_date(article.publication_date) }}
+                                                </small>
+                                            </p>
+                                        </div>
+                                    {% endif %}
                                 {% else %}
-                                    <div class="alert alert-info">
-                                        <h5 class="alert-heading">No Active Discussions</h5>
+                                    <div class="alert alert-warning">
+                                        <h5 class="alert-heading">Content Loading</h5>
                                         <p class="mb-0">
-                                            There are no active discussions on ethresear.ch for this week. Research discussions 
-                                            appear here when there are new protocol research topics or technical proposals 
-                                            being discussed. Check back next week for updates!
-                                        </p>
-                                        <hr>
-                                        <p class="mb-0">
-                                            <small class="text-muted">
-                                                Last checked: {{ format_date(article.publication_date) }}
-                                            </small>
+                                            The forum content is currently being fetched. This may take a few moments.
+                                            If the content doesn't appear after refreshing, there may be an issue with
+                                            the ethresear.ch API.
                                         </p>
                                     </div>
+                                {% endif %}
                                     {% if config.DEBUG %}
                                     <div class="debug-info mt-3">
                                         <small class="text-muted">

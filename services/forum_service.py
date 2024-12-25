@@ -66,10 +66,24 @@ class ForumService:
                 response = self._retry_with_backoff(
                     self.session.get,
                     self.ethresear_base_url,
-                    timeout=60  # Increased timeout
+                    timeout=60
                 )
                 response.raise_for_status()
-                data = response.json()
+                
+                if response.status_code == 429:
+                    logger.warning("Rate limit hit for ethresear.ch API")
+                    return []
+                    
+                try:
+                    data = response.json()
+                except ValueError as e:
+                    logger.error(f"Failed to parse JSON response: {str(e)}")
+                    logger.debug(f"Response content: {response.text[:1000]}")
+                    return []
+                    
+                if not data:
+                    logger.error("Empty response from ethresear.ch API")
+                    return []
                 
                 if not data or 'topic_list' not in data:
                     logger.error("Invalid response format from ethresear.ch")
