@@ -77,3 +77,14 @@ with app.app_context():
     except Exception as e:
         logger.error(f"Failed to initialize application: {str(e)}")
         raise
+from flask_caching import Cache
+
+cache = Cache(config={
+    'CACHE_TYPE': 'simple',
+    'CACHE_DEFAULT_TIMEOUT': 300
+})
+
+def create_app():
+    app = Flask(__name__)
+    cache.init_app(app)
+    return app
