@@ -37,7 +37,20 @@
                         {% if article.magicians_discussions or article.ethresearch_discussions %}
                             {% if article.magicians_discussions %}
                                 <div class="ethereum-magicians mb-4">
-                                    <h3 class="h4 mb-3">Ethereum Magicians Discussions</h3>
+                                    <h3 class="h4 mb-3 d-flex align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2">
+                                            <path d="M12 3a9 9 0 1 0 9 9"></path>
+                                            <path d="M12 3v6l4-4"></path>
+                                        </svg>
+                                        <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
+                                            Ethereum Magicians
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                <polyline points="15 3 21 3 21 9"></polyline>
+                                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                                            </svg>
+                                        </a>
+                                    </h3>
                                     {{ article.magicians_discussions | safe }}
                                 </div>
                             {% endif %}
