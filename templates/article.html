@@ -131,9 +131,8 @@
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
                         <div class="accordion" id="sourcesAccordion">
-                            {% include '_source_section.html' with sources=article.sources %}
-                                    {% include '_source_section.html' %}
-                                {% endif %}
+                            {% with sources=article.sources %}
+                                {% include '_source_section.html' %}
                             {% endwith %}
 
                             {% with section_type='other' %}
