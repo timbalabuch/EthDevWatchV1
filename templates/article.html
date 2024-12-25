@@ -111,13 +111,27 @@
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
-                        <div class="source-list">
+                        <div class="accordion" id="sourceAccordion">
                             {% for source in article.sources %}
-                                <div class="source-item mb-3">
-                                    <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
-                                        {{ source.title }}
-                                        <small class="text-muted">({{ source.type }})</small>
-                                    </a>
+                                <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" data-bs-target="#source{{ loop.index }}" aria-expanded="false">
+                                            {{ source.title }}
+                                            <small class="text-muted ms-2">({{ source.type }})</small>
+                                        </button>
+                                    </h2>
+                                    <div id="source{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#sourceAccordion">
+                                        <div class="accordion-body">
+                                            <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                                                <span>View Source</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-2">
+                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             {% endfor %}
                         </div>
