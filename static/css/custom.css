@@ -208,6 +208,16 @@
         gap: 0.5rem;
     }
     
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+    
     .navbar-brand {
         font-size: 1.1rem;
     }
