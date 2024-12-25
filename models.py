@@ -120,17 +120,15 @@ class Article(db.Model):
             logger.info("Processing research discussions from forum summary")
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             
-            # Look for content containing ethresear.ch discussions
-            ethresearch_content = []
+            # Look for forum-discussion-item divs
             discussions = soup.find_all('div', class_='forum-discussion-item')
-            for disc in discussions:
-                if 'ethresear.ch' in str(disc):
-                    ethresearch_content.append(str(disc))
+            if discussions:
+                return ''.join(str(disc) for disc in discussions)
             
-            if ethresearch_content:
-                return '\n'.join(ethresearch_content)
-                
             logger.debug("No research discussions found in forum summary")
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting research discussions: {e}", exc_info=True)
             return None
         except Exception as e:
             logger.error(f"Error extracting research discussions: {e}", exc_info=True)
