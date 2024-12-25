@@ -272,19 +272,30 @@
 
 .forum-discussion-item {
     margin-bottom: 2rem;
-    padding: 1.5rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.forum-discussion-item:hover {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 0.5rem;
+    transform: translateY(-2px);
 }
 
 .forum-discussion-item h4 {
     color: var(--text-color);
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.3rem;
+    font-weight: 600;
 }
 
 .forum-content {
     color: var(--text-muted);
-    margin: 1rem 0;
+    margin: 1.25rem 0;
+    line-height: 1.7;
+    font-size: 1.05rem;
 }
 
 .forum-link {

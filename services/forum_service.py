@@ -173,12 +173,12 @@ class ForumService:
                                 # Format content with proper structure
                                 formatted_content = f"""
                                 <div class="forum-discussion-item ethresearch-item">
-                                    <h4 class="discussion-title">{topic.get('title', '')}</h4>
+                                    <h4 class="discussion-title">{topic.get('title', '').replace('html', '').replace('HTML', '')}</h4>
                                     <div class="meta-info">
                                         <span class="date">{post_date.strftime('%Y-%m-%d')}</span>
                                         <span class="source">ethresear.ch</span>
                                     </div>
-                                    <div class="forum-content">{str(content_soup)}</div>
+                                    <div class="forum-content">{str(content_soup).replace('html', '').replace('HTML', '')}</div>
                                     <a href="https://ethresear.ch/t/{topic.get('slug')}/{topic.get('id')}" 
                                        target="_blank" 
                                        class="forum-link btn btn-outline-info btn-sm mt-2">
