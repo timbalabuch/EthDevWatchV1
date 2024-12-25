@@ -65,13 +65,33 @@
                                     </a>
                                 </h3>
                                 {% if article.ethresearch_discussions %}
-                                        {{ article.ethresearch_discussions | safe }}
-                                    {% else %}
-                                        <p class="text-muted mb-0">
-                                            No active discussions found on ethresear.ch for this period. Research discussions 
-                                            are posted on ethresear.ch when there are new protocol research topics or 
-                                            technical proposals to discuss.
+                                    {{ article.ethresearch_discussions | safe }}
+                                {% else %}
+                                    <div class="alert alert-info">
+                                        <h5 class="alert-heading">No Active Discussions</h5>
+                                        <p class="mb-0">
+                                            There are no active discussions on ethresear.ch for this week. Research discussions 
+                                            appear here when there are new protocol research topics or technical proposals 
+                                            being discussed. Check back next week for updates!
                                         </p>
+                                        <hr>
+                                        <p class="mb-0">
+                                            <small class="text-muted">
+                                                Last checked: {{ format_date(article.publication_date) }}
+                                            </small>
+                                        </p>
+                                    </div>
+                                    {% if config.DEBUG %}
+                                    <div class="debug-info mt-3">
+                                        <small class="text-muted">
+                                            Debug info: Forum summary length: {{ article.forum_summary|length if article.forum_summary else 0 }} chars
+                                            {% if article.forum_summary %}
+                                            <br>Content preview: {{ article.forum_summary[:200] }}...
+                                            <br>Contains ethresear.ch: {{ 'Yes' if 'ethresear.ch' in article.forum_summary else 'No' }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
                                         {% if config.DEBUG %}
                                         <div class="debug-info mt-3">
                                             <small class="text-muted">
@@ -133,7 +153,19 @@
                     {% endif %}
 
                     {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
-                    <p class="text-muted">No repository updates available for this article.</p>
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Content Update in Progress</h5>
+                        <p class="mb-0">
+                            We're currently gathering and processing the latest Ethereum development updates. 
+                            Please check back in a few minutes to see the complete information.
+                        </p>
+                        <hr>
+                        <p class="mb-0">
+                            <small class="text-muted">
+                                Last attempt: {{ format_date(article.publication_date) }}
+                            </small>
+                        </p>
+                    </div>
                     {% endif %}
                 </div>
             </section>
