@@ -134,12 +134,6 @@
                             {% with sources=article.sources %}
                                 {% include '_source_section.html' %}
                             {% endwith %}
-
-                            {% with section_type='other' %}
-                                {% if ns.other %}
-                                    {% include '_source_section.html' %}
-                                {% endif %}
-                            {% endwith %}
                         </div>
                     {% else %}
                         <p class="text-muted">No sources available for this article.</p>
