@@ -1,9 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Hide loading screen once page is loaded
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-    }
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
     const articleList = document.querySelector('.article-list');

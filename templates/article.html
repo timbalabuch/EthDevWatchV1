@@ -5,7 +5,7 @@
     <div class="card">
         <div class="card-body">
             <header class="article-header mb-5">
-                <h1 class="card-title display-5 mb-3">{{ article.title }}</h1>
+                <h1 class="display-5 mb-3">{{ article.title }}</h1>
                 <div class="d-flex justify-content-between align-items-center">
                     <p class="text-muted mb-0 fs-5">
                         {{ format_date(article.publication_date) }}
@@ -21,8 +21,9 @@
                 </div>
             </header>
 
+            <!-- Overview Section -->
             <section class="overview-section mb-5">
-                <div class="section-container">
+                <div class="section-container p-4 rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Overview</h2>
                     <div class="overview-content">
                         {{ article.brief_summary | safe }}
@@ -30,8 +31,9 @@
                 </div>
             </section>
 
+            <!-- Community Discussions Section -->
             <section class="community-section mb-5">
-                <div class="section-container">
+                <div class="section-container p-4 rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Community Discussions</h2>
                     <div class="forum-content">
                         {% if article.magicians_discussions or article.ethresearch_discussions %}
@@ -42,7 +44,7 @@
                                             <path d="M12 3a9 9 0 1 0 9 9"></path>
                                             <path d="M12 3v6l4-4"></path>
                                         </svg>
-                                        <a href="https://ethereum-magicians.org" target="_blank" class="text-info text-decoration-none">
+                                        <a href="https://ethereum-magicians.org" target="_blank" class="text-decoration-none">
                                             Ethereum Magicians
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
                                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -57,7 +59,16 @@
 
                             {% if article.ethresearch_discussions %}
                                 <div class="ethresearch mb-4">
-                                    <h3 class="h4 mb-3">Ethereum Research</h3>
+                                    <h3 class="h4 mb-3">
+                                        <a href="https://ethresear.ch" target="_blank" class="text-decoration-none">
+                                            Ethereum Research
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                <polyline points="15 3 21 3 21 9"></polyline>
+                                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                                            </svg>
+                                        </a>
+                                    </h3>
                                     {{ article.ethresearch_discussions | safe }}
                                 </div>
                             {% endif %}
@@ -70,8 +81,9 @@
                 </div>
             </section>
 
+            <!-- Repo Updates Section -->
             <section class="repo-updates-section mb-5">
-                <div class="section-container">
+                <div class="section-container p-4 rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Repository Updates</h2>
                     {% if article.repository_updates %}
                         <div class="repository-updates mb-4">
@@ -87,23 +99,7 @@
                         </div>
                     {% endif %}
 
-                    {% if article.next_steps %}
-                        <div class="next-steps mb-4">
-                            <h3 class="h4 mb-3">Next Steps</h3>
-                            <ul class="list-unstyled">
-                                {% for step in article.next_steps %}
-                                    <li class="mb-2 d-flex align-items-start">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2 mt-1">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                        {{ step }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
-                    {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
+                    {% if not article.repository_updates and not article.technical_highlights %}
                         <div class="alert alert-info">
                             <p class="mb-0">Content update in progress. Please check back in a few minutes.</p>
                         </div>
@@ -111,8 +107,9 @@
                 </div>
             </section>
 
+            <!-- Source Section -->
             <section class="source-section">
-                <div class="section-container">
+                <div class="section-container p-4 rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
                         <div class="accordion" id="sourcesAccordion">
@@ -162,3 +159,48 @@
     </div>
 </article>
 {% endblock %}
+
+<style>
+/* Keeping the existing styles */
+.ethereum-article {
+    max-width: 900px;
+    margin: 0 auto;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.section-container {
+    background: var(--bs-dark);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-container:hover {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-2px);
+}
+
+.overview-content,
+.forum-content,
+.repository-updates,
+.technical-highlights {
+    color: var(--bs-light);
+}
+
+h2.h3 {
+    font-weight: 600;
+    color: var(--bs-info);
+    letter-spacing: -0.02em;
+}
+
+.source-item {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.source-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+</style>
