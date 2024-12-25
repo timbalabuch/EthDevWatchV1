@@ -1,23 +1,30 @@
-{% set section_type = 'issues' if ns.issues else 'commits' if ns.commits else 'discussions' if ns.discussions else 'other' %}
-{% set sources = ns.issues if ns.issues else ns.commits if ns.commits else ns.discussions if ns.discussions else ns.other %}
-{% set title = 'Issues' if ns.issues else 'Commits' if ns.commits else 'Discussions' if ns.discussions else 'Other Sources' %}
 
+{% set repositories = {} %}
+{% for source in sources %}
+    {% if source.repository not in repositories %}
+        {% set _ = repositories.update({source.repository: []}) %}
+    {% endif %}
+    {% set _ = repositories[source.repository].append(source) %}
+{% endfor %}
+
+{% for repository, repo_sources in repositories.items() %}
 <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
     <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#{{ section_type }}Collapse">
-            {{ title }} ({{ sources|length }})
+        <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#{{ repository | replace('/', '_') }}Collapse">
+            {{ repository }} ({{ repo_sources|length }})
         </button>
     </h2>
-    <div id="{{ section_type }}Collapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+    <div id="{{ repository | replace('/', '_') }}Collapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
         <div class="accordion-body">
-            {% for source in sources %}
+            {% for source in repo_sources %}
                 <div class="source-item mb-2">
                     <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
                         <span>{{ source.title }}</span>
-                        <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                        <span class="ms-2 badge bg-secondary">{{ source.type }}</span>
                     </a>
                 </div>
             {% endfor %}
         </div>
     </div>
 </div>
+{% endfor %}

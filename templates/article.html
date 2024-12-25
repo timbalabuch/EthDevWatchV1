@@ -131,33 +131,7 @@
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
                         <div class="accordion" id="sourcesAccordion">
-                            {% set ns = namespace(issues=[], commits=[], discussions=[], other=[]) %}
-                            {% for source in article.sources %}
-                                {% if source.type == 'issue' %}
-                                    {% set _ = ns.issues.append(source) %}
-                                {% elif source.type == 'commit' %}
-                                    {% set _ = ns.commits.append(source) %}
-                                {% elif source.type == 'discussion' %}
-                                    {% set _ = ns.discussions.append(source) %}
-                                {% else %}
-                                    {% set _ = ns.other.append(source) %}
-                                {% endif %}
-                            {% endfor %}
-
-                            {% with section_type='issues' %}
-                                {% if ns.issues %}
-                                    {% include '_source_section.html' %}
-                                {% endif %}
-                            {% endwith %}
-
-                            {% with section_type='commits' %}
-                                {% if ns.commits %}
-                                    {% include '_source_section.html' %}
-                                {% endif %}
-                            {% endwith %}
-
-                            {% with section_type='discussions' %}
-                                {% if ns.discussions %}
+                            {% include '_source_section.html' with sources=article.sources %}
                                     {% include '_source_section.html' %}
                                 {% endif %}
                             {% endwith %}
