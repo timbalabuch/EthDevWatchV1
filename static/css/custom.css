@@ -126,3 +126,156 @@
     border-color: transparent;
     color: #fff;
 }
+
+.hero-section h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    background: linear-gradient(to right, var(--text-color), var(--text-muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    font-family: 'Titillium Web', sans-serif;
+}
+
+.hero-section .subtitle {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    max-width: 800px;
+    margin: 0 auto;
+    font-weight: 300;
+}
+
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--glow-shadow);
+}
+
+.card-title {
+    color: var(--text-color);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+}
+
+.card-title a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.card-title a:hover {
+    color: var(--link-color);
+}
+
+.hero-section {
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.article-list {
+    margin-top: 2rem;
+}
+
+.featured-article {
+    margin-bottom: 3rem;
+}
+
+.article-summary {
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.areas {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+}
+
+.source-link {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.source-link:hover {
+    color: var(--gradient-end);
+}
+
+.forum-discussion-item {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+}
+
+.forum-discussion-item h4 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.forum-content {
+    color: var(--text-muted);
+    margin: 1rem 0;
+}
+
+.forum-link {
+    color: var(--link-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.forum-link:hover {
+    color: var(--gradient-end);
+}
+
+.section-title {
+    color: var(--text-color);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Titillium Web', sans-serif;
+}
+
+.login-container {
+    max-width: 400px;
+    margin: 4rem auto;
+    padding: 2rem;
+}
+
+.weekly-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.metric-card {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
