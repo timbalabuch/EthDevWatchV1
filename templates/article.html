@@ -111,15 +111,107 @@
                 <div class="section-container p-4 bg-dark rounded border border-light border-opacity-10">
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
-                        <div class="source-list">
+                        <div class="accordion" id="sourcesAccordion">
+                            {% set ns = namespace(issues=[], commits=[], discussions=[], other=[]) %}
                             {% for source in article.sources %}
-                                <div class="source-item mb-3">
-                                    <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none">
-                                        {{ source.title }}
-                                        <small class="text-muted">({{ source.type }})</small>
-                                    </a>
-                                </div>
+                                {% if source.type == 'issue' %}
+                                    {% set ns.issues = ns.issues + [source] %}
+                                {% elif source.type == 'commit' %}
+                                    {% set ns.commits = ns.commits + [source] %}
+                                {% elif source.type == 'discussion' %}
+                                    {% set ns.discussions = ns.discussions + [source] %}
+                                {% else %}
+                                    {% set ns.other = ns.other + [source] %}
+                                {% endif %}
                             {% endfor %}
+
+                            {% if ns.issues %}
+                            <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" data-bs-target="#issuesCollapse">
+                                        Issues ({{ ns.issues|length }})
+                                    </button>
+                                </h2>
+                                <div id="issuesCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+                                    <div class="accordion-body">
+                                        {% for source in ns.issues %}
+                                            <div class="source-item mb-2">
+                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                                                    <span>{{ source.title }}</span>
+                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                                                </a>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if ns.commits %}
+                            <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" data-bs-target="#commitsCollapse">
+                                        Commits ({{ ns.commits|length }})
+                                    </button>
+                                </h2>
+                                <div id="commitsCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+                                    <div class="accordion-body">
+                                        {% for source in ns.commits %}
+                                            <div class="source-item mb-2">
+                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                                                    <span>{{ source.title }}</span>
+                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                                                </a>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if ns.discussions %}
+                            <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" data-bs-target="#discussionsCollapse">
+                                        Discussions ({{ ns.discussions|length }})
+                                    </button>
+                                </h2>
+                                <div id="discussionsCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+                                    <div class="accordion-body">
+                                        {% for source in ns.discussions %}
+                                            <div class="source-item mb-2">
+                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                                                    <span>{{ source.title }}</span>
+                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                                                </a>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if ns.other %}
+                            <div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" data-bs-target="#otherCollapse">
+                                        Other Sources ({{ ns.other|length }})
+                                    </button>
+                                </h2>
+                                <div id="otherCollapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+                                    <div class="accordion-body">
+                                        {% for source in ns.other %}
+                                            <div class="source-item mb-2">
+                                                <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                                                    <span>{{ source.title }}</span>
+                                                    <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                                                </a>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     {% else %}
                         <p class="text-muted">No sources available for this article.</p>
