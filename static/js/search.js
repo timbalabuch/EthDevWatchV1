@@ -64,8 +64,7 @@
   </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Hide loading overlay once page is loaded
+window.addEventListener('load', function() {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) {
         loadingOverlay.style.display = 'none';
