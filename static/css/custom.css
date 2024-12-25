@@ -264,12 +264,42 @@ a:hover {
     border-radius: 0.5rem;
 }
 
-.section-container {
-    background: rgba(0, 0, 0, 0.2);
+.tabs-container {
+    background: var(--bg-secondary);
     border-radius: 0.75rem;
-    padding: 2rem;
-    margin-bottom: 2rem;
     border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.tabs-header {
+    display: flex;
+    gap: 1px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem 1rem 0;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 1rem 2rem;
+    cursor: pointer;
+    border-radius: 0.5rem 0.5rem 0 0;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+}
+
+.tab-content {
+    display: none;
+    padding: 2rem;
+}
+
+.tab-content.active {
+    display: block;
 }
 
 .section-container h2 {
