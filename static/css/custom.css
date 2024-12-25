@@ -1,3 +1,4 @@
+
 :root {
     --card-bg: rgba(17, 25, 40, 0.75);
     --text-color: #ffffff;
@@ -393,27 +394,4 @@
 .metric-label {
     color: var(--text-muted);
     font-size: 0.875rem;
-}
-
-.accordion-button {
-    color: var(--text-color) !important;
-}
-
-.accordion-button:not(.collapsed) {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: var(--text-color) !important;
-}
-
-.accordion-button::after {
-    filter: invert(1) brightness(1.5);
-}
-
-.accordion-item {
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.accordion-body {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
 }
