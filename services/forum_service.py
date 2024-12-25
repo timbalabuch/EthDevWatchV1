@@ -20,10 +20,10 @@ class ForumService:
         self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
         self.model = "gpt-4"
         self.max_retries = 5
-        self.base_delay = 5  # Initial delay in seconds
-        self.max_delay = 60  # Maximum delay in seconds
+        self.base_delay = 10  # Increased initial delay
+        self.max_delay = 120  # Increased maximum delay
         self.last_api_call = 0
-        self.min_time_between_calls = 2
+        self.min_time_between_calls = 5  # Increased minimum time between calls
         
         # Initialize session with custom headers
         self.session = requests.Session()
