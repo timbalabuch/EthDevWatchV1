@@ -16,31 +16,35 @@ class ForumService:
 
     def __init__(self):
         """Initialize the ForumService."""
+        self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
+        self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
+        self.model = "gpt-4"
+        self.max_retries = 5
+        self.base_delay = 5  # Initial delay in seconds
+        self.max_delay = 60  # Maximum delay in seconds
+        self.last_api_call = 0
+        self.min_time_between_calls = 2
+        
+        # Initialize session with custom headers
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
+        })
+
+        # Initialize OpenAI client with graceful fallback
         try:
-            self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
-            self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
-            self.model = "gpt-4"
-            
-            # Initialize OpenAI client if API key is available
             api_key = os.environ.get('OPENAI_API_KEY')
-            if api_key:
+            if not api_key:
+                logger.warning("OPENAI_API_KEY not set - summarization features will be disabled")
+                self.openai = None
+            else:
                 self.openai = OpenAI(api_key=api_key)
                 logger.info("OpenAI client initialized successfully")
-            else:
-                self.openai = None
-                logger.warning("OPENAI_API_KEY not set - summarization features will be disabled")
-            self.max_retries = 5
-            self.base_delay = 5  # Increased initial delay to 5 seconds
-            self.session = requests.Session()
-            self.session.headers.update({
-                'User-Agent': 'Mozilla/5.0 (compatible; EthDevWatch/1.0; +https://ethdevwatch.replit.app)'
-            })
-            self.last_api_call = 0
-            self.min_time_between_calls = 2  # Minimum seconds between calls
-            logger.info("ForumService initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize ForumService: {str(e)}")
-            raise
+            logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+            self.openai = None
+
+        logger.info("ForumService initialized successfully")
 
     def _get_week_boundaries(self, date: datetime) -> tuple[datetime, datetime]:
         """Get the start and end dates for a given week."""
@@ -58,13 +62,20 @@ class ForumService:
             logger.info(f"Starting ethresear.ch discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
             fetch_start_time = time.time()
 
-            response = self._retry_with_backoff(
-                self.session.get,
-                self.ethresear_base_url,
-                timeout=30
-            )
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = self._retry_with_backoff(
+                    self.session.get,
+                    self.ethresear_base_url,
+                    timeout=30
+                )
+                response.raise_for_status()
+                data = response.json()
+            except requests.RequestException as e:
+                logger.error(f"Failed to fetch ethresear.ch data: {str(e)}")
+                if hasattr(e, 'response'):
+                    logger.error(f"Status code: {e.response.status_code}")
+                    logger.error(f"Response text: {e.response.text[:1000]}")  # Log first 1000 chars
+                return []
             initial_fetch_time = time.time() - fetch_start_time
             logger.info(f"Initial ethresear.ch data fetch completed in {initial_fetch_time:.2f} seconds")
 
@@ -290,30 +301,38 @@ class ForumService:
 
     def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
         """Execute a function with exponential backoff retry logic."""
-        max_retries = self.max_retries
-        base_delay = self.base_delay
-        last_error = None
-
-        for attempt in range(max_retries):
+        for attempt in range(self.max_retries):
             try:
-                if attempt > 0:  # Add delay before retries (not first attempt)
-                    delay = min(300, (base_delay * (2 ** attempt)))  # Cap at 5 minutes
-                    logger.info(f"Retry attempt {attempt + 1}, waiting {delay} seconds...")
+                self._wait_for_rate_limit()
+                response = func(*args, **kwargs)
+                
+                # Log successful response details
+                if isinstance(response, requests.Response):
+                    logger.debug(f"Request successful - Status: {response.status_code}")
+                return response
+
+            except (requests.RequestException, Exception) as e:
+                # Calculate delay with exponential backoff
+                delay = min(self.max_delay, self.base_delay * (2 ** attempt))
+                
+                # Log detailed error information
+                logger.error(f"Attempt {attempt + 1}/{self.max_retries} failed")
+                logger.error(f"Error type: {type(e).__name__}")
+                logger.error(f"Error message: {str(e)}")
+                
+                if isinstance(e, requests.RequestException) and hasattr(e, 'response'):
+                    logger.error(f"Status code: {e.response.status_code}")
+                    logger.error(f"Response headers: {dict(e.response.headers)}")
+                    logger.error(f"Response text: {e.response.text[:1000]}")
+
+                if attempt < self.max_retries - 1:
+                    logger.info(f"Retrying in {delay} seconds...")
                     time.sleep(delay)
-
-                self._wait_for_rate_limit()  # Apply rate limiting before each attempt
-                return func(*args, **kwargs)
-
-            except Exception as e:
-                last_error = e
-                logger.error(f"Attempt {attempt + 1} failed: {str(e)}", exc_info=True)
-
-                if attempt == max_retries - 1:
-                    logger.error(f"Max retries ({max_retries}) exceeded. Final error: {str(e)}")
+                else:
+                    logger.error(f"Max retries ({self.max_retries}) exceeded")
                     raise
 
-        if last_error:
-            raise last_error
+        raise Exception("Retry logic failed to return or raise")
 
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
         """Generate a summary of forum discussions using OpenAI."""
