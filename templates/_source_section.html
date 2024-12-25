@@ -1,0 +1,56 @@
+{% if loop.index == 1 %}
+<div class="accordion-item bg-transparent border-light border-opacity-10 mb-2">
+    <h2 class="accordion-header">
+        <button class="accordion-button collapsed text-light" type="button" data-bs-toggle="collapse" data-bs-target="#{{ section_type }}Collapse">
+            {% if ns.issues %}Issues ({{ ns.issues|length }}){% endif %}
+            {% if ns.commits %}Commits ({{ ns.commits|length }}){% endif %}
+            {% if ns.discussions %}Discussions ({{ ns.discussions|length }}){% endif %}
+            {% if ns.other %}Other Sources ({{ ns.other|length }}){% endif %}
+        </button>
+    </h2>
+    <div id="{{ section_type }}Collapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">
+        <div class="accordion-body">
+            {% if ns.issues %}
+                {% for source in ns.issues %}
+                    <div class="source-item mb-2">
+                        <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                            <span>{{ source.title }}</span>
+                            <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                        </a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% if ns.commits %}
+                {% for source in ns.commits %}
+                    <div class="source-item mb-2">
+                        <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                            <span>{{ source.title }}</span>
+                            <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                        </a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% if ns.discussions %}
+                {% for source in ns.discussions %}
+                    <div class="source-item mb-2">
+                        <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                            <span>{{ source.title }}</span>
+                            <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                        </a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% if ns.other %}
+                {% for source in ns.other %}
+                    <div class="source-item mb-2">
+                        <a href="{{ source.url }}" target="_blank" class="text-info text-decoration-none d-flex align-items-center">
+                            <span>{{ source.title }}</span>
+                            <span class="ms-2 badge bg-secondary">{{ source.repository }}</span>
+                        </a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
