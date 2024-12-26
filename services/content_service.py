@@ -223,6 +223,12 @@ class ContentService:
                             {overview_summary}
                         </div>
                     </div>
+                    <div class="abstract-section mb-4">
+                        <h3>Abstract</h3>
+                        <div class="abstract-content">
+                            {repo_abstract}
+                        </div>
+                    </div>
             """
 
             # Repository updates section
@@ -372,6 +378,30 @@ class ContentService:
                 repo_summaries.append(summary)
 
             logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
+
+            # Generate repository updates abstract
+            abstract_messages = [
+                {
+                    "role": "system",
+                    "content": """You are a technical writer explaining blockchain development to non-technical users.
+                    Create a simple, easy-to-understand summary of GitHub repository updates.
+                    Use plain language and avoid technical jargon."""
+                },
+                {
+                    "role": "user", 
+                    "content": f"Explain these repository updates in simple terms that anyone can understand:\n{json.dumps(repo_summaries, indent=2)}"
+                }
+            ]
+            
+            abstract_response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
+                model=self.model,
+                messages=abstract_messages,
+                temperature=0.7,
+                max_tokens=400
+            )
+            
+            repo_abstract = abstract_response.choices[0].message.content.strip()
 
             # Generate article content using OpenAI
             messages = [

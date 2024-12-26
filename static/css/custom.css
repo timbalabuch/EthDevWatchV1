@@ -550,3 +550,15 @@ a:hover {
 .featured-article {
     margin-bottom: 3rem;
 }
+
+.overview-content, .abstract-content {
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+
+.abstract-section {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
