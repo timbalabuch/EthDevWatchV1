@@ -162,6 +162,12 @@ a:hover {
     margin-bottom: 2rem;
 }
 
+.pagination .page-item.active .page-link {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
 .page-link {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -170,8 +176,8 @@ a:hover {
 }
 
 .page-link:hover {
-    background: linear-gradient(to right, var(--accent-secondary), var(--accent-primary));
-    border-color: transparent;
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
     color: var(--text-primary);
 }
 
@@ -331,14 +337,18 @@ a:hover {
     font-weight: 500;
     padding: 0.5rem 1rem;
     border-radius: 9999px;
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
 }
 
-.bg-dark {
-    background-color: var(--bg-primary) !important;
+.badge-dark {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-.bg-secondary {
-    background-color: var(--bg-secondary) !important;
+.badge-accent {
+    background-color: var(--accent-primary);
+    color: var(--text-primary);
 }
 
 .article-summary {
