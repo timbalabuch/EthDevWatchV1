@@ -226,7 +226,7 @@ class ContentService:
                     <div class="abstract-section mb-4">
                         <h3>Abstract</h3>
                         <div class="abstract-content">
-                            {repo_abstract}
+                            {summary_data.get('repo_abstract', '')}
                         </div>
                     </div>
             """
@@ -508,7 +508,8 @@ class ContentService:
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
                 'next_steps': sections['next_steps'],
-                'forum_summary': forum_section
+                'forum_summary': forum_section,
+                'repo_abstract': repo_abstract
             })
 
             article = Article(
