@@ -512,6 +512,12 @@ class ContentService:
                 'repo_abstract': repo_abstract
             })
 
+            article_content = {
+                'content': content,
+                'brief_summary': sections['brief_summary'],
+                'repo_abstract': repo_abstract
+            }
+
             article = Article(
                 title=sections['title'],
                 content=content,
