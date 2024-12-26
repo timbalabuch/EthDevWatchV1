@@ -34,13 +34,11 @@
                     <div class="progress-bar-fill" style="width: 100%"></div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="areas">
-                        <span class="badge bg-dark text-light fw-light">Weekly Ethereum Development Update</span>
-                    </div>
-                    <a href="{{ url_for('article', article_id=current_week_article.id) }}" 
-                       class="btn btn-outline-light btn-sm">Read More</a>
+                <div class="areas mb-3">
+                    <span class="badge bg-dark text-light fw-light">Weekly Ethereum Development Update</span>
                 </div>
+                <a href="{{ url_for('article', article_id=current_week_article.id) }}" 
+                   class="btn btn-outline-light btn-sm">Read More</a>
             </div>
         </article>
         {% endif %}

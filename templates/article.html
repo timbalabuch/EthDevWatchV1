@@ -6,19 +6,17 @@
         <div class="card-body">
             <header class="article-header mb-5">
                 <h1 class="card-title display-5 mb-3">{{ article.title }}</h1>
-                <div class="d-flex justify-content-between align-items-center">
-                    <p class="text-muted mb-0 fs-5">
+                <p class="text-muted mb-3 fs-5">
                         {{ format_date(article.publication_date) }}
                     </p>
                     <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
                        target="_blank"
-                       class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+                       class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 4l11.5 11.5M4 20L20 4" />
                         </svg>
                         Share on X
                     </a>
-                </div>
             </header>
 
             <section class="overview-section mb-5">
