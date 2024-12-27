@@ -67,6 +67,10 @@ args = "Create Blockchain Terms Table"
 task = "workflow.run"
 args = "Remove All Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate One Article"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -249,6 +253,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/remove_all_articles.py"
+
+[[workflows.workflow]]
+name = "Generate One Article"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/generate_one_article.py"
 
 [[ports]]
 localPort = 3000
