@@ -16,23 +16,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def cleanup_future_articles():
-    """Remove any articles with publication dates in the future"""
+    """Remove any articles with publication dates in the future or current week"""
     try:
         with app.app_context():
             # Get current UTC time with timezone information
             current_date = datetime.now(pytz.UTC)
-            logger.info(f"Current UTC time: {current_date}")
 
-            # Find any articles with publication dates in the future
+            # Get the start of the current week (Monday)
+            current_week_monday = current_date - timedelta(days=current_date.weekday())
+            current_week_monday = current_week_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            logger.info(f"Current UTC time: {current_date}")
+            logger.info(f"Current week starts: {current_week_monday}")
+
+            # Find any articles with publication dates in the future or current week
             future_articles = Article.query.filter(
-                Article.publication_date >= current_date
+                Article.publication_date >= current_week_monday
             ).all()
 
             if not future_articles:
                 logger.info("No future articles found")
                 return True
 
-            logger.info(f"Found {len(future_articles)} articles with future dates")
+            logger.info(f"Found {len(future_articles)} articles to remove")
 
             # Delete future articles and their associated sources
             for article in future_articles:
