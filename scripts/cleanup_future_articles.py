@@ -22,16 +22,16 @@ def cleanup_future_articles():
             # Get current UTC time with timezone information
             current_date = datetime.now(pytz.UTC)
 
-            # Get the start of the current week (Monday)
-            current_week_monday = current_date - timedelta(days=current_date.weekday())
-            current_week_monday = current_week_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Find any articles with publication dates greater than or equal to today
+            # This ensures we remove anything from today or the future
+            today_start = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
             logger.info(f"Current UTC time: {current_date}")
-            logger.info(f"Current week starts: {current_week_monday}")
+            logger.info(f"Today starts at: {today_start}")
 
-            # Find any articles with publication dates in the future or current week
+            # Find any articles with publication dates in the future or today
             future_articles = Article.query.filter(
-                Article.publication_date >= current_week_monday
+                Article.publication_date >= today_start
             ).all()
 
             if not future_articles:

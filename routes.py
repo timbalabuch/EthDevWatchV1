@@ -51,21 +51,25 @@ def index() -> str:
         per_page = 6
 
         current_date = get_current_utc()
-        current_week_monday = current_date - timedelta(days=current_date.weekday())
-        current_week_monday = current_week_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Get current week's article (most recent one before current time)
         current_week_article = Article.query.filter(
-            Article.publication_date < current_date,
-            Article.publication_date >= current_week_monday
+            Article.publication_date < today_start
         ).order_by(Article.publication_date.desc()).first()
 
-        # Get all articles from previous weeks
-        other_articles = Article.query.filter(
-            Article.publication_date < current_week_monday
-        ).order_by(Article.publication_date.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
-        )
+        # Get all other articles (excluding the current week's article)
+        other_articles = None
+        if current_week_article:
+            other_articles = Article.query.filter(
+                Article.id != current_week_article.id
+            ).order_by(Article.publication_date.desc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+        else:
+            other_articles = Article.query.order_by(
+                Article.publication_date.desc()
+            ).paginate(page=page, per_page=per_page, error_out=False)
 
         logger.info(f"Found {other_articles.total if other_articles else 0} total articles")
 
