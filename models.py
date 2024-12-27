@@ -75,12 +75,10 @@ class Article(db.Model):
                 # Get the actual content div inside overview section
                 overview_content = overview.find('div', class_='overview-content')
                 if overview_content:
-                    text = overview_content.get_text(strip=True)
-                    # Limit to 350 characters
-                    return text[:350] + ('...' if len(text) > 350 else '')
+                    return overview_content.get_text(strip=True)
             return None
         except Exception as e:
-            print(f"Error extracting brief summary: {e}")
+            logger.error(f"Error extracting brief summary: {e}", exc_info=True)
             return None
 
     @property
@@ -93,17 +91,17 @@ class Article(db.Model):
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
-            
+
             # Look for discussions in both formats
             for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethereum-magicians.org' in str(item):
                     discussions.append(str(item))
-            
+
             if discussions:
                 return ''.join(discussions)
-            
+
             return '<div class="alert alert-info">No discussions found on ethereum-magicians.org for this period.</div>'
-            
+
         except Exception as e:
             logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
@@ -118,17 +116,17 @@ class Article(db.Model):
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
-            
+
             # Look for discussions in both formats
             for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethresear.ch' in str(item):
                     discussions.append(str(item))
-            
+
             if discussions:
                 return ''.join(discussions)
-            
+
             return '<div class="alert alert-info">No discussions found on ethresear.ch for this period.</div>'
-            
+
         except Exception as e:
             logger.error(f"Error processing research discussions: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load research discussions at this time.</div>'

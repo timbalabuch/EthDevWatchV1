@@ -336,7 +336,7 @@ class ForumService:
     def get_weekly_forum_summary(self, date: datetime) -> Optional[str]:
         """Get a summary of forum discussions for a specific week."""
         try:
-            logger.info(f"Getting forum summary for week of {date.strftime('%Y-%m-%d')}")
+            logger.info(f"Starting forum summary generation for week of {date.strftime('%Y-%m-%d')}")
 
             # Fetch discussions from both sources
             em_discussions = self.fetch_forum_discussions(date)
@@ -344,7 +344,7 @@ class ForumService:
 
             if not em_discussions and not ethresear_discussions:
                 logger.warning("No forum discussions found for the specified week")
-                return None
+                return '<div class="alert alert-info">No forum discussions found for this week.</div>'
 
             logger.info(f"Found {len(em_discussions)} Ethereum Magicians discussions and {len(ethresear_discussions)} Ethereum Research discussions")
 
@@ -353,56 +353,65 @@ class ForumService:
             ethresear_summary = None
 
             if em_discussions:
+                logger.info("Generating Ethereum Magicians summary...")
                 em_summary = self.summarize_forum_discussions(em_discussions, "Ethereum Magicians")
-                time.sleep(self.min_time_between_calls)  # Add delay between summary generations
+                if not em_summary:
+                    logger.error("Failed to generate Ethereum Magicians summary")
+                time.sleep(self.min_time_between_calls)
 
             if ethresear_discussions:
+                logger.info("Generating Ethereum Research summary...")
                 ethresear_summary = self.summarize_forum_discussions(ethresear_discussions, "Ethereum Research")
+                if not ethresear_summary:
+                    logger.error("Failed to generate Ethereum Research summary")
 
             # Combine summaries and discussions
             content_parts = []
 
-            # Add summaries section if any exists
+            # Add summaries section
+            content_parts.append('<div class="forum-summaries mb-4">')
+            content_parts.append('<h2 class="forum-summaries-title mb-3">Forum Discussion Summaries</h2>')
+
             if em_summary or ethresear_summary:
-                content_parts.append('<div class="forum-summaries mb-4">')
-                content_parts.append('<h2 class="forum-summaries-title mb-3">Forum Discussion Summaries</h2>')
                 if em_summary:
                     content_parts.append(em_summary)
                 if ethresear_summary:
                     content_parts.append(ethresear_summary)
-                content_parts.append('</div>')
+            else:
+                content_parts.append('<div class="alert alert-warning">Unable to generate forum summaries. Please check the logs for details.</div>')
+
+            content_parts.append('</div>')
 
             # Add detailed discussions section
-            if em_discussions or ethresear_discussions:
-                content_parts.append('<div class="forum-discussions mt-4">')
-                content_parts.append('<h2 class="forum-discussions-title mb-3">Recent Forum Discussions</h2>')
+            content_parts.append('<div class="forum-discussions mt-4">')
+            content_parts.append('<h2 class="forum-discussions-title mb-3">Recent Forum Discussions</h2>')
 
-                if em_discussions:
-                    content_parts.append('<div class="ethereum-magicians-section mb-4">')
-                    content_parts.append('<h3 class="section-title">Ethereum Magicians Discussions</h3>')
-                    content_parts.extend(disc['content'] for disc in em_discussions)
-                    content_parts.append('</div>')
-
-                if ethresear_discussions:
-                    content_parts.append('<div class="ethereum-research-section mb-4">')
-                    content_parts.append('<h3 class="section-title">Ethereum Research Discussions</h3>')
-                    content_parts.extend(disc['content'] for disc in ethresear_discussions)
-                    content_parts.append('</div>')
-
+            if em_discussions:
+                content_parts.append('<div class="ethereum-magicians-section mb-4">')
+                content_parts.append('<h3 class="section-title">Ethereum Magicians Discussions</h3>')
+                content_parts.extend(disc['content'] for disc in em_discussions)
                 content_parts.append('</div>')
+            else:
+                content_parts.append('<div class="alert alert-info">No Ethereum Magicians discussions found for this period.</div>')
 
-            if not content_parts:
-                logger.warning("No content generated for forum summary")
-                return None
+            if ethresear_discussions:
+                content_parts.append('<div class="ethereum-research-section mb-4">')
+                content_parts.append('<h3 class="section-title">Ethereum Research Discussions</h3>')
+                content_parts.extend(disc['content'] for disc in ethresear_discussions)
+                content_parts.append('</div>')
+            else:
+                content_parts.append('<div class="alert alert-info">No Ethereum Research discussions found for this period.</div>')
 
-            # Combine all parts with proper container
+            content_parts.append('</div>')
+
+            # Combine all parts
             summary = '<div class="forum-discussions-container">' + '\n'.join(content_parts) + '</div>'
-            logger.info("Successfully generated forum summary")
+            logger.info("Successfully generated complete forum summary")
             return summary
 
         except Exception as e:
-            logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
-            return None
+            logger.error(f"Error generating weekly forum summary: {str(e)}", exc_info=True)
+            return '<div class="alert alert-danger">An error occurred while generating the forum summary. Please check the logs for details.</div>'
 
     def _format_raw_discussions(self, discussions: List[Dict]) -> str:
         """Format discussions without OpenAI summarization."""
