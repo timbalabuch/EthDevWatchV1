@@ -243,6 +243,16 @@ class ContentService:
                     </div>
                 """
 
+            # Forum Discussions Section
+            if summary_data.get('forum_discussions'):
+                article_html += f"""
+                    <div class="forum-discussions mb-4">
+                        <h2 class="section-title">Forum Discussions</h2>
+                        {self._format_forum_section(summary_data['forum_discussions']['magicians'], 'Magicians')}
+                        {self._format_forum_section(summary_data['forum_discussions']['research'], 'Research')}
+                    </div>
+                """
+
             # Next steps section
             if summary_data.get('next_steps'):
                 article_html += f"""
@@ -320,6 +330,48 @@ class ContentService:
                 """
             formatted_highlights.append(highlight_html)
         return '\n'.join(formatted_highlights)
+
+    def _format_forum_discussion(self, discussion):
+        """Format a single forum discussion with proper date handling."""
+        try:
+            if not discussion or 'created_at' not in discussion:
+                return ''
+
+            # Parse and format the date
+            date_str = discussion['created_at']
+            try:
+                date = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
+                formatted_date = date.strftime('%B %d, %Y')
+            except Exception as e:
+                logger.error(f"Error formatting date {date_str}: {str(e)}")
+                formatted_date = str(date_str)
+
+            return f"""
+                <div class="forum-discussion-item mb-3">
+                    <h4 class="h5 mb-2">
+                        <a href="{discussion['url']}" target="_blank" class="text-decoration-none">
+                            {discussion['title']}
+                        </a>
+                    </h4>
+                    <div class="meta text-muted small mb-2">
+                        {formatted_date}
+                    </div>
+                    <div class="discussion-summary">
+                        {discussion.get('summary', '')}
+                    </div>
+                </div>
+            """
+        except Exception as e:
+            logger.error(f"Error formatting forum discussion: {str(e)}")
+            return ''
+
+    def _format_forum_section(self, discussions, site_name):
+        """Format a complete forum section (Magicians or Research)."""
+        if not discussions:
+            return f'<div class="alert-light p-3 rounded">No discussions found on {site_name} for this period.</div>'
+
+        return ''.join(self._format_forum_discussion(d) for d in discussions)
+
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
@@ -452,7 +504,7 @@ class ContentService:
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
                 'next_steps': sections['next_steps'],
-                'forum_summary': forum_summary
+                'forum_discussions': forum_summary if forum_summary else {'magicians': [], 'research': []} #handle missing data gracefully.
             })
 
             # Create and save the article
