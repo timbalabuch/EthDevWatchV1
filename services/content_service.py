@@ -169,7 +169,7 @@ class ContentService:
                 {
                     "role": "system",
                     "content": """You are a technical writer creating concise overviews of Ethereum development updates.
-                    Create a single paragraph that summarizes the key points, focusing on:
+                    Create two paragraph that summarizes the key points, focusing on:
                     1. Major technical changes and their significance
                     2. Repository updates that affect users
                     3. Development progress and milestones

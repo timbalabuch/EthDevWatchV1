@@ -45,36 +45,27 @@ def get_last_completed_week() -> Tuple[datetime, datetime]:
 @app.route('/')
 def index() -> str:
     """Render the home page with a list of articles."""
-    last_monday, last_sunday = get_last_completed_week()
-    logger.info(f"Filtering articles up to last completed week: {last_sunday.strftime('%Y-%m-%d')}")
+    try:
+        # Get page number from request
+        page = request.args.get('page', 1, type=int)
+        per_page = 6
 
-    # Get page number from request
-    page = request.args.get('page', 1, type=int)
-    per_page = 6
-
-    # Get current week's article, ensure it's unique by using first()
-    current_week_article = Article.query.filter(
-        Article.publication_date <= last_sunday,
-        Article.publication_date >= last_monday
-    ).order_by(Article.publication_date.desc()).first()
-
-    # Get other articles with pagination, excluding current week's article
-    other_articles_query = Article.query.filter(
-        Article.publication_date <= last_monday
-    ).order_by(Article.publication_date.desc())
-
-    if current_week_article:
-        other_articles_query = other_articles_query.filter(
-            Article.id != current_week_article.id
+        # Get all articles with pagination, ordered by publication date
+        articles = Article.query.order_by(Article.publication_date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
         )
 
-    other_articles = other_articles_query.paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+        logger.info(f"Found {articles.total} total articles")
 
-    return render_template('index.html', 
-                         current_week_article=current_week_article,
-                         other_articles=other_articles)
+        return render_template('index.html', 
+                            current_week_article=articles.items[0] if articles.items else None,
+                            other_articles=articles)
+
+    except Exception as e:
+        logger.error(f"Error retrieving articles: {str(e)}", exc_info=True)
+        return render_template('index.html', 
+                            current_week_article=None,
+                            other_articles=None)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login() -> Union[str, Response]:

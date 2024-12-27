@@ -287,7 +287,12 @@ class ForumService:
                     2. Important decisions or consensus reached
                     3. Notable technical proposals
                     Keep the summary concise and use plain language.
-                    Format the output in HTML with appropriate headings and structure."""
+
+                    Format your response as a clean HTML section with:
+                    - A section header for {source}
+                    - Key points in bullet points
+                    - No full HTML document tags (html, head, body)
+                    - Use div with appropriate classes for styling"""
                 },
                 {
                     "role": "user",
@@ -309,10 +314,11 @@ class ForumService:
                 summary = response.choices[0].message.content.strip()
                 logger.info(f"Successfully generated {source} forum discussion summary")
 
-                if not summary.startswith('<'):
+                # Ensure proper HTML structure without document tags
+                if not summary.startswith('<div'):
                     summary = f"""
                     <div class="forum-summary {source.lower().replace('.', '-')}">
-                        <h3 class="forum-summary-title">{source} Discussions</h3>
+                        <h3 class="forum-source-title mb-3">{source} Summary</h3>
                         {summary}
                     </div>
                     """
@@ -357,28 +363,29 @@ class ForumService:
             content_parts = []
 
             # Add summaries section if any exists
-            summaries = []
-            if em_summary:
-                summaries.append(em_summary)
-            if ethresear_summary:
-                summaries.append(ethresear_summary)
+            if em_summary or ethresear_summary:
+                content_parts.append('<div class="forum-summaries mb-4">')
+                content_parts.append('<h2 class="forum-summaries-title mb-3">Forum Discussion Summaries</h2>')
+                if em_summary:
+                    content_parts.append(em_summary)
+                if ethresear_summary:
+                    content_parts.append(ethresear_summary)
+                content_parts.append('</div>')
 
-            if summaries:
-                content_parts.append('<div class="forum-summaries mb-4">' + '\n'.join(summaries) + '</div>')
-
-            # Add discussion sections
+            # Add detailed discussions section
             if em_discussions or ethresear_discussions:
-                content_parts.append('<div class="forum-discussions">')
+                content_parts.append('<div class="forum-discussions mt-4">')
+                content_parts.append('<h2 class="forum-discussions-title mb-3">Recent Forum Discussions</h2>')
 
                 if em_discussions:
                     content_parts.append('<div class="ethereum-magicians-section mb-4">')
-                    content_parts.append('<h3>Ethereum Magicians Discussions</h3>')
+                    content_parts.append('<h3 class="section-title">Ethereum Magicians Discussions</h3>')
                     content_parts.extend(disc['content'] for disc in em_discussions)
                     content_parts.append('</div>')
 
                 if ethresear_discussions:
                     content_parts.append('<div class="ethereum-research-section mb-4">')
-                    content_parts.append('<h3>Ethereum Research Discussions</h3>')
+                    content_parts.append('<h3 class="section-title">Ethereum Research Discussions</h3>')
                     content_parts.extend(disc['content'] for disc in ethresear_discussions)
                     content_parts.append('</div>')
 
@@ -388,7 +395,7 @@ class ForumService:
                 logger.warning("No content generated for forum summary")
                 return None
 
-            # Combine all parts
+            # Combine all parts with proper container
             summary = '<div class="forum-discussions-container">' + '\n'.join(content_parts) + '</div>'
             logger.info("Successfully generated forum summary")
             return summary
