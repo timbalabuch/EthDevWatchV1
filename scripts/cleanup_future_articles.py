@@ -70,7 +70,7 @@ def cleanup_future_articles():
         db.session.rollback()
         return False
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     success = cleanup_future_articles()
     exit_code = 0 if success else 1
     sys.exit(exit_code)
