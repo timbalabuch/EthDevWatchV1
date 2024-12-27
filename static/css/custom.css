@@ -24,6 +24,13 @@
     --bs-border-color: var(--border-color);
 }
 
+.accordion-header {
+    padding: 10px !important;
+    margin-bottom: 0px !important;
+    border-bottom-width: 0px !important;
+
+}
+
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);

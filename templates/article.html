@@ -1,24 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Main Article Container -->
 <article class="ethereum-article">
     <div class="card mb-4">
         <div class="card-body">
+            <!-- Article Header Section -->
             <header class="article-header mb-5">
+                <!-- Article Title -->
                 <h1 class="card-title display-5 mb-3">{{ article.title }}</h1>
+                <!-- Publication Date -->
                 <p class="text-muted mb-3 fs-5">
-                        {{ format_date(article.publication_date) }}
-                    </p>
-                    <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
-                       target="_blank"
-                       class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 4l11.5 11.5M4 20L20 4" />
-                        </svg>
-                        Share on X
-                    </a>
+                    {{ format_date(article.publication_date) }}
+                </p>
+                <!-- Social Share Button -->
+                <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
+                   target="_blank"
+                   class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4l11.5 11.5M4 20L20 4" />
+                    </svg>
+                    Share on X
+                </a>
             </header>
 
+            <!-- Overview Section: Brief summary of the article -->
             <section class="overview-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Overview</h2>
@@ -28,20 +34,21 @@
                 </div>
             </section>
 
+            <!-- Community Discussions Section: Forum discussions from Ethereum Magicians and Research -->
             <section class="community-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Community Discussions</h2>
                     <div class="forum-content">
                         {% if article.magicians_discussions or article.ethresearch_discussions %}
+                            <!-- Ethereum Magicians Discussions -->
                             {% if article.magicians_discussions %}
                                 <div class="ethereum-magicians mb-4">
                                     <h3 class="h4 mb-3 d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2">
-                                            <path d="M12 3a9 9 0 1 0 9 9"></path>
-                                            <path d="M12 3v6l4-4"></path>
-                                        </svg>
+                                        <!-- Ethereum Magicians Logo -->
+                                        <img src="/static/images/ethmagicians.png" alt="Ethereum Logo" class="eth-logo me-2">
                                         <a href="https://ethereum-magicians.org" target="_blank" class="text-decoration-none">
                                             Ethereum Magicians
+                                            <!-- External Link Icon -->
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
                                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -49,21 +56,20 @@
                                             </svg>
                                         </a>
                                     </h3>
+                                    <!-- Magicians Discussions Content -->
                                     {{ article.magicians_discussions | safe }}
                                 </div>
                             {% endif %}
 
+                            <!-- Ethereum Research Discussions -->
                             {% if article.ethresearch_discussions %}
                                 <div class="ethresearch mb-4">
                                     <h3 class="h4 mb-3 d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                                        </svg>
+                                        <!-- Ethereum Research Logo -->
+                                        <img src="/static/images/ethresearch.png" alt="Ethereum Logo" class="eth-logo me-2">
                                         <a href="https://ethresear.ch" target="_blank" class="text-decoration-none">
                                             Ethereum Research
+                                            <!-- External Link Icon -->
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
                                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -71,10 +77,12 @@
                                             </svg>
                                         </a>
                                     </h3>
+                                    <!-- Research Discussions Content -->
                                     {{ article.ethresearch_discussions | safe }}
                                 </div>
                             {% endif %}
                         {% else %}
+                            <!-- No Discussions Found Message -->
                             <div class="alert alert-info">
                                 <p class="mb-0">No forum discussions available for this period.</p>
                             </div>
@@ -83,9 +91,11 @@
                 </div>
             </section>
 
+            <!-- Repository Updates Section: Changes and technical details -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Repository Updates</h2>
+                    <!-- Latest Changes Subsection -->
                     {% if article.repository_updates %}
                         <div class="repository-updates mb-4">
                             <h3 class="h4 mb-3">Latest Changes</h3>
@@ -93,6 +103,7 @@
                         </div>
                     {% endif %}
 
+                    <!-- Technical Highlights Subsection -->
                     {% if article.technical_highlights %}
                         <div class="technical-highlights mb-4">
                             <h3 class="h4 mb-3">Technical Highlights</h3>
@@ -100,12 +111,14 @@
                         </div>
                     {% endif %}
 
+                    <!-- Next Steps Subsection -->
                     {% if article.next_steps %}
                         <div class="next-steps mb-4">
                             <h3 class="h4 mb-3">Next Steps</h3>
                             <ul class="list-unstyled">
                                 {% for step in article.next_steps %}
                                     <li class="mb-2 d-flex align-items-start">
+                                        <!-- Arrow Icon -->
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2 mt-1">
                                             <polyline points="9 18 15 12 9 6"></polyline>
                                         </svg>
@@ -116,6 +129,7 @@
                         </div>
                     {% endif %}
 
+                    <!-- Content Update Message -->
                     {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
                         <div class="alert alert-info">
                             <p class="mb-0">Content update in progress. Please check back in a few minutes.</p>
@@ -124,10 +138,12 @@
                 </div>
             </section>
 
+            <!-- Sources Section -->
             <section class="source-section">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Sources</h2>
                     {% if article.sources %}
+                        <!-- Sources Accordion -->
                         <div class="accordion" id="sourcesAccordion">
                             {% with sources=article.sources %}
                                 {% include '_source_section.html' %}
@@ -141,6 +157,8 @@
         </div>
     </div>
 </article>
+
+<!-- JavaScript Dependencies -->
 <script src="{{ url_for('static', filename='js/search.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/article.js') }}"></script>
+<script src="{{ url_for('static', filename='js/article.js') }}"></script>
 {% endblock %}

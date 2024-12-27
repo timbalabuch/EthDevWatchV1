@@ -1,17 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Admin Dashboard Container -->
 <div class="container">
+    <!-- Header Section with New Article Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Dashboard</h1>
+        <!-- Create New Article Button -->
         <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
     </div>
 
+    <!-- Articles Management Card -->
     <div class="card">
         <div class="card-body">
             <h2>Articles</h2>
+            <!-- Articles Table -->
             <div class="table-responsive">
                 <table class="table">
+                    <!-- Table Headers -->
                     <thead>
                         <tr>
                             <th>Title</th>
@@ -19,13 +25,17 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+                    <!-- Table Body: List of Articles -->
                     <tbody>
                         {% for article in articles %}
                         <tr>
                             <td>{{ article.title }}</td>
                             <td>{{ article.publication_date.strftime('%Y-%m-%d') }}</td>
+                            <!-- Article Actions -->
                             <td>
+                                <!-- Edit Article Button -->
                                 <a href="{{ url_for('edit_article', article_id=article.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <!-- View Article Button -->
                                 <a href="{{ url_for('article', article_id=article.id) }}" class="btn btn-sm btn-outline-secondary">View</a>
                             </td>
                         </tr>

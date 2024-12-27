@@ -1,17 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Hero Section: Main title and subtitle -->
 <div class="hero-section text-center">
     <h1>EthDevWatch</h1>
     <p class="subtitle">All Ethereum updates in one place, crafted by AI</p>
 </div>
 
+<!-- Main Content Container -->
 <div class="row">
     <div class="col-lg-8 mx-auto">
+        <!-- Current Week's Featured Article Section -->
         {% if current_week_article %}
         <h4 class="text-muted mb-4 fs-5">Current week</h4>
         <article class="card featured-article mb-5">
             <div class="card-body">
+                <!-- Article Title with Link -->
                 <div class="mb-4">
                     <h2 class="card-title">
                         <a href="{{ url_for('article', article_id=current_week_article.id) }}" class="text-decoration-none">
@@ -20,39 +24,48 @@
                     </h2>
                 </div>
 
+                <!-- Publication Date -->
                 <p class="text-muted mb-4">
                     {{ format_date(current_week_article.publication_date) }}
                 </p>
 
+                <!-- Article Summary Preview -->
                 <div class="article-summary mb-4">
                     {% if current_week_article.brief_summary %}
-                        {{ (current_week_article.brief_summary | string)[:350] ~ '...' if current_week_article.brief_summary | string | length > 350 else current_week_article.brief_summary | string | safe }}
+                        {{ current_week_article.brief_summary | safe }}
                     {% endif %}
                 </div>
 
+                <!-- Progress Bar Indicator -->
                 <div class="progress-bar mb-4">
                     <div class="progress-bar-fill" style="width: 100%"></div>
                 </div>
 
+                <!-- Read More Link -->
                 <a href="{{ url_for('article', article_id=current_week_article.id) }}" 
                    class="btn btn-outline-light btn-sm">Read More</a>
             </div>
         </article>
         {% endif %}
 
+        <!-- Previous Weeks' Articles Section -->
         {% if other_articles.items %}
         <h4 class="text-muted mb-4 fs-5">Previous weeks</h4>
         <div class="article-list">
+            <!-- Article Cards Loop -->
             {% for article in other_articles.items %}
             <div class="card mb-3">
                 <div class="card-body">
                     <div>
+                        <!-- Article Title with Link -->
                         <h4 class="h5 mb-2">
                             <a href="{{ url_for('article', article_id=article.id) }}" class="text-decoration-none">
                                 {{ article.title }}
                             </a>
                         </h4>
+                        <!-- Publication Date -->
                         <p class="text-muted small mb-3">{{ format_date(article.publication_date) }}</p>
+                        <!-- Read More Link -->
                         <a href="{{ url_for('article', article_id=article.id) }}" 
                            class="btn btn-outline-light btn-sm">Read More</a>
                     </div>
@@ -61,21 +74,25 @@
             {% endfor %}
         </div>
 
+        <!-- Pagination Navigation -->
         {% if other_articles.pages > 1 %}
         <nav class="d-flex justify-content-center mt-4">
             <ul class="pagination">
+                <!-- Previous Page Link -->
                 {% if other_articles.has_prev %}
                 <li class="page-item">
                     <a class="page-link" href="{{ url_for('index', page=other_articles.prev_num) }}">Previous</a>
                 </li>
                 {% endif %}
 
+                <!-- Page Numbers -->
                 {% for page_num in range(1, other_articles.pages + 1) %}
                 <li class="page-item {% if page_num == other_articles.page %}active{% endif %}">
                     <a class="page-link" href="{{ url_for('index', page=page_num) }}">{{ page_num }}</a>
                 </li>
                 {% endfor %}
 
+                <!-- Next Page Link -->
                 {% if other_articles.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="{{ url_for('index', page=other_articles.next_num) }}">Next</a>
