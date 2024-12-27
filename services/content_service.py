@@ -26,11 +26,11 @@ class ContentService:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
 
             self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4"
+            self.model = "gpt-4"  # Using stable model
             self.max_retries = 5
-            self.base_delay = 2  # Increased base delay
-            self.max_delay = 60  # Maximum delay in seconds
-            self.jitter = 0.1    # Add randomness to delay
+            self.base_delay = 2
+            self.max_delay = 60
+            self.jitter = 0.1
             self.forum_service = ForumService()
             logger.info("ContentService initialized successfully")
         except Exception as e:
@@ -330,6 +330,9 @@ class ContentService:
         try:
             current_date = datetime.now(pytz.UTC)
 
+            # Enhanced logging for publication date handling
+            logger.info(f"Starting article generation for date: {publication_date}")
+
             # Handle publication date
             if publication_date:
                 if not isinstance(publication_date, datetime):
@@ -341,6 +344,8 @@ class ContentService:
                 publication_date = current_date - timedelta(days=days_since_monday)
                 publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
+
+            logger.info(f"Finalized publication date: {publication_date}")
 
             # Get forum discussions summary with error handling
             forum_summary = None
@@ -437,53 +442,23 @@ class ContentService:
             content = response.choices[0].message.content
             sections = self._extract_content_sections(content)
 
-            # Ensure minimum length for brief summary
-            if len(sections['brief_summary']) < 700:
-                logger.warning(f"Brief summary too short ({len(sections['brief_summary'])} chars), regenerating...")
-                messages[0]["content"] += "\n\nIMPORTANT: Your explanation MUST be at least 700 characters long."
-                response = self._retry_with_exponential_backoff(
-                    self.openai.chat.completions.create,
-                    model=self.model,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=2000
-                )
-                content = response.choices[0].message.content
-                sections = self._extract_content_sections(content)
+            # Log sections for debugging
+            logger.debug(f"Extracted sections: {json.dumps({k: v[:100] + '...' if isinstance(v, str) else v for k, v in sections.items()})}")
 
             # Format the content as HTML with the added forum summary or error message
-            forum_section = ""
-            if forum_summary:
-                forum_section = f"""
-                    <div class="forum-discussions mb-4">
-                        <h2 class="section-title">Community Discussions</h2>
-                        <div class="forum-summary">
-                            {forum_summary}
-                        </div>
-                    </div>
-                """
-            elif forum_error:
-                forum_section = f"""
-                    <div class="forum-discussions mb-4">
-                        <h2 class="section-title">Community Discussions</h2>
-                        <div class="alert alert-warning">
-                            <strong>Note:</strong> {forum_error}
-                        </div>
-                    </div>
-                """
-
-            content = self._format_article_content({
+            article_content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
                 'next_steps': sections['next_steps'],
-                'forum_summary': forum_section
+                'forum_summary': forum_summary
             })
 
+            # Create and save the article
             article = Article(
                 title=sections['title'],
-                content=content,
+                content=article_content,
                 publication_date=publication_date,
                 status='published',
                 published_date=current_date,
@@ -508,6 +483,6 @@ class ContentService:
             return article
 
         except Exception as e:
-            logger.error(f"Error in generate_weekly_summary: {str(e)}")
+            logger.error(f"Error in generate_weekly_summary: {str(e)}", exc_info=True)
             db.session.rollback()
             raise
