@@ -141,6 +141,13 @@ a:hover {
     color: var(--accent-secondary);
 }
 
+/* Custom footer text styles */
+.footer .text-muted {
+    letter-spacing: 0.5px; /* Adjust the letter spacing */
+    font-size: 14px; /* Reduce the font size */
+    font-weight: 200;
+}
+
 .form-control {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -194,16 +201,16 @@ a:hover {
     background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 1rem;
+    margin-bottom: 0px;
     font-family: 'Titillium Web', sans-serif;
 }
 
 .hero-section .subtitle {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     color: var(--text-secondary);
     max-width: 800px;
     margin: 0 auto;
-    font-weight: 300;
+    font-weight: 200;
 }
 
 .card {
@@ -452,8 +459,8 @@ a:hover {
     }
 
     .hero-section .subtitle {
-        font-size: 1.1rem;
-        padding: 0 1rem;
+        font-size: 0.9rem;
+     
     }
     .card {
         margin: 0.5rem;
