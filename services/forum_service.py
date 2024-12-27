@@ -19,16 +19,16 @@ class ForumService:
         self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
         self.ethresear_base_url = "https://ethresear.ch"
         self.ethresear_categories = [
+            "latest.json",  # Get latest posts across all categories
             "c/protocol/16.json",
-            "c/research/15.json",
-            "c/layer-2/32.json"
+            "c/rollups/45.json"  # Updated category for L2/rollups
         ]
         self.model = "gpt-4"
-        self.max_retries = 5
-        self.base_delay = 10
-        self.max_delay = 120
+        self.max_retries = 3  # Reduced retries to avoid long waits
+        self.base_delay = 20  # Increased base delay for rate limiting
+        self.max_delay = 60
         self.last_api_call = 0
-        self.min_time_between_calls = 5
+        self.min_time_between_calls = 10  # Increased minimum time between calls
 
         # Initialize session with custom headers
         self.session = requests.Session()
@@ -101,6 +101,7 @@ class ForumService:
             fetch_start_time = time.time()
 
             all_discussions = []
+            processed_topics = set()  # Track processed topics to avoid duplicates
 
             # Fetch from multiple categories
             for category in self.ethresear_categories:
@@ -108,46 +109,37 @@ class ForumService:
                 logger.info(f"Fetching discussions from category: {category}")
 
                 try:
+                    # Add delay between category fetches
+                    if len(all_discussions) > 0:
+                        time.sleep(self.min_time_between_calls)
+
                     response = self._retry_with_backoff(
                         self.session.get,
                         category_url,
                         timeout=60
                     )
+
+                    if response.status_code == 404:
+                        logger.warning(f"Category not found: {category}, skipping...")
+                        continue
+
                     response.raise_for_status()
-
-                    if response.status_code == 429:
-                        logger.warning(f"Rate limit hit for ethresear.ch API category: {category}")
-                        continue
-
-                    try:
-                        data = response.json()
-                    except ValueError as e:
-                        logger.error(f"Failed to parse JSON response for category {category}: {str(e)}")
-                        logger.debug(f"Response content: {response.text[:1000]}")
-                        continue
-
-                    if not data:
-                        logger.error(f"Empty response from ethresear.ch API for category: {category}")
-                        continue
+                    data = response.json()
 
                     if not data or 'topic_list' not in data:
-                        logger.error(f"Invalid response format from ethresear.ch for category: {category}")
-                        logger.debug(f"Response content: {str(data)[:1000]}")
+                        logger.warning(f"Invalid response format from ethresear.ch for category: {category}")
                         continue
 
-                except requests.RequestException as e:
-                    logger.error(f"Failed to fetch ethresear.ch data for category {category}: {str(e)}")
-                    if hasattr(e, 'response'):
-                        logger.error(f"Status code: {e.response.status_code}")
-                        logger.error(f"Response text: {e.response.text[:1000]}")
-                    continue
-
-                if 'topic_list' in data and 'topics' in data['topic_list']:
-                    topics = data['topic_list']['topics']
+                    topics = data['topic_list'].get('topics', [])
                     logger.info(f"Found {len(topics)} topics in category {category}")
 
                     for topic in topics:
                         try:
+                            topic_id = topic.get('id')
+                            if topic_id in processed_topics:  # Skip if already processed
+                                continue
+                            processed_topics.add(topic_id)
+
                             created_at = topic.get('created_at')
                             if not created_at:
                                 continue
@@ -161,19 +153,17 @@ class ForumService:
                                     except ValueError:
                                         continue
                                 else:
-                                    logger.error(f"Could not parse date {created_at} in any known format")
                                     continue
-
                             except Exception as e:
-                                logger.error(f"Unexpected error parsing date {created_at}: {str(e)}")
+                                logger.debug(f"Date parsing error for {created_at}: {str(e)}")
                                 continue
 
                             if start_date <= post_date <= end_date:
-                                topic_id = topic.get('id')
                                 slug = topic.get('slug', str(topic_id))
                                 topic_url = f"{self.ethresear_base_url}/t/{slug}/{topic_id}.json"
 
-                                logger.debug(f"Fetching details for ethresear.ch topic: {topic.get('title', 'Unknown')}")
+                                # Add delay between topic fetches
+                                time.sleep(self.min_time_between_calls)
 
                                 topic_response = self._retry_with_backoff(
                                     self.session.get,
@@ -208,6 +198,10 @@ class ForumService:
                             logger.error(f"Error processing ethresear.ch topic: {str(e)}", exc_info=True)
                             continue
 
+                except requests.RequestException as e:
+                    logger.error(f"Failed to fetch ethresear.ch data for category {category}: {str(e)}")
+                    continue
+
             total_fetch_time = time.time() - fetch_start_time
             logger.info(f"Successfully fetched {len(all_discussions)} relevant discussions from ethresear.ch in {total_fetch_time:.2f} seconds")
             return all_discussions
@@ -215,6 +209,220 @@ class ForumService:
         except Exception as e:
             logger.error(f"Error fetching ethresear.ch discussions: {str(e)}", exc_info=True)
             return []
+
+    def _wait_for_rate_limit(self):
+        """Implement rate limiting for API calls."""
+        now = time.time()
+        time_since_last_call = now - self.last_api_call
+        if time_since_last_call < self.min_time_between_calls:
+            sleep_time = self.min_time_between_calls - time_since_last_call
+            logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+        self.last_api_call = time.time()
+
+    def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
+        """Execute a function with exponential backoff retry logic."""
+        last_error = None
+        for attempt in range(self.max_retries):
+            try:
+                self._wait_for_rate_limit()
+                response = func(*args, **kwargs)
+
+                if isinstance(response, requests.Response):
+                    if response.status_code == 404:
+                        return response  # Return 404 response without retrying
+                    response.raise_for_status()
+                    logger.debug(f"Request successful - Status: {response.status_code}")
+                return response
+
+            except Exception as e:
+                last_error = e
+                delay = min(self.max_delay, self.base_delay * (2 ** attempt))
+
+                if isinstance(e, requests.RequestException) and hasattr(e, 'response'):
+                    logger.error(f"Request failed - Status: {e.response.status_code}")
+                    if e.response.status_code == 404:
+                        return e.response  # Return 404 response without retrying
+
+                if attempt < self.max_retries - 1:
+                    logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    logger.error(f"All {self.max_retries} attempts failed")
+
+        raise last_error
+
+    def summarize_forum_discussions(self, discussions: List[Dict], source: str) -> Optional[str]:
+        """Generate a summary of forum discussions for a specific source using OpenAI."""
+        if not discussions:
+            logger.warning(f"No discussions provided for summarization from {source}")
+            return None
+
+        if not self.openai:
+            logger.warning("OpenAI client not initialized - returning raw discussion content")
+            return self._format_raw_discussions(discussions)
+
+        try:
+            logger.info(f"Starting {source} forum discussions summarization")
+            formatted_discussions = []
+            for disc in discussions:
+                content_soup = BeautifulSoup(disc['content'], 'lxml')
+                clean_content = content_soup.get_text(strip=True)
+                formatted_discussions.append(
+                    f"Title: {disc['title']}\n"
+                    f"Date: {disc['date'].strftime('%Y-%m-%d')}\n"
+                    f"URL: {disc['url']}\n"
+                    f"Content Summary: {clean_content[:1000]}..."
+                )
+
+            combined_text = "\n\n---\n\n".join(formatted_discussions)
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""You are an expert in Ethereum protocol discussions. 
+                    Summarize the key points from {source} forum discussions in a clear, 
+                    accessible way. Focus on:
+                    1. Main topics discussed
+                    2. Important decisions or consensus reached
+                    3. Notable technical proposals
+                    Keep the summary concise and use plain language.
+                    Format the output in HTML with appropriate headings and structure."""
+                },
+                {
+                    "role": "user",
+                    "content": f"Summarize these {source} discussions from the past week:\n\n{combined_text}"
+                }
+            ]
+
+            logger.info(f"Sending request to OpenAI for {source} forum discussion summary")
+
+            try:
+                self._wait_for_rate_limit()
+                response = self.openai.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+
+                summary = response.choices[0].message.content.strip()
+                logger.info(f"Successfully generated {source} forum discussion summary")
+
+                if not summary.startswith('<'):
+                    summary = f"""
+                    <div class="forum-summary {source.lower().replace('.', '-')}">
+                        <h3 class="forum-summary-title">{source} Discussions</h3>
+                        {summary}
+                    </div>
+                    """
+
+                return summary
+
+            except Exception as e:
+                logger.error(f"OpenAI API error: {str(e)}")
+                return self._format_raw_discussions(discussions)
+
+        except Exception as e:
+            logger.error(f"Error generating {source} forum discussion summary: {str(e)}", exc_info=True)
+            return self._format_raw_discussions(discussions)
+
+    def get_weekly_forum_summary(self, date: datetime) -> Optional[str]:
+        """Get a summary of forum discussions for a specific week."""
+        try:
+            logger.info(f"Getting forum summary for week of {date.strftime('%Y-%m-%d')}")
+
+            # Fetch discussions from both sources
+            em_discussions = self.fetch_forum_discussions(date)
+            ethresear_discussions = self.fetch_ethresear_discussions(date)
+
+            if not em_discussions and not ethresear_discussions:
+                logger.warning("No forum discussions found for the specified week")
+                return None
+
+            logger.info(f"Found {len(em_discussions)} Ethereum Magicians discussions and {len(ethresear_discussions)} Ethereum Research discussions")
+
+            # Generate summaries for each source
+            em_summary = None
+            ethresear_summary = None
+
+            if em_discussions:
+                em_summary = self.summarize_forum_discussions(em_discussions, "Ethereum Magicians")
+                time.sleep(self.min_time_between_calls)  # Add delay between summary generations
+
+            if ethresear_discussions:
+                ethresear_summary = self.summarize_forum_discussions(ethresear_discussions, "Ethereum Research")
+
+            # Combine summaries and discussions
+            content_parts = []
+
+            # Add summaries section if any exists
+            summaries = []
+            if em_summary:
+                summaries.append(em_summary)
+            if ethresear_summary:
+                summaries.append(ethresear_summary)
+
+            if summaries:
+                content_parts.append('<div class="forum-summaries mb-4">' + '\n'.join(summaries) + '</div>')
+
+            # Add discussion sections
+            if em_discussions or ethresear_discussions:
+                content_parts.append('<div class="forum-discussions">')
+
+                if em_discussions:
+                    content_parts.append('<div class="ethereum-magicians-section mb-4">')
+                    content_parts.append('<h3>Ethereum Magicians Discussions</h3>')
+                    content_parts.extend(disc['content'] for disc in em_discussions)
+                    content_parts.append('</div>')
+
+                if ethresear_discussions:
+                    content_parts.append('<div class="ethereum-research-section mb-4">')
+                    content_parts.append('<h3>Ethereum Research Discussions</h3>')
+                    content_parts.extend(disc['content'] for disc in ethresear_discussions)
+                    content_parts.append('</div>')
+
+                content_parts.append('</div>')
+
+            if not content_parts:
+                logger.warning("No content generated for forum summary")
+                return None
+
+            # Combine all parts
+            summary = '<div class="forum-discussions-container">' + '\n'.join(content_parts) + '</div>'
+            logger.info("Successfully generated forum summary")
+            return summary
+
+        except Exception as e:
+            logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
+            return None
+
+    def _format_raw_discussions(self, discussions: List[Dict]) -> str:
+        """Format discussions without OpenAI summarization."""
+        formatted_content = []
+        for disc in discussions:
+            content_soup = BeautifulSoup(disc['content'], 'lxml')
+            clean_content = content_soup.get_text(strip=True)[:500]
+            formatted_content.append(f"""
+                <div class="forum-discussion-item">
+                    <h4>{disc['title']}</h4>
+                    <p>Source: {disc['source']}</p>
+                    <p>Date: {disc['date'].strftime('%Y-%m-%d')}</p>
+                    <div class="forum-content">{clean_content}...</div>
+                    <a href="{disc['url']}" target="_blank" class="forum-link">
+                        Read more →
+                    </a>
+                </div>
+            """)
+
+        return f"""
+        <div class="forum-discussion-summary">
+            <div class="alert alert-info">
+                Summaries are temporarily unavailable. Showing raw discussion content.
+            </div>
+            {''.join(formatted_content)}
+        </div>
+        """
 
     def fetch_forum_discussions(self, week_date: datetime) -> List[Dict]:
         """Fetch forum discussions from Ethereum Magicians for a specific week."""
@@ -326,52 +534,6 @@ class ForumService:
             logger.error(f"Error fetching forum discussions: {str(e)}", exc_info=True)
             return []
 
-    def _wait_for_rate_limit(self):
-        """Implement rate limiting for API calls."""
-        now = time.time()
-        time_since_last_call = now - self.last_api_call
-        if time_since_last_call < self.min_time_between_calls:
-            sleep_time = self.min_time_between_calls - time_since_last_call
-            logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
-            time.sleep(sleep_time)
-        self.last_api_call = time.time()
-
-    def _retry_with_backoff(self, func: Any, *args: Any, **kwargs: Any) -> Any:
-        """Execute a function with exponential backoff retry logic."""
-        for attempt in range(self.max_retries):
-            try:
-                self._wait_for_rate_limit()
-                response = func(*args, **kwargs)
-
-
-                # Log successful response details
-                if isinstance(response, requests.Response):
-                    logger.debug(f"Request successful - Status: {response.status_code}")
-                return response
-
-            except (requests.RequestException, Exception) as e:
-                # Calculate delay with exponential backoff
-                delay = min(self.max_delay, self.base_delay * (2 ** attempt))
-
-
-                # Log detailed error information
-                logger.error(f"Attempt {attempt + 1}/{self.max_retries} failed")
-                logger.error(f"Error type: {type(e).__name__}")
-                logger.error(f"Error message: {str(e)}")
-
-                if isinstance(e, requests.RequestException) and hasattr(e, 'response'):
-                    logger.error(f"Status code: {e.response.status_code}")
-                    logger.error(f"Response headers: {dict(e.response.headers)}")
-                    logger.error(f"Response text: {e.response.text[:1000]}")
-
-                if attempt < self.max_retries - 1:
-                    logger.info(f"Retrying in {delay} seconds...")
-                    time.sleep(delay)
-                else:
-                    logger.error(f"Max retries ({self.max_retries}) exceeded")
-                    raise
-        raise Exception("Retry logic failed to return or raise")
-
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
         """Generate a summary of forum discussions using OpenAI."""
         if not discussions:
@@ -386,10 +548,12 @@ class ForumService:
             logger.info("Starting forum discussions summarization")
             formatted_discussions = []
             for disc in discussions:
+                content_soup = BeautifulSoup(disc['content'], 'lxml')
+                clean_content = content_soup.get_text(strip=True)
                 formatted_discussions.append(
                     f"Title: {disc['title']}\nSource: {disc['source']}\n"
                     f"Date: {disc['date'].strftime('%Y-%m-%d')}\n"
-                    f"URL: {disc['url']}\nContent: {disc['content'][:1000]}..."
+                    f"URL: {disc['url']}\nContent: {clean_content[:1000]}..."
                 )
 
             combined_text = "\n\n---\n\n".join(formatted_discussions)
@@ -404,7 +568,6 @@ class ForumService:
                     2. Important decisions or consensus reached
                     3. Notable technical proposals
                     Keep the summary concise and use plain language.
-
                     Format the output in HTML, using appropriate tags for structure."""
                 },
                 {
@@ -415,195 +578,27 @@ class ForumService:
 
             logger.info("Sending request to OpenAI for forum discussion summary")
 
-            for attempt in range(self.max_retries):
-                try:
-                    self._wait_for_rate_limit()
-                    response = self.openai.chat.completions.create(
-                        model=self.model,
-                        messages=messages,
-                        temperature=0.7,
-                        max_tokens=1000
-                    )
+            try:
+                self._wait_for_rate_limit()
+                response = self.openai.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=1000
+                )
 
-                    summary = response.choices[0].message.content.strip()
-                    logger.info("Successfully generated forum discussion summary")
+                summary = response.choices[0].message.content.strip()
+                logger.info("Successfully generated forum discussion summary")
 
-                    if not summary.startswith('<'):
-                        summary = f'<div class="forum-discussion-summary">{summary}</div>'
+                if not summary.startswith('<'):
+                    summary = f'<div class="forum-discussion-summary">{summary}</div>'
 
-                    return summary
+                return summary
 
-                except Exception as e:
-                    if attempt == self.max_retries - 1:
-                        logger.error(f"Failed to generate summary after {self.max_retries} attempts: {str(e)}")
-                        return None
-
-                    delay = min(300, self.base_delay * (2 ** attempt))
-                    logger.warning(f"Summary generation attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
-                    time.sleep(delay)
+            except Exception as e:
+                logger.error(f"OpenAI API error: {str(e)}")
+                return self._format_raw_discussions(discussions)
 
         except Exception as e:
             logger.error(f"Error generating forum discussion summary: {str(e)}", exc_info=True)
             return None
-
-    def summarize_forum_discussions(self, discussions: List[Dict], source: str) -> Optional[str]:
-        """Generate a summary of forum discussions for a specific source using OpenAI."""
-        if not discussions:
-            logger.warning(f"No discussions provided for summarization from {source}")
-            return None
-
-        if not self.openai:
-            logger.warning("OpenAI client not initialized - returning raw discussion content")
-            return self._format_raw_discussions(discussions)
-
-        try:
-            logger.info(f"Starting {source} forum discussions summarization")
-            formatted_discussions = []
-            for disc in discussions:
-                formatted_discussions.append(
-                    f"Title: {disc['title']}\nSource: {disc['source']}\n"
-                    f"Date: {disc['date'].strftime('%Y-%m-%d')}\n"
-                    f"URL: {disc['url']}\nContent: {disc['content'][:1000]}..."
-                )
-
-            combined_text = "\n\n---\n\n".join(formatted_discussions)
-
-            messages = [
-                {
-                    "role": "system",
-                    "content": f"""You are an expert in Ethereum protocol discussions. 
-                    Summarize the key points from {source} forum discussions in a clear, 
-                    accessible way. Focus on:
-                    1. Main topics discussed
-                    2. Important decisions or consensus reached
-                    3. Notable technical proposals
-                    Keep the summary concise and use plain language.
-
-                    Format the output in HTML with a clear heading for {source}."""
-                },
-                {
-                    "role": "user",
-                    "content": f"Summarize these {source} forum discussions:\n\n{combined_text}"
-                }
-            ]
-
-            logger.info(f"Sending request to OpenAI for {source} forum discussion summary")
-
-            for attempt in range(self.max_retries):
-                try:
-                    self._wait_for_rate_limit()
-                    response = self.openai.chat.completions.create(
-                        model=self.model,
-                        messages=messages,
-                        temperature=0.7,
-                        max_tokens=1000
-                    )
-
-                    summary = response.choices[0].message.content.strip()
-                    logger.info(f"Successfully generated {source} forum discussion summary")
-
-                    if not summary.startswith('<'):
-                        summary = f'<div class="forum-discussion-summary {source.lower().replace(".", "-")}">{summary}</div>'
-
-                    return summary
-
-                except Exception as e:
-                    if attempt == self.max_retries - 1:
-                        logger.error(f"Failed to generate {source} summary after {self.max_retries} attempts: {str(e)}")
-                        return None
-
-                    delay = min(300, self.base_delay * (2 ** attempt))
-                    logger.warning(f"Summary generation attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
-                    time.sleep(delay)
-
-        except Exception as e:
-            logger.error(f"Error generating {source} forum discussion summary: {str(e)}", exc_info=True)
-            return None
-
-    def get_weekly_forum_summary(self, date: datetime) -> Optional[str]:
-        """Get a summary of forum discussions for a specific week."""
-        try:
-            logger.info(f"Getting forum summary for week of {date.strftime('%Y-%m-%d')}")
-
-            # Fetch discussions from both sources
-            em_discussions = self.fetch_forum_discussions(date)
-            ethresear_discussions = self.fetch_ethresear_discussions(date)
-
-            if not em_discussions and not ethresear_discussions:
-                logger.warning("No forum discussions found for the specified week")
-                return None
-
-            logger.info(f"Found {len(em_discussions)} Ethereum Magicians discussions and {len(ethresear_discussions)} Ethereum Research discussions")
-
-            # Generate summaries for each source
-            em_summary = self.summarize_forum_discussions(em_discussions, "Ethereum Magicians") if em_discussions else None
-            ethresear_summary = self.summarize_forum_discussions(ethresear_discussions, "Ethereum Research") if ethresear_discussions else None
-
-            summaries = []
-            if em_summary:
-                summaries.append(em_summary)
-            if ethresear_summary:
-                summaries.append(ethresear_summary)
-
-            # Format discussions for display
-            formatted_discussions = []
-
-            # Add Ethereum Magicians discussions
-            if em_discussions:
-                formatted_discussions.extend([
-                    self._format_forum_content(
-                        content=disc['content'],
-                        source=disc['source'],
-                        title=disc['title'],
-                        date=disc['date'],
-                        url=disc['url']
-                    ) for disc in em_discussions if disc['source'] == 'ethereum-magicians.org'
-                ])
-
-            # Add Ethereum Research discussions
-            if ethresear_discussions:
-                formatted_discussions.extend([
-                    self._format_forum_content(
-                        content=disc['content'],
-                        source=disc['source'],
-                        title=disc['title'],
-                        date=disc['date'],
-                        url=disc['url']
-                    ) for disc in ethresear_discussions if disc['source'] == 'ethresear.ch'
-                ])
-
-            if not formatted_discussions and not summaries:
-                logger.warning("No discussions could be formatted properly")
-                return None
-
-            # Combine summaries and formatted discussions
-            summary = '<div class="forum-discussions-container">'
-            if summaries:
-                summary += '<div class="forum-summaries mb-4">' + '\n'.join(summaries) + '</div>'
-            summary += '\n'.join(formatted_discussions)
-            summary += '</div>'
-
-            logger.info("Successfully generated forum summary")
-            return summary
-
-        except Exception as e:
-            logger.error(f"Error getting weekly forum summary: {str(e)}", exc_info=True)
-            return None
-
-    def _format_raw_discussions(self, discussions: List[Dict]) -> str:
-        """Format discussions without OpenAI summarization."""
-        formatted_content = []
-        for disc in discussions:
-            formatted_content.append(f"""
-                <div class="forum-discussion-item">
-                    <h4>{disc['title']}</h4>
-                    <p>Source: {disc['source']}</p>
-                    <p>Date: {disc['date'].strftime('%Y-%m-%d')}</p>
-                    <div class="forum-content">{disc['content'][:500]}...</div>
-                    <a href="{disc['url']}" target="_blank" class="forum-link">
-                        Read more →
-                    </a>
-                </div>
-            """)
-
-        return '<div class="forum-discussion-summary">' + ''.join(formatted_content) + '</div>'

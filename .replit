@@ -75,6 +75,10 @@ args = "Generate One Article"
 task = "workflow.run"
 args = "Regenerate Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate Sample Data"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -285,6 +289,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/regenerate_articles.py"
+
+[[workflows.workflow]]
+name = "Generate Sample Data"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/generate_sample_data.py"
 
 [[ports]]
 localPort = 3000
