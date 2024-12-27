@@ -29,24 +29,24 @@ def generate_article_for_date(target_date=None):
         github_service = GitHubService()
         content_service = ContentService()
 
-        # Get real GitHub content
-        logger.info("Fetching GitHub content...")
-        github_content = github_service.fetch_recent_content()
-
-        if not github_content:
-            logger.error("No content fetched from GitHub")
-            return False
-
-        logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
+        current_date = datetime.utcnow()
 
         # Get Monday for the target date or current week
         if target_date:
             monday = target_date - timedelta(days=target_date.weekday())
         else:
-            current_date = datetime.utcnow()
+            # If no target date, use current week's Monday only if it's Monday
+            if current_date.weekday() != 0:
+                logger.info("Today is not Monday. Articles can only be created on Mondays.")
+                return False
             monday = current_date - timedelta(days=current_date.weekday())
 
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Prevent creation of future articles
+        if monday >= current_date.replace(hour=0, minute=0, second=0, microsecond=0):
+            logger.info(f"Cannot create article for future week of {monday.strftime('%Y-%m-%d')}")
+            return False
 
         with app.app_context():
             try:
@@ -61,6 +61,16 @@ def generate_article_for_date(target_date=None):
                 if existing_article:
                     logger.warning(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
                     return False
+
+                # Get real GitHub content
+                logger.info("Fetching GitHub content...")
+                github_content = github_service.fetch_recent_content()
+
+                if not github_content:
+                    logger.error("No content fetched from GitHub")
+                    return False
+
+                logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
                 # Generate the article
                 article = content_service.generate_weekly_summary(github_content, monday)
