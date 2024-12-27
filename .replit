@@ -63,6 +63,10 @@ args = "Add Forum Summary Column"
 task = "workflow.run"
 args = "Create Blockchain Terms Table"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Remove All Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -231,6 +235,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/add_blockchain_terms.py"
+
+[[workflows.workflow]]
+name = "Remove All Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/remove_all_articles.py"
 
 [[ports]]
 localPort = 3000
