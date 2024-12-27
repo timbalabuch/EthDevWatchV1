@@ -34,10 +34,11 @@ def remove_duplicate_articles():
                 logger.info("No duplicate articles found")
                 return
 
+            total_removed = 0
             for group in duplicate_groups:
                 pub_date = group.pub_date
                 article_ids = group.article_ids
-                
+
                 logger.info(f"Processing duplicate group for date {pub_date}")
                 logger.info(f"Found {len(article_ids)} articles")
 
@@ -57,22 +58,23 @@ def remove_duplicate_articles():
                     )
 
                     # Delete duplicate articles
-                    Article.query.filter(
+                    deleted = Article.query.filter(
                         Article.id.in_(remove_ids)
                     ).delete(
                         synchronize_session=False
                     )
+                    total_removed += deleted
 
                     # Commit changes for this group
                     db.session.commit()
-                    logger.info(f"Successfully processed duplicate group for {pub_date}")
+                    logger.info(f"Successfully removed {deleted} duplicate articles for {pub_date}")
 
                 except Exception as e:
                     logger.error(f"Error processing duplicate group: {str(e)}")
                     db.session.rollback()
                     continue
 
-            logger.info("Duplicate removal completed successfully")
+            logger.info(f"Successfully removed {total_removed} duplicate articles")
 
     except Exception as e:
         logger.error(f"Error removing duplicate articles: {str(e)}")

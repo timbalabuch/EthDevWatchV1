@@ -83,6 +83,10 @@ args = "Generate Sample Data"
 task = "workflow.run"
 args = "Generate Past Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Cleanup Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -321,6 +325,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/generate_past_articles.py"
+
+[[workflows.workflow]]
+name = "Cleanup Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/cleanup_future_articles.py && python migrations/remove_duplicate_articles.py"
 
 [[ports]]
 localPort = 3000
