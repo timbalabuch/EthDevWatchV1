@@ -30,6 +30,19 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+class Subscriber(db.Model):
+    """Model for email subscribers who want to receive article notifications."""
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    confirmed = db.Column(db.Boolean, default=False)
+    confirmation_token = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+
+    def __repr__(self):
+        return f'<Subscriber {self.email}>'
+
+
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -37,7 +50,7 @@ class Article(db.Model):
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
-    forum_summary = db.Column(db.Text)  # New field for forum discussions
+    forum_summary = db.Column(db.Text)  # Stores forum discussion summaries
 
     # Publishing workflow columns
     status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
@@ -66,27 +79,28 @@ class Article(db.Model):
     def brief_summary(self):
         """Extract brief summary from content."""
         if not self.content:
+            logger.warning("Article content is empty")
             return None
+
         try:
             soup = BeautifulSoup(self.content, 'lxml')
             # Look for the overview content div
-            overview = soup.find('div', class_='overview-section')
+            overview = soup.select_one('div.overview-section')
             if overview:
-                # Get the actual content div inside overview section
-                overview_content = overview.find('div', class_='overview-content')
-                if overview_content:
-                    return overview_content.get_text(strip=True)
-            return None
+                return overview.get_text(strip=True)
+            else:
+                logger.warning(f"No overview section found for article {self.id}")
+                return None
         except Exception as e:
-            logger.error(f"Error extracting brief summary: {e}", exc_info=True)
+            logger.error(f"Error extracting brief summary for article {self.id}: {e}", exc_info=True)
             return None
 
     @property
     def magicians_discussions(self):
-        """Extract Ethereum Magicians discussions."""
+        """Extract Ethereum Magicians forum discussions."""
         try:
             if not self.forum_summary:
-                logger.info("No forum summary available")
+                logger.info(f"No forum summary available for article {self.id}")
                 return '<div class="alert alert-info">No forum discussions available for this period.</div>'
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
@@ -100,18 +114,19 @@ class Article(db.Model):
             if discussions:
                 return ''.join(discussions)
 
+            logger.info(f"No Ethereum Magicians discussions found for article {self.id}")
             return '<div class="alert alert-info">No discussions found on ethereum-magicians.org for this period.</div>'
 
         except Exception as e:
-            logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
+            logger.error(f"Error processing magicians discussions for article {self.id}: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
 
     @property
     def ethresearch_discussions(self):
-        """Extract Ethereum Research discussions."""
+        """Extract Ethereum Research forum discussions."""
         try:
             if not self.forum_summary:
-                logger.info("No forum summary available")
+                logger.info(f"No forum summary available for article {self.id}")
                 return '<div class="alert alert-info">No research discussions available for this period.</div>'
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
@@ -125,10 +140,11 @@ class Article(db.Model):
             if discussions:
                 return ''.join(discussions)
 
+            logger.info(f"No Ethereum Research discussions found for article {self.id}")
             return '<div class="alert alert-info">No discussions found on ethresear.ch for this period.</div>'
 
         except Exception as e:
-            logger.error(f"Error processing research discussions: {str(e)}", exc_info=True)
+            logger.error(f"Error processing research discussions for article {self.id}: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load research discussions at this time.</div>'
 
     @property

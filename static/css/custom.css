@@ -28,7 +28,6 @@
     padding: 10px !important;
     margin-bottom: 0px !important;
     border-bottom-width: 0px !important;
-
 }
 
 body {
@@ -592,4 +591,54 @@ a:hover {
     padding: 1rem;
     border-radius: 0.5rem;
     margin-bottom: 1rem;
+}
+
+/* Newsletter Subscription Section Styles */
+.subscription-section {
+    background: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.subscription-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.subscription-form .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.subscription-form .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+    border: none;
+    padding: 0.5rem 1.5rem;
+}
+
+.subscription-form .btn:hover {
+    opacity: 0.9;
+}
+
+/* Success and Error Message Styles */
+.subscription-message {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+    display: none;
+}
+
+.subscription-message.success {
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.subscription-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #ef4444;
 }
