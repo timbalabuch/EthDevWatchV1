@@ -93,17 +93,17 @@ class Article(db.Model):
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
-            
+
             # Look for discussions in both formats
             for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethereum-magicians.org' in str(item):
                     discussions.append(str(item))
-            
+
             if discussions:
                 return ''.join(discussions)
-            
+
             return '<div class="alert alert-info">No discussions found on ethereum-magicians.org for this period.</div>'
-            
+
         except Exception as e:
             logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
@@ -118,17 +118,17 @@ class Article(db.Model):
 
             soup = BeautifulSoup(self.forum_summary, 'lxml')
             discussions = []
-            
+
             # Look for discussions in both formats
             for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
                 if 'ethresear.ch' in str(item):
                     discussions.append(str(item))
-            
+
             if discussions:
                 return ''.join(discussions)
-            
+
             return '<div class="alert alert-info">No discussions found on ethresear.ch for this period.</div>'
-            
+
         except Exception as e:
             logger.error(f"Error processing research discussions: {str(e)}", exc_info=True)
             return '<div class="alert alert-warning">Unable to load research discussions at this time.</div>'
@@ -171,11 +171,3 @@ class Source(db.Model):
     repository = db.Column(db.String(100), nullable=False)  # Added repository field
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
-
-
-class BlockchainTerm(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    term = db.Column(db.String(100), unique=True, nullable=False)
-    explanation = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
-    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))

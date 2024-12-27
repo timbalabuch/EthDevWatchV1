@@ -266,10 +266,3 @@ def utility_processor() -> dict:
         format_date=format_date,
         current_time=get_current_utc
     )
-
-# Add new route for technical terms API
-@app.route('/api/technical-terms')
-def get_technical_terms():
-    """Return a dictionary of technical terms and their explanations."""
-    terms = BlockchainTerm.query.all()
-    return {term.term: term.explanation for term in terms}
