@@ -20,11 +20,11 @@ class ForumService:
         self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
         self.model = "gpt-4"
         self.max_retries = 5
-        self.base_delay = 10  # Increased initial delay
-        self.max_delay = 120  # Increased maximum delay
+        self.base_delay = 10
+        self.max_delay = 120
         self.last_api_call = 0
-        self.min_time_between_calls = 5  # Increased minimum time between calls
-        
+        self.min_time_between_calls = 5
+
         # Initialize session with custom headers
         self.session = requests.Session()
         self.session.headers.update({
@@ -45,6 +45,39 @@ class ForumService:
             self.openai = None
 
         logger.info("ForumService initialized successfully")
+
+    def _format_forum_content(self, content: str, source: str, title: str, date: datetime, url: str) -> str:
+        """Format forum content with consistent styling."""
+        try:
+            # Clean content
+            content_soup = BeautifulSoup(content, 'lxml')
+            clean_content = content_soup.get_text(strip=True)
+            brief_content = clean_content[:500] + ('...' if len(clean_content) > 500 else '')
+
+            source_class = 'ethresearch-item' if 'ethresear.ch' in source else 'magicians-item'
+
+            formatted_content = f"""
+            <div class="forum-discussion-item {source_class} mb-4">
+                <h4 class="discussion-title mb-2">{title.replace('html', '').replace('HTML', '')}</h4>
+                <div class="meta-info mb-2">
+                    <span class="date">{date.strftime('%Y-%m-%d')}</span>
+                    <span class="badge bg-info ms-2">{source}</span>
+                </div>
+                <div class="forum-content mb-3">{brief_content}</div>
+                <a href="{url}" 
+                   target="_blank" 
+                   class="forum-link btn btn-outline-info btn-sm">
+                    Read full discussion →
+                </a>
+            </div>
+            """
+
+            logger.debug(f"Successfully formatted forum content for {title}")
+            return formatted_content
+
+        except Exception as e:
+            logger.error(f"Error formatting forum content: {str(e)}")
+            return ""
 
     def _get_week_boundaries(self, date: datetime) -> tuple[datetime, datetime]:
         """Get the start and end dates for a given week."""
@@ -162,45 +195,24 @@ class ForumService:
                                 first_post = topic_data['post_stream']['posts'][0]
                                 content = first_post.get('cooked', '')
                                 
-                                # Create proper forum discussion format
-                                # Parse and clean content
-                                content_soup = BeautifulSoup(content, 'lxml')
-                                
-                                # Remove script and style elements
-                                for element in content_soup.find_all(['script', 'style']):
-                                    element.decompose()
-                                
-                                # Clean and extract text content
-                                clean_content = content_soup.get_text(strip=True)
-                                # Truncate content to a reasonable length for brief
-                                brief_content = clean_content[:500] + ('...' if len(clean_content) > 500 else '')
-                                
-                                # Format content with proper structure
-                                formatted_content = f"""
-                                <div class="forum-discussion-item ethresearch-item mb-4">
-                                    <h4 class="discussion-title mb-2">{topic.get('title', '').replace('html', '').replace('HTML', '')}</h4>
-                                    <div class="meta-info mb-2">
-                                        <span class="date">{post_date.strftime('%Y-%m-%d')}</span>
-                                        <span class="badge bg-info ms-2">ethresear.ch</span>
-                                    </div>
-                                    <div class="forum-content mb-3">{brief_content}</div>
-                                    <a href="https://ethresear.ch/t/{topic.get('slug')}/{topic.get('id')}" 
-                                       target="_blank" 
-                                       class="forum-link btn btn-outline-info btn-sm">
-                                        Read full discussion →
-                                    </a>
-                                </div>
-                                """
 
-                                discussions.append({
-                                    'title': topic.get('title', ''),
-                                    'content': formatted_content,
-                                    'url': f"https://ethresear.ch/t/{slug}/{topic_id}",
-                                    'date': post_date,
-                                    'source': 'ethresear.ch'
-                                })
-                                process_time = time.time() - process_start_time
-                                logger.info(f"Successfully added ethresear.ch discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
+                                formatted_content = self._format_forum_content(
+                                    content=content,
+                                    source='ethresear.ch',
+                                    title=topic.get('title', ''),
+                                    date=post_date,
+                                    url=f"https://ethresear.ch/t/{slug}/{topic_id}"
+                                )
+                                if formatted_content:
+                                    discussions.append({
+                                        'title': topic.get('title', ''),
+                                        'content': formatted_content,
+                                        'url': f"https://ethresear.ch/t/{slug}/{topic_id}",
+                                        'date': post_date,
+                                        'source': 'ethresear.ch'
+                                    })
+                                    process_time = time.time() - process_start_time
+                                    logger.info(f"Successfully added ethresear.ch discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
 
                     except Exception as e:
                         logger.error(f"Error processing ethresear.ch topic: {str(e)}", exc_info=True)
@@ -294,23 +306,23 @@ class ForumService:
                                 first_post = topic_data['post_stream']['posts'][0]
                                 content = first_post.get('cooked', '')
 
-                                # Clean HTML content
-                                content_soup = BeautifulSoup(content, 'lxml')
-                                clean_content = content_soup.get_text(strip=True)
-
-                                # Truncate content if too long
-                                if len(clean_content) > 5000:
-                                    clean_content = clean_content[:5000] + "..."
-
-                                discussions.append({
-                                    'title': topic.get('title', ''),
-                                    'content': clean_content,
-                                    'url': f"https://ethereum-magicians.org/t/{slug}/{topic_id}",
-                                    'date': post_date,
-                                    'source': 'ethereum-magicians.org'
-                                })
-                                process_time = time.time() - process_start_time
-                                logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
+                                formatted_content = self._format_forum_content(
+                                    content=content,
+                                    source='ethereum-magicians.org',
+                                    title=topic.get('title', ''),
+                                    date=post_date,
+                                    url=f"https://ethereum-magicians.org/t/{slug}/{topic_id}"
+                                )
+                                if formatted_content:
+                                    discussions.append({
+                                        'title': topic.get('title', ''),
+                                        'content': formatted_content,
+                                        'url': f"https://ethereum-magicians.org/t/{slug}/{topic_id}",
+                                        'date': post_date,
+                                        'source': 'ethereum-magicians.org'
+                                    })
+                                    process_time = time.time() - process_start_time
+                                    logger.info(f"Successfully added discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
 
                     except Exception as e:
                         logger.error(f"Error processing topic: {str(e)}", exc_info=True)
@@ -366,7 +378,6 @@ class ForumService:
                 else:
                     logger.error(f"Max retries ({self.max_retries}) exceeded")
                     raise
-
         raise Exception("Retry logic failed to return or raise")
 
     def summarize_discussions(self, discussions: List[Dict]) -> Optional[str]:
@@ -459,12 +470,27 @@ class ForumService:
                 logger.warning("No forum discussions found for the specified week")
                 return None
 
-            logger.info(f"Generating summary for {len(all_discussions)} discussions")
-            summary = self.summarize_discussions(all_discussions)
+            logger.info(f"Found {len(all_discussions)} discussions to summarize")
 
-            if not summary:
-                logger.warning("Failed to generate summary from forum discussions")
+            # Format each discussion
+            formatted_discussions = []
+            for disc in all_discussions:
+                formatted_content = self._format_forum_content(
+                    content=disc['content'],
+                    source=disc['source'],
+                    title=disc['title'],
+                    date=disc['date'],
+                    url=disc['url']
+                )
+                if formatted_content:
+                    formatted_discussions.append(formatted_content)
+
+            if not formatted_discussions:
+                logger.warning("No discussions could be formatted properly")
                 return None
+
+            # Combine all formatted discussions
+            summary = '<div class="forum-discussions-container">' + '\n'.join(formatted_discussions) + '</div>'
 
             logger.info("Successfully generated forum summary")
             return summary
