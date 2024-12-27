@@ -21,44 +21,49 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def get_monday_of_week(date):
-    """Get the Monday of the week for a given date"""
-    monday = date - timedelta(days=date.weekday())
-    return monday.replace(hour=0, minute=0, second=0, microsecond=0)
-
-def get_sunday_of_week(date):
-    """Get the Sunday of the week (end of week) for a given date"""
-    monday = get_monday_of_week(date)
-    return monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
-
 def generate_sample_articles():
-    """Generate articles for current week"""
+    """Generate an article for the current week"""
     try:
-        logger.info("=== Starting Sample Data Generation ===")
-
-        # Initialize services
-        logger.info("Initializing services...")
-        github_service = GitHubService()
-        content_service = ContentService()
-
-        # Get real GitHub content
-        logger.info("Fetching GitHub content...")
-        github_content = github_service.fetch_recent_content()
-
-        if not github_content:
-            logger.error("No content fetched from GitHub")
-            return False
-
-        logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
-
-        current_date = datetime.now(pytz.UTC)
-        monday = get_monday_of_week(current_date)
-
         with app.app_context():
-            try:
-                logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
+            # First, check if we already have articles
+            existing_articles = Article.query.count()
+            logger.info(f"Found {existing_articles} existing articles")
 
-                # Generate article
+            # Initialize services
+            logger.info("Initializing services...")
+            github_service = GitHubService()
+            content_service = ContentService()
+
+            # Get real GitHub content
+            logger.info("Fetching GitHub content...")
+            github_content = github_service.fetch_recent_content()
+
+            if not github_content:
+                logger.error("No content fetched from GitHub")
+                return False
+
+            logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
+
+            # Calculate the date for Monday of current week
+            current_date = datetime.now(pytz.UTC)
+            monday = current_date - timedelta(days=current_date.weekday())
+            monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            monday = pytz.UTC.localize(monday)
+
+            try:
+                logger.info(f"Generating article for week of {monday.strftime('%Y-%m-%d')}")
+
+                # Check if article already exists for this week
+                existing_article = Article.query.filter(
+                    Article.publication_date >= monday,
+                    Article.publication_date < monday + timedelta(days=7)
+                ).first()
+
+                if existing_article:
+                    logger.info(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
+                    return True
+
+                # Generate the article
                 article = content_service.generate_weekly_summary(github_content, monday)
 
                 if article:
@@ -74,12 +79,12 @@ def generate_sample_articles():
                 return False
 
     except Exception as e:
-        logger.error(f"Fatal error in sample data generation: {str(e)}", exc_info=True)
+        logger.error(f"Fatal error in article generation: {str(e)}", exc_info=True)
         return False
 
 if __name__ == "__main__":
-    print("\n=== Starting Sample Data Generation Script ===\n")
+    print("\n=== Starting Article Generation Script ===\n")
     success = generate_sample_articles()
     exit_code = 0 if success else 1
-    print(f"\n=== Sample Data Generation {'Succeeded' if success else 'Failed'} ===\n")
+    print(f"\n=== Article Generation {'Succeeded' if success else 'Failed'} ===\n")
     sys.exit(exit_code)
