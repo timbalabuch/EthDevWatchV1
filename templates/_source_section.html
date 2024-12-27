@@ -12,7 +12,7 @@
     <h2 class="accordion-header">
         <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#{{ repository | replace('/', '_') }}Collapse">
             <span class="text-accent-primary">{{ repository }}</span>
-            <span class="ms-2 badge bg-secondary">{{ repo_sources|length }}</span>
+            <span class="ms-2 badge bg-dark">{{ repo_sources|length }}</span>
         </button>
     </h2>
     <div id="{{ repository | replace('/', '_') }}Collapse" class="accordion-collapse collapse" data-bs-parent="#sourcesAccordion">

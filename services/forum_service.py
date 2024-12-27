@@ -17,7 +17,12 @@ class ForumService:
     def __init__(self):
         """Initialize the ForumService."""
         self.forum_base_url = "https://ethereum-magicians.org/c/protocol-calls/63.json"
-        self.ethresear_base_url = "https://ethresear.ch/c/protocol/16.json"
+        self.ethresear_base_url = "https://ethresear.ch"
+        self.ethresear_categories = [
+            "c/protocol/16.json",
+            "c/research/15.json",
+            "c/layer-2/32.json"
+        ]
         self.model = "gpt-4"
         self.max_retries = 5
         self.base_delay = 10
@@ -95,132 +100,117 @@ class ForumService:
             logger.info(f"Starting ethresear.ch discussions fetch for week of {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
             fetch_start_time = time.time()
 
-            try:
-                response = self._retry_with_backoff(
-                    self.session.get,
-                    self.ethresear_base_url,
-                    timeout=60
-                )
-                response.raise_for_status()
-                
-                if response.status_code == 429:
-                    logger.warning("Rate limit hit for ethresear.ch API")
-                    return []
-                    
+            all_discussions = []
+
+            # Fetch from multiple categories
+            for category in self.ethresear_categories:
+                category_url = f"{self.ethresear_base_url}/{category}"
+                logger.info(f"Fetching discussions from category: {category}")
+
                 try:
-                    data = response.json()
-                except ValueError as e:
-                    logger.error(f"Failed to parse JSON response: {str(e)}")
-                    logger.debug(f"Response content: {response.text[:1000]}")
-                    return []
-                    
-                if not data:
-                    logger.error("Empty response from ethresear.ch API")
-                    return []
-                
-                if not data or 'topic_list' not in data:
-                    logger.error("Invalid response format from ethresear.ch")
-                    logger.debug(f"Response content: {str(data)[:1000]}")
-                    return []
-                    
-            except requests.RequestException as e:
-                logger.error(f"Failed to fetch ethresear.ch data: {str(e)}")
-                if hasattr(e, 'response'):
-                    logger.error(f"Status code: {e.response.status_code}")
-                    logger.error(f"Response text: {e.response.text[:1000]}")
-                return []
-            except ValueError as e:
-                logger.error(f"Invalid JSON from ethresear.ch: {str(e)}")
-                return []
-            initial_fetch_time = time.time() - fetch_start_time
-            logger.info(f"Initial ethresear.ch data fetch completed in {initial_fetch_time:.2f} seconds")
+                    response = self._retry_with_backoff(
+                        self.session.get,
+                        category_url,
+                        timeout=60
+                    )
+                    response.raise_for_status()
 
-            discussions = []
-            if 'topic_list' in data and 'topics' in data['topic_list']:
-                topics = data['topic_list']['topics']
-                total_topics = len(topics)
-                logger.info(f"Found {total_topics} topics to process from ethresear.ch")
-
-                for index, topic in enumerate(topics, 1):
-                    try:
-                        process_start_time = time.time()
-                        logger.info(f"Processing ethresear.ch topic {index}/{total_topics} ({(index/total_topics)*100:.1f}%)")
-
-                        # Validate required topic fields
-                        required_fields = ['created_at', 'id', 'title']
-                        missing_fields = [field for field in required_fields if not topic.get(field)]
-                        
-                        if missing_fields:
-                            logger.warning(f"Skipping topic due to missing fields: {', '.join(missing_fields)}")
-                            continue
-                            
-                        created_at = topic['created_at']
-                        
-                        try:
-                            # Try different date formats
-                            for date_format in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ']:
-                                try:
-                                    post_date = datetime.strptime(created_at, date_format).replace(tzinfo=pytz.UTC)
-                                    break
-                                except ValueError:
-                                    continue
-                            else:
-                                logger.error(f"Could not parse date {created_at} in any known format")
-                                continue
-                                
-                        except Exception as e:
-                            logger.error(f"Unexpected error parsing date {created_at}: {str(e)}")
-                            continue
-
-                        if start_date <= post_date <= end_date:
-                            topic_id = topic.get('id')
-                            slug = topic.get('slug', str(topic_id))
-                            topic_url = f"https://ethresear.ch/t/{slug}/{topic_id}.json"
-
-                            logger.debug(f"Fetching details for ethresear.ch topic: {topic.get('title', 'Unknown')}")
-                            topic_fetch_start = time.time()
-
-                            topic_response = self._retry_with_backoff(
-                                self.session.get,
-                                topic_url,
-                                timeout=30
-                            )
-                            topic_response.raise_for_status()
-                            topic_data = topic_response.json()
-
-                            topic_fetch_time = time.time() - topic_fetch_start
-                            logger.debug(f"Topic details fetched in {topic_fetch_time:.2f} seconds")
-
-                            if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
-                                first_post = topic_data['post_stream']['posts'][0]
-                                content = first_post.get('cooked', '')
-                                
-
-                                formatted_content = self._format_forum_content(
-                                    content=content,
-                                    source='ethresear.ch',
-                                    title=topic.get('title', ''),
-                                    date=post_date,
-                                    url=f"https://ethresear.ch/t/{slug}/{topic_id}"
-                                )
-                                if formatted_content:
-                                    discussions.append({
-                                        'title': topic.get('title', ''),
-                                        'content': formatted_content,
-                                        'url': f"https://ethresear.ch/t/{slug}/{topic_id}",
-                                        'date': post_date,
-                                        'source': 'ethresear.ch'
-                                    })
-                                    process_time = time.time() - process_start_time
-                                    logger.info(f"Successfully added ethresear.ch discussion: {topic.get('title', '')} (processed in {process_time:.2f} seconds)")
-
-                    except Exception as e:
-                        logger.error(f"Error processing ethresear.ch topic: {str(e)}", exc_info=True)
+                    if response.status_code == 429:
+                        logger.warning(f"Rate limit hit for ethresear.ch API category: {category}")
                         continue
 
+                    try:
+                        data = response.json()
+                    except ValueError as e:
+                        logger.error(f"Failed to parse JSON response for category {category}: {str(e)}")
+                        logger.debug(f"Response content: {response.text[:1000]}")
+                        continue
+
+                    if not data:
+                        logger.error(f"Empty response from ethresear.ch API for category: {category}")
+                        continue
+
+                    if not data or 'topic_list' not in data:
+                        logger.error(f"Invalid response format from ethresear.ch for category: {category}")
+                        logger.debug(f"Response content: {str(data)[:1000]}")
+                        continue
+
+                except requests.RequestException as e:
+                    logger.error(f"Failed to fetch ethresear.ch data for category {category}: {str(e)}")
+                    if hasattr(e, 'response'):
+                        logger.error(f"Status code: {e.response.status_code}")
+                        logger.error(f"Response text: {e.response.text[:1000]}")
+                    continue
+
+                if 'topic_list' in data and 'topics' in data['topic_list']:
+                    topics = data['topic_list']['topics']
+                    logger.info(f"Found {len(topics)} topics in category {category}")
+
+                    for topic in topics:
+                        try:
+                            created_at = topic.get('created_at')
+                            if not created_at:
+                                continue
+
+                            try:
+                                # Try different date formats
+                                for date_format in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ']:
+                                    try:
+                                        post_date = datetime.strptime(created_at, date_format).replace(tzinfo=pytz.UTC)
+                                        break
+                                    except ValueError:
+                                        continue
+                                else:
+                                    logger.error(f"Could not parse date {created_at} in any known format")
+                                    continue
+
+                            except Exception as e:
+                                logger.error(f"Unexpected error parsing date {created_at}: {str(e)}")
+                                continue
+
+                            if start_date <= post_date <= end_date:
+                                topic_id = topic.get('id')
+                                slug = topic.get('slug', str(topic_id))
+                                topic_url = f"{self.ethresear_base_url}/t/{slug}/{topic_id}.json"
+
+                                logger.debug(f"Fetching details for ethresear.ch topic: {topic.get('title', 'Unknown')}")
+
+                                topic_response = self._retry_with_backoff(
+                                    self.session.get,
+                                    topic_url,
+                                    timeout=30
+                                )
+                                topic_response.raise_for_status()
+                                topic_data = topic_response.json()
+
+                                if 'post_stream' in topic_data and 'posts' in topic_data['post_stream']:
+                                    first_post = topic_data['post_stream']['posts'][0]
+                                    content = first_post.get('cooked', '')
+
+                                    formatted_content = self._format_forum_content(
+                                        content=content,
+                                        source='ethresear.ch',
+                                        title=topic.get('title', ''),
+                                        date=post_date,
+                                        url=f"{self.ethresear_base_url}/t/{slug}/{topic_id}"
+                                    )
+                                    if formatted_content:
+                                        all_discussions.append({
+                                            'title': topic.get('title', ''),
+                                            'content': formatted_content,
+                                            'url': f"{self.ethresear_base_url}/t/{slug}/{topic_id}",
+                                            'date': post_date,
+                                            'source': 'ethresear.ch'
+                                        })
+                                        logger.info(f"Successfully added ethresear.ch discussion: {topic.get('title', '')}")
+
+                        except Exception as e:
+                            logger.error(f"Error processing ethresear.ch topic: {str(e)}", exc_info=True)
+                            continue
+
             total_fetch_time = time.time() - fetch_start_time
-            logger.info(f"Successfully fetched {len(discussions)} relevant discussions from ethresear.ch in {total_fetch_time:.2f} seconds")
-            return discussions
+            logger.info(f"Successfully fetched {len(all_discussions)} relevant discussions from ethresear.ch in {total_fetch_time:.2f} seconds")
+            return all_discussions
 
         except Exception as e:
             logger.error(f"Error fetching ethresear.ch discussions: {str(e)}", exc_info=True)
@@ -353,6 +343,7 @@ class ForumService:
                 self._wait_for_rate_limit()
                 response = func(*args, **kwargs)
                 
+
                 # Log successful response details
                 if isinstance(response, requests.Response):
                     logger.debug(f"Request successful - Status: {response.status_code}")
@@ -362,6 +353,7 @@ class ForumService:
                 # Calculate delay with exponential backoff
                 delay = min(self.max_delay, self.base_delay * (2 ** attempt))
                 
+
                 # Log detailed error information
                 logger.error(f"Attempt {attempt + 1}/{self.max_retries} failed")
                 logger.error(f"Error type: {type(e).__name__}")
