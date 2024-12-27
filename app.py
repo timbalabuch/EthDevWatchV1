@@ -1,3 +1,4 @@
+
 import os
 import logging
 from datetime import datetime
@@ -6,7 +7,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
-from flask_mail import Mail
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -27,7 +27,6 @@ database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# Database Configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
@@ -36,14 +35,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "max_overflow": 5
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Email Configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@ethdevwatch.com')
 
 db.init_app(app)
 login_manager.init_app(app)

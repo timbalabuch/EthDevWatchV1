@@ -28,15 +28,8 @@
             <section class="overview-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Overview</h2>
-                    <!-- Show full overview content, article.brief_summary is generated from content div.overview-section -->
                     <div class="overview-content">
-                        {% if article.brief_summary %}
-                            {{ article.brief_summary | safe }}
-                        {% else %}
-                            <div class="alert alert-info">
-                                Overview content is not available for this article.
-                            </div>
-                        {% endif %}
+                        {{ article.brief_summary | safe }}
                     </div>
                 </div>
             </section>

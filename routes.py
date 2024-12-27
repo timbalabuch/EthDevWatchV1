@@ -2,13 +2,11 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
 
-from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
+from flask import render_template, abort, flash, redirect, url_for, request, Response
 from flask_login import current_user, login_user, logout_user, login_required
-from flask_mail import Message, Mail
-from secrets import token_urlsafe
 
 from app import app, db
-from models import Article, User, Source, Subscriber
+from models import Article, User, Source
 import pytz
 import logging
 
@@ -259,114 +257,6 @@ def utility_processor() -> dict:
         format_date=format_date,
         current_time=get_current_utc
     )
-
-# Initialize Flask-Mail
-mail = Mail(app)
-
-@app.route('/subscribe', methods=['POST'])
-def subscribe():
-    """Handle email subscription requests."""
-    try:
-        email = request.form.get('email')
-        if not email:
-            return jsonify({'status': 'error', 'message': 'Email is required'}), 400
-
-        # Check if already subscribed
-        existing_subscriber = Subscriber.query.filter_by(email=email).first()
-        if existing_subscriber:
-            if existing_subscriber.confirmed:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'This email is already subscribed'
-                }), 400
-            else:
-                # Resend confirmation email
-                confirmation_token = token_urlsafe(32)
-                existing_subscriber.confirmation_token = confirmation_token
-                db.session.commit()
-                send_confirmation_email(email, confirmation_token)
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Confirmation email has been resent'
-                })
-
-        # Create new subscriber
-        confirmation_token = token_urlsafe(32)
-        subscriber = Subscriber(
-            email=email,
-            confirmation_token=confirmation_token
-        )
-        db.session.add(subscriber)
-        db.session.commit()
-
-        # Send confirmation email
-        send_confirmation_email(email, confirmation_token)
-
-        return jsonify({
-            'status': 'success',
-            'message': 'Please check your email to confirm your subscription'
-        })
-
-    except Exception as e:
-        logger.error(f"Error in subscription process: {str(e)}", exc_info=True)
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'An error occurred while processing your subscription'
-        }), 500
-
-def send_confirmation_email(email: str, token: str) -> None:
-    """Send confirmation email to subscriber."""
-    try:
-        confirmation_url = url_for(
-            'confirm_subscription',
-            token=token,
-            _external=True
-        ).replace('http://', 'https://')
-
-        msg = Message(
-            'Confirm your subscription to EthDevWatch',
-            sender=app.config['MAIL_DEFAULT_SENDER'],
-            recipients=[email]
-        )
-        msg.body = f'''Thank you for subscribing to EthDevWatch!
-
-Please confirm your subscription by clicking on the following link:
-{confirmation_url}
-
-If you did not request this subscription, please ignore this email.
-'''
-        mail.send(msg)
-        logger.info(f"Confirmation email sent to {email}")
-    except Exception as e:
-        logger.error(f"Error sending confirmation email: {str(e)}", exc_info=True)
-        raise
-
-@app.route('/confirm_subscription/<token>')
-def confirm_subscription(token: str):
-    """Confirm email subscription."""
-    try:
-        subscriber = Subscriber.query.filter_by(confirmation_token=token).first()
-        if not subscriber:
-            flash('Invalid or expired confirmation link.', 'error')
-            return redirect(url_for('index'))
-
-        subscriber.confirmed = True
-        subscriber.confirmation_token = None
-        db.session.commit()
-
-        flash('Thank you for confirming your subscription!', 'success')
-        return redirect(url_for('index'))
-
-    except Exception as e:
-        logger.error(f"Error confirming subscription: {str(e)}", exc_info=True)
-        db.session.rollback()
-        flash('An error occurred while confirming your subscription.', 'error')
-        return redirect(url_for('index'))
-
-# Add this to the utility_processor context
-# def utility_processor() -> dict: # this is already defined above.
-
 
 # Add new route for technical terms API
 @app.route('/api/technical-terms')
