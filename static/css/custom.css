@@ -551,7 +551,15 @@ a:hover {
     margin-bottom: 3rem;
 }
 
-/* Add these new styles for custom alerts */
+.article-list h4 a {
+    color: var(--text-primary) !important;
+    transition: color 0.3s ease;
+}
+
+.article-list h4 a:hover {
+    color: var(--accent-primary) !important;
+}
+
 .custom-alert-success {
     background: rgba(52, 211, 153, 0.1);
     border: 1px solid var(--accent-primary);
