@@ -244,12 +244,13 @@ class ContentService:
                 """
 
             # Forum Discussions Section
-            if summary_data.get('forum_discussions'):
+            forum_data = summary_data.get('forum_discussions', {})
+            if isinstance(forum_data, dict) and (forum_data.get('magicians') or forum_data.get('research')):
                 article_html += f"""
                     <div class="forum-discussions mb-4">
                         <h2 class="section-title">Forum Discussions</h2>
-                        {self._format_forum_section(summary_data['forum_discussions']['magicians'], 'Magicians')}
-                        {self._format_forum_section(summary_data['forum_discussions']['research'], 'Research')}
+                        {self._format_forum_section(forum_data.get('magicians', []), 'Magicians')}
+                        {self._format_forum_section(forum_data.get('research', []), 'Research')}
                     </div>
                 """
 
@@ -504,7 +505,7 @@ class ContentService:
                 'repository_updates': [{'summary': update} for update in sections['repo_updates']],
                 'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
                 'next_steps': sections['next_steps'],
-                'forum_discussions': forum_summary if forum_summary else {'magicians': [], 'research': []} #handle missing data gracefully.
+                'forum_discussions': {'magicians': [], 'research': []} if not forum_summary else forum_summary
             })
 
             # Create and save the article
