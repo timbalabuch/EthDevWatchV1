@@ -32,7 +32,7 @@
                 <!-- Article Summary Preview -->
                 <div class="article-summary mb-4">
                     {% if current_week_article.brief_summary %}
-                        {{ current_week_article.brief_summary | safe }}
+                        {{ current_week_article.brief_summary | truncate(400) }}
                     {% endif %}
                 </div>
 
@@ -50,7 +50,7 @@
 
         <!-- Previous Weeks' Articles Section -->
         {% if other_articles.items %}
-        <h4 class="text-muted mb-4 fs-5">Previous weeks</h4>
+        <h4 class="text-muted mb-4 fs-5">Past weeks</h4>
         <div class="article-list">
             <!-- Article Cards Loop -->
             {% for article in other_articles.items %}

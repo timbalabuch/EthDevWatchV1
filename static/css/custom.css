@@ -24,6 +24,19 @@
     --bs-border-color: var(--border-color);
 }
 
+.badge.bg-info.ms-2 {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+h4.text-muted.mb-4.fs-5 {
+    margin-bottom: 10px !important;
+}
+
+.hero-section {
+    padding-top: 20px; /* Ajuste o valor conforme necessário */
+    padding-bottom: 50px; /* Ajuste o valor conforme necessário */
+}
+
 .accordion-header {
     padding: 10px !important;
     margin-bottom: 0px !important;
@@ -458,6 +471,11 @@ a:hover {
         font-size: 2.2rem;
     }
 
+    .hero-section {
+        padding-top: 10px; /* Ajuste o valor conforme necessário */
+        padding-bottom: 40px; /* Ajuste o valor conforme necessário */
+    }
+
     .hero-section .subtitle {
         font-size: 0.9rem;
      
@@ -558,7 +576,7 @@ a:hover {
 }
 
 .article-list {
-    margin-top: 2rem;
+    margin-top: 0rem;
 }
 
 .featured-article {

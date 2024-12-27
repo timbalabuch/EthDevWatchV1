@@ -16,14 +16,13 @@
                 <!-- Social Share Button -->
                 <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
                    target="_blank"
-                   class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 4l11.5 11.5M4 20L20 4" />
+                   class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-2 mb-4">
+                    Share on <svg width="16" height="16" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="white"/>
                     </svg>
-                    Share on X
                 </a>
-            </header>
 
+            </header>
             <!-- Overview Section: Brief summary of the article -->
             <section class="overview-section mb-5">
                 <div class="section-container">
@@ -94,11 +93,9 @@
             <!-- Repository Updates Section: Changes and technical details -->
             <section class="repo-updates-section mb-5">
                 <div class="section-container">
-                    <h2 class="h3 mb-4">Repository Updates</h2>
                     <!-- Latest Changes Subsection -->
                     {% if article.repository_updates %}
                         <div class="repository-updates mb-4">
-                            <h3 class="h4 mb-3">Latest Changes</h3>
                             {{ article.repository_updates | safe }}
                         </div>
                     {% endif %}
@@ -106,7 +103,6 @@
                     <!-- Technical Highlights Subsection -->
                     {% if article.technical_highlights %}
                         <div class="technical-highlights mb-4">
-                            <h3 class="h4 mb-3">Technical Highlights</h3>
                             {{ article.technical_highlights | safe }}
                         </div>
                     {% endif %}
@@ -117,11 +113,7 @@
                             <h3 class="h4 mb-3">Next Steps</h3>
                             <ul class="list-unstyled">
                                 {% for step in article.next_steps %}
-                                    <li class="mb-2 d-flex align-items-start">
-                                        <!-- Arrow Icon -->
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2 mt-1">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
+                                    <li class="mb-2 d-flex align-items-start">                                       
                                         {{ step }}
                                     </li>
                                 {% endfor %}
@@ -156,6 +148,18 @@
             </section>
         </div>
     </div>
+    <!-- Social Share Button -->
+    <div class="d-flex justify-content-center">
+        <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
+           target="_blank"
+           class="btn btn-outline-light btn-sm d-inline-flex align-items-center gap-2 mb-4">
+            Share on 
+            <svg width="16" height="16" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="white"/>
+            </svg>
+        </a>
+    </div>
+
 </article>
 
 <!-- JavaScript Dependencies -->
