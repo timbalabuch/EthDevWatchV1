@@ -350,7 +350,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python migrations/cleanup_future_and_duplicate_articles.py"
+args = "python migrations/cleanup_future_and_duplicate_articles.py && python migrations/fix_article_dates.py"
 
 [[workflows.workflow]]
 name = "Clean Articles"

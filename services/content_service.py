@@ -355,18 +355,8 @@ class ContentService:
 
         # Find any overlapping articles
         existing_articles = Article.query.filter(
-            db.or_(
-                # Direct overlap: Article's date falls within our week
-                db.and_(
-                    Article.publication_date >= week_start,
-                    Article.publication_date <= week_end
-                ),
-                # Indirect overlap: Article's week range overlaps with our week
-                db.and_(
-                    Article.publication_date <= week_end,
-                    Article.publication_date + timedelta(days=6) >= week_start
-                )
-            )
+            Article.publication_date >= week_start,
+            Article.publication_date <= week_start + timedelta(days=7)
         ).all()
 
         if existing_articles:
@@ -454,9 +444,12 @@ class ContentService:
                 publication_date = self.get_available_date_range(current_date)
 
             # Check for date range conflicts
-            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
+            has_conflict, error_msg, existing_articles = self.check_date_range_conflicts(publication_date)
             if has_conflict:
                 logger.warning(error_msg)
+                if existing_articles:
+                    logger.warning(f"Articles already exist for week of {publication_date.strftime('%Y-%m-%d')}")
+                    return existing_articles[0]  # Return the first existing article
                 return None
 
 
