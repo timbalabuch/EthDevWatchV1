@@ -17,14 +17,24 @@
                     <option value="4">4 weeks</option>
                     <option value="8">8 weeks</option>
                 </select>
-                <button type="submit" class="btn btn-outline-success">Generate Previous Articles</button>
+                <button type="submit" class="btn btn-outline-success generate-btn" data-type="multiple">Generate Previous Articles</button>
             </form>
             <!-- Generate Single Article Button -->
             <form method="POST" action="{{ url_for('generate_single_article') }}" class="d-inline me-2">
-                <button type="submit" class="btn btn-outline-info">Generate Single Article</button>
+                <button type="submit" class="btn btn-outline-info generate-btn" data-type="single">Generate Single Article</button>
             </form>
             <!-- Create New Article Button -->
             <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="generationProgress" class="alert alert-info d-none">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span id="generationMessage">Generating article(s)...</span>
         </div>
     </div>
 
@@ -110,4 +120,31 @@ python scripts/manage_scheduler.py disable</pre>
         </div>
     </div>
 </div>
+
+<!-- Add JavaScript for Loading Indicator -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get loading indicator elements
+    const progressIndicator = document.getElementById('generationProgress');
+    const generationMessage = document.getElementById('generationMessage');
+    const generateButtons = document.querySelectorAll('.generate-btn');
+
+    // Add click handlers to all generate buttons
+    generateButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Show loading indicator
+            progressIndicator.classList.remove('d-none');
+
+            // Disable all generate buttons
+            generateButtons.forEach(btn => btn.disabled = true);
+
+            // Update message based on button type
+            const type = this.dataset.type;
+            generationMessage.textContent = type === 'single' 
+                ? 'Generating single article...' 
+                : 'Generating multiple articles...';
+        });
+    });
+});
+</script>
 {% endblock %}
