@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 class ArticleGenerationService:
     """New implementation of article generation service with improved status tracking."""
-    
+
     def __init__(self):
         """Initialize the ArticleGenerationService with required clients."""
         try:
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
-            
+
             self.openai = OpenAI(api_key=api_key)
             self.model = "gpt-4"
             self.github_service = GitHubService()
@@ -37,7 +37,7 @@ class ArticleGenerationService:
     def get_target_date(self, requested_date: Optional[datetime] = None) -> datetime:
         """Calculate the appropriate target date for article generation."""
         current_date = datetime.now(pytz.UTC)
-        
+
         if requested_date:
             if not requested_date.tzinfo:
                 requested_date = pytz.UTC.localize(requested_date)
@@ -46,7 +46,7 @@ class ArticleGenerationService:
             # Get the most recent past Monday
             days_since_monday = current_date.weekday()
             target_date = current_date - timedelta(days=days_since_monday + 7)
-        
+
         # Ensure date is a Monday
         target_date = target_date - timedelta(days=target_date.weekday())
         return target_date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -55,16 +55,16 @@ class ArticleGenerationService:
         """Check for existing articles in the target week."""
         week_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
         week_end = week_start + timedelta(days=7)
-        
+
         existing_article = Article.query.filter(
             Article.publication_date >= week_start,
             Article.publication_date < week_end
         ).first()
-        
+
         if existing_article:
             msg = f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}"
             return True, msg, existing_article
-        
+
         return False, "", None
 
     def track_error(self, error_msg: str, error_type: str = "generation"):
@@ -102,6 +102,14 @@ class ArticleGenerationService:
             target_date = self.get_target_date(target_date)
             logger.info(f"Generating article for week of {target_date.strftime('%Y-%m-%d')}")
 
+            # Check for generating articles first
+            generating_article = Article.query.filter_by(status='generating').first()
+            if generating_article:
+                msg = "Another article is currently being generated"
+                self.track_error(msg, "concurrent_generation")
+                logger.warning(msg)
+                return None
+
             # Check for conflicts
             has_conflict, msg, existing_article = self.check_conflicts(target_date)
             if has_conflict:
@@ -122,7 +130,7 @@ class ArticleGenerationService:
                 # This will be replaced with new implementation in next phase
                 from services.content_service import ContentService
                 content_service = ContentService()
-                
+
                 updated_article = content_service.generate_weekly_summary(
                     github_content,
                     target_date
