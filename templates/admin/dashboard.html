@@ -23,7 +23,7 @@
                 Articles will only be generated if there isn't already an article for that week.
                 The scheduler can be controlled using the manage_scheduler.py script:
             </p>
-            <pre class="bg-light p-2">
+            <pre class="bg-dark p-2">
 # Enable automatic article generation
 python scripts/manage_scheduler.py enable
 
@@ -57,11 +57,16 @@ python scripts/manage_scheduler.py disable</pre>
                             <!-- Article Status -->
                             <td>
                                 {% if article.is_generating %}
-                                    <span class="badge bg-warning">Generating</span>
+                                    <span class="badge bg-warning text-dark">Generating</span>
                                 {% elif article.is_published %}
-                                    <span class="badge bg-success">Published</span>
+                                    <span class="badge bg-success text-light">Published</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Draft</span>
+                                    <span class="badge bg-secondary text-light">Draft</span>
+                                {% endif %}
+
+                                {% if article.is_generating %}
+                                    <br>
+                                    <small class="text-muted">Another article will start after this one completes</small>
                                 {% endif %}
                             </td>
                             <!-- Article Actions -->
