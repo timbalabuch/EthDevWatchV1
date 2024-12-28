@@ -21,22 +21,12 @@ logger = logging.getLogger(__name__)
 
 def wait_for_generating_articles():
     """Wait until there are no articles in generating status."""
-    max_wait_time = 300  # 5 minutes maximum wait time
-    start_time = time.time()
-
     while True:
         with app.app_context():
             generating = Article.query.filter_by(status='generating').first()
             if not generating:
-                logger.info("No articles are currently generating")
-                return True
-
-            elapsed_time = time.time() - start_time
-            if elapsed_time > max_wait_time:
-                logger.error("Timeout waiting for article generation")
-                return False
-
-            logger.info(f"Waiting for article (ID: {generating.id}) to finish generating... (elapsed: {elapsed_time:.0f}s)")
+                return
+            logger.info("Waiting for article to finish generating...")
             time.sleep(5)  # Wait for 5 seconds before checking again
 
 def generate_past_articles(num_articles=10):
@@ -54,9 +44,7 @@ def generate_past_articles(num_articles=10):
         # Generate articles for past weeks
         for i in range(1, num_articles + 1):
             # Wait for any currently generating articles to complete
-            if not wait_for_generating_articles():
-                logger.error("Timeout waiting for articles to finish generating")
-                break
+            wait_for_generating_articles()
 
             target_date = current_monday - timedelta(weeks=i)
             logger.info(f"Generating article for week of {target_date.strftime('%Y-%m-%d')}")

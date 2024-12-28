@@ -1,16 +1,15 @@
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
-from werkzeug.security import generate_password_hash, check_password_hash
-import json
-import logging
+from werkzeug.security import generate_password_hash
 
-from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
+from flask import render_template, abort, flash, redirect, url_for, request, Response
 from flask_login import current_user, login_user, logout_user, login_required
 
 from app import app, db
 from models import Article, User, Source
 import pytz
+import logging
 
 # Setup logging
 logging.basicConfig(
@@ -276,10 +275,12 @@ def utility_processor() -> dict:
         current_time=get_current_utc
     )
 
+# Add new route for technical terms API
 @app.route('/api/technical-terms')
 def get_technical_terms():
     """Return a dictionary of technical terms and their explanations."""
-    return jsonify({})
+    terms = BlockchainTerm.query.all()
+    return {term.term: term.explanation for term in terms}
 
 @app.route('/admin/article/<int:article_id>/delete', methods=['POST'])
 @login_required
@@ -287,36 +288,18 @@ def get_technical_terms():
 def delete_article(article_id: int) -> Response:
     """Handle deletion of articles."""
     try:
-        # Get the specific article using get_or_404
-        article = Article.query.with_for_update().get_or_404(article_id)
-        logger.info(f"Attempting to delete article {article_id} by user {current_user.email}")
-
-        # Begin transaction
-        db.session.begin()
-        try:
-            # Delete only the sources for this specific article
-            source_count = Source.query.filter_by(article_id=article.id).delete()
-            logger.info(f"Deleted {source_count} sources for article {article_id}")
-
-            # Delete the specific article
-            db.session.delete(article)
-
-            # Commit the transaction
-            db.session.commit()
-            logger.info(f"Article {article_id} and its sources successfully deleted by {current_user.email}")
-            flash('Article deleted successfully', 'success')
-
-        except Exception as e:
-            logger.error(f"Error during transaction for deleting article {article_id}: {str(e)}")
-            db.session.rollback()
-            flash('An error occurred while deleting the article.', 'error')
-            raise
-
+        article = Article.query.get_or_404(article_id)
+        # Delete only the sources for this specific article
+        Source.query.filter_by(article_id=article.id).delete()
+        # Delete the specific article
+        db.session.delete(article)
+        db.session.commit()
+        logger.info(f"Article {article_id} and its sources successfully deleted by {current_user.email}")
+        flash('Article deleted successfully', 'success')
     except Exception as e:
         logger.error(f"Error deleting article {article_id}: {str(e)}")
         flash('An error occurred while deleting the article.', 'error')
         db.session.rollback()
-
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/update_credentials', methods=['GET', 'POST'])
@@ -361,112 +344,3 @@ def update_admin_credentials():
         flash('An error occurred while updating credentials.', 'error')
         db.session.rollback()
         return render_template('admin/update_credentials.html')
-
-@app.route('/admin/generate/current-week')
-@login_required
-@admin_required
-def generate_current_week_article():
-    """Generate an article for the current week."""
-    try:
-        from services.content_service import ContentService
-        from services.github_service import GitHubService
-
-        # Initialize services
-        github_service = GitHubService()
-        content_service = ContentService()
-
-        # Get current date and check if article already exists
-        current_date = datetime.now(pytz.UTC)
-        days_since_monday = current_date.weekday()
-        current_monday = current_date - timedelta(days=days_since_monday)
-        current_monday = current_monday.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        # Check for existing article
-        existing_article = Article.query.filter(
-            Article.publication_date >= current_monday,
-            Article.publication_date < current_monday + timedelta(days=7)
-        ).first()
-
-        if existing_article:
-            flash('Article for current week already exists.', 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Check if any articles are currently being generated
-        if content_service.check_for_generating_articles():
-            flash('Another article is currently being generated. Please wait.', 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Fetch GitHub content for the current week
-        github_content = github_service.get_content_for_period(
-            start_date=current_monday - timedelta(days=7),  # Include previous week for context
-            end_date=current_date
-        )
-
-        if not github_content:
-            flash('No content available for the current week.', 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Generate the article
-        article = content_service.generate_weekly_summary(github_content, current_monday)
-
-        if article:
-            flash('Article for current week generated successfully.', 'success')
-        else:
-            flash('Failed to generate article for current week.', 'error')
-
-        return redirect(url_for('admin_dashboard'))
-
-    except Exception as e:
-        logger.error(f"Error generating current week article: {str(e)}", exc_info=True)
-        flash('An error occurred while generating the article.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/generate/missing-week')
-@login_required
-@admin_required
-def generate_missing_week_article():
-    """Find and generate an article for the earliest missing week."""
-    try:
-        from services.content_service import ContentService
-        from services.github_service import GitHubService
-
-        # Initialize services
-        github_service = GitHubService()
-        content_service = ContentService()
-
-        # Check if any articles are currently being generated
-        if content_service.check_for_generating_articles():
-            flash('Another article is currently being generated. Please wait.', 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Get the next available date for article generation
-        try:
-            target_date = content_service.get_available_date_range()
-        except ValueError as e:
-            flash(str(e), 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Fetch GitHub content for the target week
-        github_content = github_service.get_content_for_period(
-            start_date=target_date - timedelta(days=7),  # Include previous week for context
-            end_date=target_date + timedelta(days=6)
-        )
-
-        if not github_content:
-            flash('No content available for the target week.', 'warning')
-            return redirect(url_for('admin_dashboard'))
-
-        # Generate the article
-        article = content_service.generate_weekly_summary(github_content, target_date)
-
-        if article:
-            flash(f'Article generated successfully for week of {target_date.strftime("%Y-%m-%d")}.', 'success')
-        else:
-            flash('Failed to generate article.', 'error')
-
-        return redirect(url_for('admin_dashboard'))
-
-    except Exception as e:
-        logger.error(f"Error generating missing week article: {str(e)}", exc_info=True)
-        flash('An error occurred while generating the article.', 'error')
-        return redirect(url_for('admin_dashboard'))

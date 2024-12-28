@@ -9,14 +9,6 @@
         <div>
             <!-- Update Credentials Link -->
             <a href="{{ url_for('update_admin_credentials') }}" class="btn btn-outline-primary me-2">Update Credentials</a>
-            <!-- Generate Current Week Article Button -->
-            <a href="{{ url_for('generate_current_week_article') }}" 
-               onclick="return confirm('Generate article for current week?')"
-               class="btn btn-outline-success me-2">Generate Current Week</a>
-            <!-- Generate Missing Week Article Button -->
-            <a href="{{ url_for('generate_missing_week_article') }}"
-               onclick="return confirm('Find and generate article for earliest missing week?')"
-               class="btn btn-outline-info me-2">Generate Missing Week</a>
             <!-- Create New Article Button -->
             <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
         </div>
@@ -25,11 +17,18 @@
     <!-- Article Generation Info Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">Article Generation Status</h5>
+            <h5 class="card-title">Article Generation Schedule</h5>
             <p class="card-text">
+                New articles are automatically generated every Monday at 9:00 UTC.
                 Articles will only be generated if there isn't already an article for that week.
-                Only one article can be generated at a time to prevent duplicates.
+                The scheduler can be controlled using the manage_scheduler.py script:
             </p>
+            <pre class="bg-light p-2">
+# Enable automatic article generation
+python scripts/manage_scheduler.py enable
+
+# Disable automatic article generation
+python scripts/manage_scheduler.py disable</pre>
         </div>
     </div>
 
@@ -40,6 +39,7 @@
             <!-- Articles Table -->
             <div class="table-responsive">
                 <table class="table">
+                    <!-- Table Headers -->
                     <thead>
                         <tr>
                             <th>Title</th>
@@ -48,11 +48,13 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+                    <!-- Table Body: List of Articles -->
                     <tbody>
                         {% for article in articles %}
                         <tr>
                             <td>{{ article.title }}</td>
                             <td>{{ article.formatted_date_range }}</td>
+                            <!-- Article Status -->
                             <td>
                                 {% if article.is_generating %}
                                     <span class="badge bg-warning">Generating</span>
@@ -62,22 +64,24 @@
                                     <span class="badge bg-secondary">Draft</span>
                                 {% endif %}
                             </td>
+                            <!-- Article Actions -->
                             <td>
                                 {% if not article.is_generating %}
+                                    <!-- Edit Article Button -->
                                     <a href="{{ url_for('edit_article', article_id=article.id) }}" 
                                        class="btn btn-sm btn-outline-primary me-1">Edit</a>
-                                    <a href="{{ url_for('article', article_id=article.id) }}" 
-                                       class="btn btn-sm btn-outline-secondary me-1">View</a>
-                                    <form action="{{ url_for('delete_article', article_id=article.id) }}" 
-                                          method="POST" 
-                                          class="d-inline" 
-                                          onsubmit="return confirm('Are you sure you want to delete this article?');">
-                                        <button type="submit" 
-                                                class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
-                                {% else %}
-                                    <span class="text-muted">Generation in progress...</span>
                                 {% endif %}
+                                <!-- View Article Button -->
+                                <a href="{{ url_for('article', article_id=article.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary me-1">View</a>
+                                <!-- Delete Article Button -->
+                                <form action="{{ url_for('delete_article', article_id=article.id) }}" 
+                                      method="POST" 
+                                      class="d-inline" 
+                                      onsubmit="return confirm('Are you sure you want to delete this article?');">
+                                    <button type="submit" 
+                                            class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}

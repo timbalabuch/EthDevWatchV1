@@ -324,7 +324,7 @@ class ContentService:
 
     def check_date_range_conflicts(self, target_date: datetime) -> tuple[bool, Optional[str], Optional[List[Article]]]:
         """
-        Check for potential date range conflicts before article creation with improved validation.
+        Check for potential date range conflicts before article creation.
 
         Args:
             target_date: The publication date to check for conflicts
@@ -353,327 +353,34 @@ class ContentService:
         if week_end > current_date:
             return True, "Cannot create articles with future dates", None
 
-        try:
-            # Use a transaction to ensure consistency
-            with db.session.begin_nested():
-                # Lock the articles table for the date check
-                existing_articles = Article.query.filter(
-                    db.or_(
-                        # Direct overlap: Article's date falls within our week
-                        db.and_(
-                            Article.publication_date >= week_start,
-                            Article.publication_date <= week_end
-                        ),
-                        # Indirect overlap: Article's week range overlaps with our week
-                        db.and_(
-                            Article.publication_date <= week_end,
-                            Article.publication_date + timedelta(days=6) >= week_start
-                        )
-                    )
-                ).with_for_update().all()
-
-                if existing_articles:
-                    conflicting_dates = [
-                        f"{article.publication_date.strftime('%Y-%m-%d')} (ID: {article.id})"
-                        for article in existing_articles
-                    ]
-                    error_msg = (
-                        f"Found {len(existing_articles)} existing article(s) for week of "
-                        f"{week_start.strftime('%Y-%m-%d')}: {', '.join(conflicting_dates)}"
-                    )
-                    return True, error_msg, existing_articles
-
-                return False, None, None
-
-        except Exception as e:
-            logger.error(f"Error checking date range conflicts: {str(e)}")
-            return True, f"Error checking date conflicts: {str(e)}", None
-
-    def check_for_generating_articles(self) -> bool:
-        """Check if any articles are currently being generated with improved timeout."""
-        try:
-            generating_articles = Article.query.filter_by(status='generating').all()
-            if generating_articles:
-                current_time = datetime.now(pytz.UTC)
-                logger.warning(f"Found {len(generating_articles)} articles in generating status")
-
-                # Cleanup any stale generating articles older than 5 minutes
-                cleaned_count = 0
-                for article in generating_articles:
-                    if not article.published_date or (current_time - article.published_date > timedelta(minutes=5)):
-                        logger.warning(f"Found stale generating article {article.id}, resetting to draft status")
-                        article.status = 'draft'
-                        cleaned_count += 1
-
-                if cleaned_count > 0:
-                    try:
-                        db.session.commit()
-                        logger.info(f"Reset {cleaned_count} stale articles to draft status")
-                    except Exception as e:
-                        logger.error(f"Error committing cleanup changes: {str(e)}")
-                        db.session.rollback()
-
-                # Return True if there are any non-stale generating articles
-                active_articles = [
-                    article for article in generating_articles
-                    if article.published_date and (current_time - article.published_date <= timedelta(minutes=5))
-                ]
-                return len(active_articles) > 0
-            return False
-        except Exception as e:
-            logger.error(f"Error checking for generating articles: {str(e)}")
-            return False
-
-    def _generate_content_hash(self, title: str, content: str) -> str:
-        """Generate a more robust hash of the article content for duplicate detection."""
-        import hashlib
-        # Ensure title is a string and normalize it
-        safe_title = str(title).strip().lower() if title else ""
-        # Normalize content
-        safe_content = content.strip() if content else ""
-        # Create a unique combination including publication date
-        combined_content = f"{safe_title}|{safe_content}"
-        return hashlib.sha256(combined_content.encode()).hexdigest()
-
-    def check_for_duplicate_content(self, title: str, content: str) -> tuple[bool, Optional[Article]]:
-        """Check if an article with similar content already exists using improved criteria."""
-        try:
-            # Ensure title is a string and normalize it
-            safe_title = str(title).strip().lower() if title else ""
-            content_hash = self._generate_content_hash(safe_title, content)
-
-            # Check for exact content match using hash
-            existing_article = Article.query.filter_by(content_hash=content_hash).first()
-            if existing_article:
-                logger.warning(f"Found duplicate article with matching content hash: {existing_article.id}")
-                return True, existing_article
-
-            # Additional check for similar titles
-            similar_title_articles = Article.query.filter(
-                Article.title.ilike(f"%{safe_title}%")
-            ).all()
-
-            for article in similar_title_articles:
-                # If titles are very similar, consider it a duplicate
-                if self._calculate_title_similarity(safe_title, article.title.lower()) > 0.8:
-                    logger.warning(f"Found duplicate article with similar title: {article.id}")
-                    return True, article
-
-            return False, None
-
-        except Exception as e:
-            logger.error(f"Error checking for duplicate content: {str(e)}")
-            return False, None
-
-    def _calculate_title_similarity(self, title1: str, title2: str) -> float:
-        """Calculate similarity between two titles using Levenshtein distance."""
-        from difflib import SequenceMatcher
-        return SequenceMatcher(None, title1, title2).ratio()
-
-    def _generate_article_content(self, repo_content: Dict, forum_summary: Optional[str]) -> str:
-        """Generates the article content using OpenAI."""
-        try:
-            # Convert datetime objects to strings in repo_content
-            def serialize_content(content):
-                if isinstance(content, dict):
-                    return {k: serialize_content(v) for k, v in content.items()}
-                elif isinstance(content, list):
-                    return [serialize_content(item) for item in content]
-                elif isinstance(content, datetime):
-                    return content.isoformat()
-                return content
-
-            serialized_content = serialize_content(repo_content)
-
-            messages = [
-                {
-                    "role": "system",
-                    "content": """You are a technical writer specializing in blockchain technology documentation. 
-                    Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
-
-                    Most important rules:
-                    1. Use plain language that anyone can understand
-                    2. Explain complex ideas in simple terms
-                    3. Focus on real-world impact and benefits
-                    4. Avoid technical jargon in titles
-                    5. Make concepts accessible to regular users
-
-                    Title requirements:
-                    - Create simple, clear titles that describe the main improvements
-                    - Write titles that anyone can understand
-                    - Combine multiple key changes in plain language
-                    - DO NOT include dates or week references
-                    - DO NOT use technical terms, parentheses, or quotation marks
-                    - Example: "Making Smart Contracts Better and Network Updates"
-                    - Example: "Network Speed Improvements and Better Security"
-
-                    Required sections:
-                    1. A clear, simple title following the above format
-                    2. A detailed overview (at least 700 characters)
-                    3. Repository updates (start with 'Repository Updates:')
-                    4. Technical highlights (start with 'Technical Highlights:')
-                    5. Next Steps (start with 'Next Steps:')"""
-                },
-                {
-                    "role": "user",
-                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week.
-                    Remember:
-                    - Create clear, simple titles without technical terms
-                    - Explain the main improvements in plain language
-                    - Avoid technical jargon and quotation marks in titles
-                    - Use everyday language
-                    - Make complex ideas easy to understand
-                    - Focus on real-world benefits
-                    - Keep explanations clear and simple
-                    - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
-
-                    Here are the technical updates to analyze:
-                    {json.dumps(serialized_content, indent=2)}
-                    Forum Summary: {forum_summary or ''}"""
-                }
-            ]
-
-            logger.info("Sending request to OpenAI API...")
-            response = self._retry_with_exponential_backoff(
-                self.openai.chat.completions.create,
-                model=self.model,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=2000
+        # Find any overlapping articles
+        existing_articles = Article.query.filter(
+            db.or_(
+                # Direct overlap: Article's date falls within our week
+                db.and_(
+                    Article.publication_date >= week_start,
+                    Article.publication_date <= week_end
+                ),
+                # Indirect overlap: Article's week range overlaps with our week
+                db.and_(
+                    Article.publication_date <= week_end,
+                    Article.publication_date + timedelta(days=6) >= week_start
+                )
             )
+        ).all()
 
-            if not response or not hasattr(response, 'choices') or not response.choices:
-                raise ValueError("Invalid response from OpenAI API")
+        if existing_articles:
+            conflicting_dates = [
+                f"{article.publication_date.strftime('%Y-%m-%d')} (ID: {article.id})"
+                for article in existing_articles
+            ]
+            error_msg = (
+                f"Found {len(existing_articles)} existing article(s) for week of "
+                f"{week_start.strftime('%Y-%m-%d')}: {', '.join(conflicting_dates)}"
+            )
+            return True, error_msg, existing_articles
 
-            logger.info("Received response from OpenAI API")
-            return response.choices[0].message.content
-
-        except Exception as e:
-            logger.error(f"Error generating article content: {str(e)}", exc_info=True)
-            raise
-
-
-    def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
-        """Generate a weekly summary article from GitHub content with improved duplicate prevention."""
-        if not github_content:
-            logger.error("No GitHub content provided for summary generation")
-            raise ValueError("GitHub content is required for summary generation")
-
-        try:
-            # Check if any articles are currently being generated
-            if self.check_for_generating_articles():
-                logger.warning("Another article is currently being generated. Skipping this generation.")
-                return None
-
-            # Validate and prepare the publication date
-            if publication_date:
-                if not isinstance(publication_date, datetime):
-                    publication_date = datetime.fromisoformat(str(publication_date))
-                if publication_date.tzinfo is None:
-                    publication_date = pytz.UTC.localize(publication_date)
-            else:
-                # Get the most recent Monday if no date specified
-                current_date = datetime.now(pytz.UTC)
-                publication_date = self.get_available_date_range(current_date)
-
-            # Check for date range conflicts with FOR UPDATE lock
-            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
-            if has_conflict:
-                logger.warning(error_msg)
-                return None
-
-            logger.info(f"Starting article generation for date: {publication_date}")
-
-            # Calculate the week range with microsecond precision
-            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
-
-            # Get forum discussions summary with error handling
-            forum_summary = None
-            forum_error = None
-            try:
-                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
-                if not forum_summary:
-                    forum_error = "No forum discussions found for this week"
-                    logger.warning(forum_error)
-            except Exception as e:
-                forum_error = f"Error fetching forum discussions: {str(e)}"
-                logger.error(forum_error)
-
-            repo_content = self.organize_content_by_repository(github_content)
-            if not repo_content:
-                logger.warning("No content found to summarize")
-                return None
-
-            # Generate content and check for duplicates
-            content = self._generate_article_content(repo_content, forum_summary)
-            sections = self._extract_content_sections(content)
-
-            # Begin transaction with row-level locking
-            with db.session.begin_nested():
-                try:
-                    # Double-check for duplicates with row locks
-                    has_duplicate, duplicate_article = self.check_for_duplicate_content(sections['title'], content)
-                    if has_duplicate:
-                        logger.warning(f"Duplicate content detected. Similar to article ID: {duplicate_article.id if duplicate_article else 'Unknown'}")
-                        return None
-
-                    # Format the content as HTML
-                    article_content = self._format_article_content({
-                        'title': sections['title'],
-                        'brief_summary': sections['brief_summary'],
-                        'repository_updates': [{'summary': update} for update in sections['repo_updates']],
-                        'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                        'next_steps': sections['next_steps'],
-                        'forum_summary': forum_summary
-                    })
-
-                    # Create and save the article with content hash
-                    article = Article(
-                        title=sections['title'],
-                        content=article_content,
-                        publication_date=publication_date,
-                        status='generating',
-                        published_date=datetime.now(pytz.UTC),
-                        forum_summary=forum_summary if forum_summary else forum_error,
-                        content_hash=self._generate_content_hash(sections['title'], article_content)
-                    )
-
-                    # Add sources
-                    for item in github_content:
-                        source = Source(
-                            url=item['url'],
-                            type=item['type'],
-                            title=item.get('title', ''),
-                            repository=item['repository'],
-                            article=article
-                        )
-                        db.session.add(source)
-
-                    db.session.add(article)
-
-                    # Final check for conflicts before committing
-                    has_conflict, _, _ = self.check_date_range_conflicts(publication_date)
-                    if has_conflict:
-                        logger.warning("Date range conflict detected during final check, rolling back")
-                        return None
-
-                    # Update status to published and commit
-                    article.status = 'published'
-                    db.session.commit()
-
-                    logger.info(f"Successfully created article: {article.title}")
-                    return article
-
-                except Exception as e:
-                    logger.error(f"Error saving article: {str(e)}")
-                    db.session.rollback()
-                    return None
-
-        except Exception as e:
-            logger.error(f"Error in generate_weekly_summary: {str(e)}", exc_info=True)
-            db.session.rollback()
-            raise
+        return False, None, None
 
     def get_available_date_range(self, target_date: Optional[datetime] = None) -> datetime:
         """
@@ -713,3 +420,193 @@ class ContentService:
             attempts += 1
 
         raise ValueError("Could not find an available date range within the last year")
+
+    def check_for_generating_articles(self) -> bool:
+        """Check if any articles are currently being generated."""
+        try:
+            generating_articles = Article.query.filter_by(status='generating').first()
+            return generating_articles is not None
+        except Exception as e:
+            logger.error(f"Error checking for generating articles: {str(e)}")
+            return False
+
+    def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
+        """Generate a weekly summary article from GitHub content."""
+        if not github_content:
+            logger.error("No GitHub content provided for summary generation")
+            raise ValueError("GitHub content is required for summary generation")
+
+        try:
+            # Check if any articles are currently being generated
+            if self.check_for_generating_articles():
+                logger.warning("Another article is currently being generated. Skipping this generation.")
+                return None
+
+            # Validate and prepare the publication date
+            if publication_date:
+                if not isinstance(publication_date, datetime):
+                    publication_date = datetime.fromisoformat(str(publication_date))
+                if publication_date.tzinfo is None:
+                    publication_date = pytz.UTC.localize(publication_date)
+            else:
+                # Get the most recent Monday if no date specified
+                current_date = datetime.now(pytz.UTC)
+                publication_date = self.get_available_date_range(current_date)
+
+            # Check for date range conflicts
+            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
+            if has_conflict:
+                logger.warning(error_msg)
+                return None
+
+
+            logger.info(f"Starting article generation for date: {publication_date}")
+
+            # Calculate the week range with microsecond precision
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
+
+            # Get forum discussions summary with error handling
+            forum_summary = None
+            forum_error = None
+            try:
+                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
+                if not forum_summary:
+                    forum_error = "No forum discussions found for this week"
+                    logger.warning(forum_error)
+            except Exception as e:
+                forum_error = f"Error fetching forum discussions: {str(e)}"
+                logger.error(forum_error)
+
+            repo_content = self.organize_content_by_repository(github_content)
+            if not repo_content:
+                logger.warning("No content found to summarize")
+                return None
+
+            # Create repository summaries
+            repo_summaries = []
+            for repo, content in repo_content.items():
+                summary = {
+                    'repository': repo,
+                    'total_issues': len(content['issues']),
+                    'total_commits': len(content['commits']),
+                    'sample_issues': [{'title': issue['title'], 'url': issue['url']} for issue in content['issues'][:3]],
+                    'sample_commits': [{'title': commit['title'], 'url': commit['url']} for commit in content['commits'][:3]]
+                }
+                repo_summaries.append(summary)
+
+            logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
+
+            # Generate article content using OpenAI
+            messages = [
+                {
+                    "role": "system",
+                    "content": """You are a technical writer specializing in blockchain technology documentation. 
+                    Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
+                    
+                    Most important rules:
+                    1. Use plain language that anyone can understand
+                    2. Explain complex ideas in simple terms
+                    3. Focus on real-world impact and benefits
+                    4. Avoid technical jargon in titles
+                    5. Make concepts accessible to regular users
+                    
+                    Title requirements:
+                    - Create simple, clear titles that describe the main improvements
+                    - Write titles that anyone can understand
+                    - Combine multiple key changes in plain language
+                    - DO NOT include dates or week references
+                    - DO NOT use technical terms, parentheses, or quotation marks
+                    - Example: "Making Smart Contracts Better and Network Updates"
+                    - Example: "Network Speed Improvements and Better Security"
+                    
+                    Required sections:
+                    1. A clear, simple title following the above format
+                    2. A detailed overview (at least 700 characters)
+                    3. Repository updates (start with 'Repository Updates:')
+                    4. Technical highlights (start with 'Technical Highlights:')
+                    5. Next Steps (start with 'Next Steps:')"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
+                    Remember:
+                    - Create clear, simple titles without technical terms
+                    - Explain the main improvements in plain language
+                    - Avoid technical jargon and quotation marks in titles
+                    - Use everyday language
+                    - Make complex ideas easy to understand
+                    - Focus on real-world benefits
+                    - Keep explanations clear and simple
+                    - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
+                    
+                    Here are the technical updates to analyze:
+                    {json.dumps(repo_summaries, indent=2)}"""
+                }
+            ]
+
+            logger.info("Sending request to OpenAI API...")
+            response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2000
+            )
+
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                raise ValueError("Invalid response from OpenAI API")
+
+            logger.info("Received response from OpenAI API")
+            content = response.choices[0].message.content
+            sections = self._extract_content_sections(content)
+
+            # Log sections for debugging
+            logger.debug(f"Extracted sections: {json.dumps({k: v[:100] + '...' if isinstance(v, str) else v for k, v in sections.items()})}")
+
+            # Format the content as HTML with the added forum summary or error message
+            article_content = self._format_article_content({
+                'title': sections['title'],
+                'brief_summary': sections['brief_summary'],
+                'repository_updates': [{'summary': update} for update in sections['repo_updates']],
+                'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
+                'next_steps': sections['next_steps'],
+                'forum_summary': forum_summary
+            })
+
+            # Create and save the article
+            article = Article(
+                title=sections['title'],
+                content=article_content,
+                publication_date=publication_date,
+                status='generating',  # Set initial status to generating
+                published_date=datetime.now(pytz.UTC),
+                forum_summary=forum_summary if forum_summary else forum_error
+            )
+
+            # Add sources
+            for item in github_content:
+                source = Source(
+                    url=item['url'],
+                    type=item['type'],
+                    title=item.get('title', ''),
+                    repository=item['repository'],
+                    article=article
+                )
+                db.session.add(source)
+
+            db.session.add(article)
+            db.session.commit()
+
+            # Update status to published after successful generation
+            article.status = 'published'
+            db.session.commit()
+
+            logger.info(f"Successfully created article: {article.title}")
+
+            return article
+
+        except Exception as e:
+            logger.error(f"Error in generate_weekly_summary: {str(e)}", exc_info=True)
+            db.session.rollback()
+            raise

@@ -81,6 +81,10 @@ args = "Generate Sample Data"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "Generate Past Articles"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "Cleanup Articles"
 
 [[workflows.workflow.tasks]]
@@ -90,10 +94,6 @@ args = "Clean Articles"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Cleanup Future and Duplicate Articles"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Add Content Hash"
 
 [[workflows.workflow]]
 name = "Flask Server"
@@ -321,6 +321,20 @@ task = "shell.exec"
 args = "python scripts/generate_sample_data.py"
 
 [[workflows.workflow]]
+name = "Generate Past Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/generate_past_articles.py"
+
+[[workflows.workflow]]
 name = "Cleanup Articles"
 author = "agent"
 
@@ -361,20 +375,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/cleanup_future_and_duplicate_articles.py"
-
-[[workflows.workflow]]
-name = "Add Content Hash"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python migrations/add_content_hash.py"
 
 [[ports]]
 localPort = 3000
