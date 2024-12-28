@@ -35,6 +35,9 @@ def cleanup_articles():
 
                 week_start, week_end = article.date_range
 
+                # Add debug logging for date comparisons
+                logger.debug(f"Article {article.id}: Start {week_start}, End {week_end}, Current {current_date}")
+
                 # Check for future dates
                 if week_end > current_date:
                     logger.info(f"Found article with future dates: {article.title}, end date: {week_end}")
