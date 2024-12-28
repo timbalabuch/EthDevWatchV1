@@ -38,52 +38,58 @@ document.addEventListener('DOMContentLoaded', function() {
                content.includes(searchTerm);
     }
 
-    if (searchForm && searchInput) {
-        searchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const searchTerm = searchInput.value.trim().toLowerCase();
-            let hasResults = false;
+    function performSearch() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        let hasResults = false;
 
-            // Search in featured article
+        // Search in featured article
+        if (featuredArticle) {
+            const isMatch = searchInArticle(featuredArticle, searchTerm);
+            featuredArticle.style.display = isMatch ? 'block' : 'none';
+            hasResults = hasResults || isMatch;
+        }
+
+        // Search in article list
+        if (articleList) {
+            const articles = articleList.querySelectorAll('.card');
+            let listHasResults = false;
+
+            articles.forEach(article => {
+                const isMatch = searchInArticle(article, searchTerm);
+                article.style.display = isMatch ? 'block' : 'none';
+                listHasResults = listHasResults || isMatch;
+            });
+
+            hasResults = hasResults || listHasResults;
+            showNoResults(articleList, !listHasResults && articles.length > 0);
+        }
+
+        // If no featured article and no article list has results
+        if (!hasResults && !articleList && !featuredArticle) {
+            showNoResults(searchForm.parentElement, true);
+        }
+
+        // If search is empty, show everything
+        if (searchTerm === '') {
             if (featuredArticle) {
-                const isMatch = searchInArticle(featuredArticle, searchTerm);
-                featuredArticle.style.display = isMatch ? 'block' : 'none';
-                hasResults = hasResults || isMatch;
+                featuredArticle.style.display = 'block';
             }
-
-            // Search in article list
             if (articleList) {
                 const articles = articleList.querySelectorAll('.card');
-                let listHasResults = false;
-
-                articles.forEach(article => {
-                    const isMatch = searchInArticle(article, searchTerm);
-                    article.style.display = isMatch ? 'block' : 'none';
-                    listHasResults = listHasResults || isMatch;
-                });
-
-                hasResults = hasResults || listHasResults;
-                showNoResults(articleList, !listHasResults && articles.length > 0);
+                articles.forEach(article => article.style.display = 'block');
             }
+            showNoResults(articleList || searchForm.parentElement, false);
+        }
+    }
 
-            // If no featured article and no article list has results
-            if (!hasResults && !articleList && !featuredArticle) {
-                showNoResults(searchForm.parentElement, true);
-            }
+    if (searchForm && searchInput) {
+        // Handle form submission
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            performSearch();
         });
 
-        // Reset display when search is cleared
-        searchInput.addEventListener('input', function() {
-            if (this.value.trim() === '') {
-                if (featuredArticle) {
-                    featuredArticle.style.display = 'block';
-                }
-                if (articleList) {
-                    const articles = articleList.querySelectorAll('.card');
-                    articles.forEach(article => article.style.display = 'block');
-                }
-                showNoResults(articleList || searchForm.parentElement, false);
-            }
-        });
+        // Handle real-time search as user types
+        searchInput.addEventListener('input', performSearch);
     }
 });
