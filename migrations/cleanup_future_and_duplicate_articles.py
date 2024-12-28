@@ -24,10 +24,9 @@ def cleanup_articles():
 
             # Get all articles ordered by publication date
             articles = Article.query.order_by(Article.publication_date.asc()).all()
-            week_articles = {}
+            week_ranges = {}  # Store articles by their week range
             articles_to_delete = []
 
-            # First pass: group articles by week and identify future dates
             for article in articles:
                 if not article.date_range:
                     logger.warning(f"Article {article.id} has no date range, skipping")
@@ -50,24 +49,22 @@ def cleanup_articles():
                     articles_to_delete.append(article)
                     continue
 
-                # Group articles by week start date
+                # Get standardized week range key (Monday 00:00:00 to Sunday 23:59:59)
                 week_key = week_start.strftime('%Y-%m-%d')
-                if week_key not in week_articles:
-                    week_articles[week_key] = []
-                week_articles[week_key].append(article)
 
-            # Second pass: handle duplicates
-            for week_key, week_group in week_articles.items():
-                if len(week_group) > 1:
-                    logger.info(f"Found {len(week_group)} articles for week of {week_key}")
-
-                    # Sort by publication date, newest first
-                    week_group.sort(key=lambda x: x.publication_date, reverse=True)
-
-                    # Keep only the newest article
-                    kept_article = week_group[0]
-                    logger.info(f"Keeping newest article {kept_article.id}: {kept_article.title}")
-                    articles_to_delete.extend([a for a in week_group if a != kept_article])
+                # If we already have an article for this week
+                if week_key in week_ranges:
+                    existing_article = week_ranges[week_key]
+                    # Keep the newest article
+                    if article.publication_date > existing_article.publication_date:
+                        logger.info(f"Found newer article for week {week_key}, marking older article for deletion")
+                        articles_to_delete.append(existing_article)
+                        week_ranges[week_key] = article
+                    else:
+                        logger.info(f"Found duplicate article for week {week_key}, marking newer article for deletion")
+                        articles_to_delete.append(article)
+                else:
+                    week_ranges[week_key] = article
 
             # Delete problematic articles
             if articles_to_delete:

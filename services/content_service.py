@@ -379,7 +379,6 @@ class ContentService:
                 logger.warning(f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}")
                 return None
 
-
             # Get forum discussions summary with error handling
             forum_summary = None
             forum_error = None
