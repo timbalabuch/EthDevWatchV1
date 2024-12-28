@@ -272,7 +272,8 @@ def utility_processor() -> dict:
 
     return dict(
         format_date=format_date,
-        current_time=get_current_utc
+        current_time=get_current_utc,
+        timedelta=timedelta  # Add timedelta to template context
     )
 
 # Add new route for technical terms API
