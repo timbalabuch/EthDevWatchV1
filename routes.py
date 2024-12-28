@@ -412,6 +412,17 @@ def generate_single_article():
 
         logger.info(f"Found target date for article generation: {target_date.strftime('%Y-%m-%d')}")
 
+        # Create a placeholder article in generating status
+        article = Article(
+            title="Generating...",
+            content="Article is being generated...",
+            publication_date=target_date,
+            status='generating',
+            published_date=current_date
+        )
+        db.session.add(article)
+        db.session.commit()
+
         # Execute generate_one_article script with the target date
         workflows_set_run_config_tool(
             name='Generate One Article',
