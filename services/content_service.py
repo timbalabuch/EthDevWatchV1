@@ -344,15 +344,19 @@ class ContentService:
                 # Get the most recent Monday
                 days_since_monday = current_date.weekday()
                 last_monday = current_date - timedelta(days=days_since_monday)
-                next_monday = last_monday + timedelta(days=7)
 
-                # Only allow article creation if we're on or after the next Monday
-                if current_date < next_monday:
-                    logger.warning(f"Cannot create article until next Monday: {next_monday.strftime('%Y-%m-%d')}")
+                # Ensure we're only creating articles for complete weeks
+                if current_date.weekday() < 6:  # If it's not Sunday yet
+                    logger.warning(f"Cannot create article until the week is complete (Sunday)")
                     return None
 
                 publication_date = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
+
+            # Validate that publication date is a Monday
+            if publication_date.weekday() != 0:
+                logger.error(f"Publication date must be a Monday, got {publication_date.strftime('%A')}")
+                return None
 
             # Calculate the end of the week (Sunday)
             week_end = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
@@ -362,7 +366,7 @@ class ContentService:
                 logger.warning(f"Cannot create article with future dates in range. Week end: {week_end}, Current: {current_date}")
                 return None
 
-            logger.info(f"Finalized publication date: {publication_date}")
+            logger.info(f"Finalized publication date: {publication_date}, Week end: {week_end}")
 
             # Check for existing article in the same week to prevent duplicates
             week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)

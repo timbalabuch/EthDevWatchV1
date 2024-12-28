@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -44,6 +44,12 @@ def cleanup_articles():
                     articles_to_delete.append(article)
                     continue
 
+                # Check if article starts on a Monday
+                if week_start.weekday() != 0:
+                    logger.info(f"Found article not starting on Monday: {article.title}, start date: {week_start}")
+                    articles_to_delete.append(article)
+                    continue
+
                 # Group articles by week start date
                 week_key = week_start.strftime('%Y-%m-%d')
                 if week_key not in week_articles:
@@ -58,26 +64,10 @@ def cleanup_articles():
                     # Sort by publication date, newest first
                     week_group.sort(key=lambda x: x.publication_date, reverse=True)
 
-                    # Keep only the newest article that starts on Monday
-                    kept_article = None
-                    for article in week_group:
-                        week_start, _ = article.date_range
-                        if week_start.weekday() == 0:  # Monday
-                            if kept_article is None:
-                                kept_article = article
-                                logger.info(f"Keeping article {article.id}: {article.title} (published {article.publication_date})")
-                            else:
-                                logger.info(f"Marking duplicate article {article.id} for deletion: {article.title} (published {article.publication_date})")
-                                articles_to_delete.append(article)
-                        else:
-                            logger.info(f"Marking non-Monday article {article.id} for deletion: {article.title} (starts on {week_start.strftime('%A')})")
-                            articles_to_delete.append(article)
-
-                    # If no Monday article was found, keep the newest one
-                    if kept_article is None and week_group:
-                        kept_article = week_group[0]
-                        logger.info(f"No Monday article found, keeping newest article {kept_article.id}: {kept_article.title}")
-                        articles_to_delete.extend([a for a in week_group if a != kept_article])
+                    # Keep only the newest article
+                    kept_article = week_group[0]
+                    logger.info(f"Keeping newest article {kept_article.id}: {kept_article.title}")
+                    articles_to_delete.extend([a for a in week_group if a != kept_article])
 
             # Delete problematic articles
             if articles_to_delete:
