@@ -20,6 +20,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def get_next_monday(dt):
+    """Get the next Monday from a given date."""
+    days_until_monday = (7 - dt.weekday()) % 7
+    if days_until_monday == 0:
+        days_until_monday = 7
+    return dt + timedelta(days=days_until_monday)
+
 def generate_article_for_date(target_date=None):
     """Generate an article for a specific date or the current week"""
     try:
@@ -31,27 +38,36 @@ def generate_article_for_date(target_date=None):
         content_service = ContentService()
 
         current_date = datetime.now(pytz.UTC)
+        current_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Only allow article generation on Mondays
-        if current_date.weekday() != 0 and not target_date:
-            logger.warning("Articles can only be generated on Mondays")
-            return False
-
-        # Calculate the appropriate Monday
+        # Handle target date
         if target_date:
             if not target_date.tzinfo:
                 target_date = pytz.UTC.localize(target_date)
+            target_date = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
             monday = target_date - timedelta(days=target_date.weekday())
         else:
-            # For current week, use the previous Monday
+            # For current date, get the previous week's Monday
             days_since_monday = current_date.weekday()
-            monday = current_date - timedelta(days=days_since_monday)
+            monday = current_date - timedelta(days=days_since_monday + 7)
+
+            # Only allow article generation on Mondays
+            if current_date.weekday() != 0:
+                logger.warning("Articles can only be generated on Mondays")
+                return False
 
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_monday = get_next_monday(monday)
 
-        # Prevent article generation for future weeks
-        if monday >= current_date.replace(hour=0, minute=0, second=0, microsecond=0):
-            logger.warning(f"Cannot create article for future week of {monday.strftime('%Y-%m-%d')}")
+        # Validate article date
+        if monday >= current_date:
+            logger.warning(f"Cannot create article for current or future week: {monday.strftime('%Y-%m-%d')}")
+            return False
+
+        # Ensure the current date is at least on the next Monday for the target week
+        required_monday = get_next_monday(monday)
+        if current_date < required_monday:
+            logger.warning(f"Cannot create article until {required_monday.strftime('%Y-%m-%d')}")
             return False
 
         with app.app_context():
@@ -61,7 +77,7 @@ def generate_article_for_date(target_date=None):
                 # Check if article already exists for this week
                 existing_article = Article.query.filter(
                     Article.publication_date >= monday,
-                    Article.publication_date < monday + timedelta(days=7)
+                    Article.publication_date < next_monday
                 ).first()
 
                 if existing_article:

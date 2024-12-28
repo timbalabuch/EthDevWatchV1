@@ -356,7 +356,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scripts/cleanup_future_articles.py && python migrations/remove_duplicate_articles.py"
+args = "python migrations/cleanup_articles.py"
 
 [[ports]]
 localPort = 3000
