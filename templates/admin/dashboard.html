@@ -21,7 +21,7 @@
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Publication Date</th>
+                            <th>Date Range</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -30,7 +30,7 @@
                         {% for article in articles %}
                         <tr>
                             <td>{{ article.title }}</td>
-                            <td>{{ article.publication_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ article.formatted_date_range }}</td>
                             <!-- Article Actions -->
                             <td>
                                 <!-- Edit Article Button -->

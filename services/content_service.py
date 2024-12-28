@@ -354,7 +354,27 @@ class ContentService:
                 publication_date = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
                 publication_date = pytz.UTC.localize(publication_date)
 
+            # Calculate the end of the week (Sunday)
+            week_end = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+            # Prevent creation if any part of the date range includes future dates
+            if week_end > current_date:
+                logger.warning(f"Cannot create article with future dates in range. Week end: {week_end}, Current: {current_date}")
+                return None
+
             logger.info(f"Finalized publication date: {publication_date}")
+
+            # Check for existing article in the same week to prevent duplicates
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            existing_article = Article.query.filter(
+                Article.publication_date >= week_start,
+                Article.publication_date < week_start + timedelta(days=7)
+            ).first()
+
+            if existing_article:
+                logger.warning(f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}")
+                return None
+
 
             # Get forum discussions summary with error handling
             forum_summary = None

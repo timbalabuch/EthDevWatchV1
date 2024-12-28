@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -159,6 +159,41 @@ class Article(db.Model):
         if not steps:
             return []
         return [step.get_text(strip=True) for step in steps.find_all('li')]
+
+    @property
+    def date_range(self):
+        """Get the week's date range for this article."""
+        if not self.publication_date:
+            return None
+
+        # Ensure date is timezone-aware
+        pub_date = self.publication_date
+        if pub_date.tzinfo is None:
+            pub_date = pytz.UTC.localize(pub_date)
+
+        # Get Monday (start) of the week
+        week_start = pub_date - timedelta(days=pub_date.weekday())
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Get Sunday (end) of the week
+        week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+        return week_start, week_end
+
+    @property
+    def formatted_date_range(self):
+        """Get a formatted string representation of the article's week range."""
+        if not self.date_range:
+            return ""
+
+        week_start, week_end = self.date_range
+
+        if week_start.month == week_end.month:
+            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%d, %Y')}"
+        elif week_start.year == week_end.year:
+            return f"Week of {week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')}"
+        else:
+            return f"Week of {week_start.strftime('%B %d, %Y')} - {week_end.strftime('%B %d, %Y')}"
 
 
 class Source(db.Model):

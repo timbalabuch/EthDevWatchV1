@@ -91,6 +91,10 @@ args = "Cleanup Articles"
 task = "workflow.run"
 args = "Clean Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Cleanup Future and Duplicate Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -357,6 +361,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/cleanup_articles.py"
+
+[[workflows.workflow]]
+name = "Cleanup Future and Duplicate Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/cleanup_future_and_duplicate_articles.py"
 
 [[ports]]
 localPort = 3000
