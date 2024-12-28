@@ -289,9 +289,12 @@ def delete_article(article_id: int) -> Response:
     """Handle deletion of articles."""
     try:
         article = Article.query.get_or_404(article_id)
-        logger.info(f"Deleting article {article_id} by {current_user.email}")
+        # First delete associated sources
+        Source.query.filter_by(article_id=article.id).delete()
+        # Then delete the article
         db.session.delete(article)
         db.session.commit()
+        logger.info(f"Article {article_id} and its sources successfully deleted by {current_user.email}")
         flash('Article deleted successfully', 'success')
     except Exception as e:
         logger.error(f"Error deleting article {article_id}: {str(e)}")
