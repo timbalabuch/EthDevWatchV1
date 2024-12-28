@@ -1,4 +1,3 @@
-
 import os
 import logging
 from datetime import datetime
@@ -70,7 +69,8 @@ with app.app_context():
         from routes import *
         try:
             from services.scheduler import init_scheduler
-            init_scheduler()
+            # Initialize scheduler but don't auto-start unless explicitly enabled
+            init_scheduler(auto_start=False)
             logger.info("Application initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize scheduler: {str(e)}")

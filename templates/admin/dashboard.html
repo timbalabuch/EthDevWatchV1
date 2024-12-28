@@ -14,6 +14,24 @@
         </div>
     </div>
 
+    <!-- Article Generation Info Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Article Generation Schedule</h5>
+            <p class="card-text">
+                New articles are automatically generated every Monday at 9:00 UTC.
+                Articles will only be generated if there isn't already an article for that week.
+                The scheduler can be controlled using the manage_scheduler.py script:
+            </p>
+            <pre class="bg-light p-2">
+# Enable automatic article generation
+python scripts/manage_scheduler.py enable
+
+# Disable automatic article generation
+python scripts/manage_scheduler.py disable</pre>
+        </div>
+    </div>
+
     <!-- Articles Management Card -->
     <div class="card">
         <div class="card-body">
