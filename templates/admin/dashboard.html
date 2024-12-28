@@ -33,13 +33,24 @@
         </div>
     </div>
 
+    <!-- Search Box -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search articles...">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Articles Management Card -->
     <div class="card">
         <div class="card-body">
             <h2>Articles</h2>
             <!-- Articles Table -->
             <div class="table-responsive">
-                <table class="table">
+                <table class="table" id="articlesTable">
                     <!-- Table Headers -->
                     <thead>
                         <tr>
@@ -110,6 +121,26 @@
                     console.error('Error fetching generation status:', error);
                 });
         }
+
+        // Add search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchText = e.target.value.toLowerCase();
+            const table = document.getElementById('articlesTable');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const title = row.cells[0].textContent.toLowerCase();
+                const date = row.cells[1].textContent.toLowerCase();
+                const dateRange = row.cells[2].textContent.toLowerCase();
+
+                if (title.includes(searchText) || date.includes(searchText) || dateRange.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
 
         // Check status every 5 seconds
         setInterval(updateGenerationStatus, 5000);

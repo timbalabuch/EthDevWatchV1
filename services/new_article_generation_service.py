@@ -25,7 +25,7 @@ class NewArticleGenerationService:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
 
             self.openai = OpenAI(api_key=api_key)
-            self.model = "gpt-4"  # Using latest stable model
+            self.model = "gpt-4"  # Using stable model
             self.github_service = GitHubService()
             self.forum_service = ForumService()
             logger.info("NewArticleGenerationService initialized successfully")
@@ -52,32 +52,39 @@ class NewArticleGenerationService:
 
     def check_conflicts(self, target_date: datetime) -> Tuple[bool, str, Optional[Article]]:
         """Check for existing or in-progress articles."""
-        # First check for any article in generating status
-        generating_article = Article.query.filter_by(status='generating').first()
-        if generating_article:
-            # If an article has been in generating status for more than 10 minutes, mark it as failed
-            generation_timeout = datetime.now(pytz.UTC) - timedelta(minutes=10)
-            if generating_article.published_date and generating_article.published_date < generation_timeout:
-                generating_article.status = 'failed'
-                generating_article.content = "<div class='alert alert-danger'>Article generation timed out</div>"
-                db.session.commit()
-                logger.warning(f"Article {generating_article.id} marked as failed due to timeout")
-            else:
-                return True, "Another article is currently being generated", generating_article
+        try:
+            # First check for any article in generating status
+            generating_article = Article.query.filter_by(status='generating').first()
+            if generating_article:
+                # If an article has been in generating status for more than 10 minutes, mark it as failed
+                generation_timeout = datetime.now(pytz.UTC) - timedelta(minutes=10)
+                if generating_article.published_date:
+                    published_date = generating_article.published_date if generating_article.published_date.tzinfo else pytz.UTC.localize(generating_article.published_date)
+                    if published_date < generation_timeout:
+                        generating_article.status = 'failed'
+                        generating_article.content = "<div class='alert alert-danger'>Article generation timed out</div>"
+                        db.session.commit()
+                        logger.warning(f"Article {generating_article.id} marked as failed due to timeout")
+                    else:
+                        return True, "Another article is currently being generated", generating_article
 
-        # Then check for existing article in the target week
-        week_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        week_end = week_start + timedelta(days=7)
-        existing_article = Article.query.filter(
-            Article.publication_date >= week_start,
-            Article.publication_date < week_end
-        ).first()
+            # Then check for existing article in the target week
+            week_start = target_date
+            week_end = week_start + timedelta(days=7)
+            existing_article = Article.query.filter(
+                Article.publication_date >= week_start,
+                Article.publication_date < week_end
+            ).first()
 
-        if existing_article:
-            msg = f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}"
-            return True, msg, existing_article
+            if existing_article:
+                msg = f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}"
+                return True, msg, existing_article
 
-        return False, "", None
+            return False, "", None
+
+        except Exception as e:
+            logger.error(f"Error checking for conflicts: {str(e)}")
+            raise
 
     def create_placeholder_article(self, target_date: datetime) -> Article:
         """Create a placeholder article with 'generating' status."""
@@ -87,7 +94,7 @@ class NewArticleGenerationService:
                 content="<div class='alert alert-info'>Article content is being generated...</div>",
                 publication_date=target_date,
                 status='generating',
-                published_date=datetime.now(pytz.UTC)  # Add published_date for timeout tracking
+                published_date=datetime.now(pytz.UTC)
             )
             db.session.add(article)
             db.session.commit()
@@ -120,8 +127,9 @@ class NewArticleGenerationService:
             generating_articles = Article.query.filter_by(status='generating').all()
             for article in generating_articles:
                 if article.published_date:
+                    published_date = article.published_date if article.published_date.tzinfo else pytz.UTC.localize(article.published_date)
                     generation_timeout = datetime.now(pytz.UTC) - timedelta(minutes=10)
-                    if article.published_date < generation_timeout:
+                    if published_date < generation_timeout:
                         article.status = 'failed'
                         article.content = "<div class='alert alert-danger'>Article generation timed out</div>"
                         db.session.commit()
@@ -133,7 +141,6 @@ class NewArticleGenerationService:
                 return {
                     "is_generating": True,
                     "article_id": generating_article.id,
-                    "start_time": generating_article.published_date.isoformat() if generating_article.published_date else None,
                     "status": "generating",
                     "error": None
                 }
