@@ -344,3 +344,26 @@ def update_admin_credentials():
         flash('An error occurred while updating credentials.', 'error')
         db.session.rollback()
         return render_template('admin/update_credentials.html')
+
+@app.route('/admin/generate_previous', methods=['POST'])
+@login_required
+@admin_required
+def generate_previous_articles():
+    """Handle generation of previous articles."""
+    try:
+        num_articles = int(request.form.get('num_articles', 2))
+
+        # Execute generate_past_articles script
+        command = f'python scripts/generate_past_articles.py {num_articles}'
+        workflows_set_run_config_tool(
+            name='Generate Past Articles',
+            command=command
+        )
+
+        flash('Started generating previous articles. Check the status in the dashboard.', 'success')
+        logger.info(f"Started generating {num_articles} past articles")
+    except Exception as e:
+        logger.error(f"Error starting article generation: {str(e)}")
+        flash('An error occurred while starting article generation.', 'error')
+
+    return redirect(url_for('admin_dashboard'))

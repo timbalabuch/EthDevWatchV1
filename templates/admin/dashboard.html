@@ -9,6 +9,15 @@
         <div>
             <!-- Update Credentials Link -->
             <a href="{{ url_for('update_admin_credentials') }}" class="btn btn-outline-primary me-2">Update Credentials</a>
+            <!-- Generate Previous Articles Button -->
+            <form method="POST" action="{{ url_for('generate_previous_articles') }}" class="d-inline me-2">
+                <select name="num_articles" class="form-select d-inline-block w-auto me-2">
+                    <option value="2">2 weeks</option>
+                    <option value="4">4 weeks</option>
+                    <option value="8">8 weeks</option>
+                </select>
+                <button type="submit" class="btn btn-outline-success">Generate Previous Articles</button>
+            </form>
             <!-- Create New Article Button -->
             <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
         </div>
