@@ -10,6 +10,29 @@
         <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
     </div>
 
+    <!-- Article Generation Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2>Article Generation</h2>
+            <!-- Article Generation Form -->
+            <form action="{{ url_for('generate_single_article') }}" method="POST" class="mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label for="generation_date" class="form-label">Generation Date (Monday of the week)</label>
+                        <input type="date" id="generation_date" name="generation_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Generate Article</button>
+                    </div>
+                </div>
+            </form>
+            <!-- Generation Status Display -->
+            <div id="generation-status" class="alert d-none">
+                <span id="status-message"></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Articles Management Card -->
     <div class="card">
         <div class="card-body">
@@ -22,6 +45,7 @@
                         <tr>
                             <th>Title</th>
                             <th>Publication Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -31,6 +55,7 @@
                         <tr>
                             <td>{{ article.title }}</td>
                             <td>{{ article.publication_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ article.status }}</td>
                             <!-- Article Actions -->
                             <td>
                                 <!-- Edit Article Button -->
@@ -45,5 +70,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Status Checking Script -->
+    <script>
+        function updateGenerationStatus() {
+            fetch('/api/generation-status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('generation-status');
+                    const statusMessage = document.getElementById('status-message');
+
+                    statusDiv.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger');
+
+                    if (data.is_generating) {
+                        statusDiv.classList.add('alert-info');
+                        statusMessage.textContent = 'Article generation in progress...';
+                    } else if (data.error) {
+                        statusDiv.classList.add('alert-danger');
+                        statusMessage.textContent = `Error: ${data.error}`;
+                    } else if (data.status === 'idle') {
+                        statusDiv.classList.add('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching generation status:', error);
+                });
+        }
+
+        // Check status every 5 seconds
+        setInterval(updateGenerationStatus, 5000);
+        // Initial check
+        updateGenerationStatus();
+    </script>
 </div>
 {% endblock %}

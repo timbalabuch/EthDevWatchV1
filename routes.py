@@ -289,15 +289,30 @@ def get_technical_terms():
 def generate_single_article():
     """Handle generation of a single article."""
     try:
+        generation_date_str = request.form.get('generation_date')
+        if not generation_date_str:
+            flash('Generation date is required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+
+        try:
+            generation_date = datetime.strptime(generation_date_str, '%Y-%m-%d')
+            if generation_date.weekday() != 0:
+                # Adjust to the Monday of the selected week
+                generation_date = generation_date - timedelta(days=generation_date.weekday())
+            generation_date = pytz.UTC.localize(generation_date)
+        except ValueError:
+            flash('Invalid date format.', 'error')
+            return redirect(url_for('admin_dashboard'))
+
         # Initialize new article generation service
         generation_service = NewArticleGenerationService()
 
-        # Try to generate an article
-        article = generation_service.generate_article()
+        # Try to generate an article for the specified date
+        article = generation_service.generate_article(generation_date)
 
         if article:
             flash('Article generation started. Check the status in the dashboard.', 'success')
-            logger.info(f"Started generating article with ID: {article.id}")
+            logger.info(f"Started generating article with ID: {article.id} for date {generation_date}")
         else:
             status = generation_service.get_generation_status()
             if status.get("is_generating"):
