@@ -8,7 +8,8 @@ from app import app, db
 from models import Article, User, Source
 import pytz
 import logging
-from tools import workflows_set_run_config_tool  # Add this import
+from tools import workflows_set_run_config_tool
+from services.article_generation_service import ArticleGenerationService
 
 # Setup logging
 logging.basicConfig(
@@ -376,8 +377,6 @@ def generate_previous_articles():
 def generate_single_article():
     """Handle generation of a single article."""
     try:
-        current_date = datetime.now(pytz.UTC)
-
         # Initialize article generation service
         generation_service = ArticleGenerationService()
 
