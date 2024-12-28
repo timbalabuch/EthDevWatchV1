@@ -341,16 +341,18 @@ class ContentService:
                 if publication_date.tzinfo is None:
                     publication_date = pytz.UTC.localize(publication_date)
             else:
-                # Only allow creation of articles for past Mondays
+                # Get the most recent Monday
                 days_since_monday = current_date.weekday()
-                publication_date = current_date - timedelta(days=days_since_monday)
-                publication_date = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                publication_date = pytz.UTC.localize(publication_date)
+                last_monday = current_date - timedelta(days=days_since_monday)
+                next_monday = last_monday + timedelta(days=7)
 
-                # If it's not Monday and we're trying to create an article for the current week, return None
-                if current_date.weekday() != 0 and publication_date >= current_date.replace(hour=0, minute=0, second=0, microsecond=0):
-                    logger.warning("Attempted to create article before Monday. Skipping.")
+                # Only allow article creation if we're on or after the next Monday
+                if current_date < next_monday:
+                    logger.warning(f"Cannot create article until next Monday: {next_monday.strftime('%Y-%m-%d')}")
                     return None
+
+                publication_date = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+                publication_date = pytz.UTC.localize(publication_date)
 
             logger.info(f"Finalized publication date: {publication_date}")
 
