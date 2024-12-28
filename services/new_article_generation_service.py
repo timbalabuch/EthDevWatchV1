@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 class NewArticleGenerationService:
     """New implementation of article generation service with improved status tracking."""
-    
+
     def __init__(self):
         """Initialize the service with required clients."""
         try:
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is not set")
-            
+
             self.openai = OpenAI(api_key=api_key)
             self.model = "gpt-4"  # Using latest stable model
             self.github_service = GitHubService()
@@ -36,7 +36,7 @@ class NewArticleGenerationService:
     def get_target_date(self, requested_date: Optional[datetime] = None) -> datetime:
         """Calculate the appropriate target date for article generation."""
         current_date = datetime.now(pytz.UTC)
-        
+
         if requested_date:
             if not requested_date.tzinfo:
                 requested_date = pytz.UTC.localize(requested_date)
@@ -45,7 +45,7 @@ class NewArticleGenerationService:
             # Get the most recent past Monday
             days_since_monday = current_date.weekday()
             target_date = current_date - timedelta(days=days_since_monday + 7)
-        
+
         # Ensure date is a Monday
         target_date = target_date - timedelta(days=target_date.weekday())
         return target_date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -65,11 +65,11 @@ class NewArticleGenerationService:
             Article.publication_date >= week_start,
             Article.publication_date < week_end
         ).first()
-        
+
         if existing_article:
             msg = f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}"
             return True, msg, existing_article
-        
+
         return False, "", None
 
     def create_placeholder_article(self, target_date: datetime) -> Article:
@@ -107,7 +107,7 @@ class NewArticleGenerationService:
         """Get current generation status and any errors."""
         try:
             generating_article = Article.query.filter_by(status='generating').first()
-            
+
             if generating_article:
                 return {
                     "is_generating": True,
@@ -116,7 +116,7 @@ class NewArticleGenerationService:
                     "status": "generating",
                     "error": None
                 }
-            
+
             # Check for recent failed articles
             failed_article = Article.query.filter_by(status='failed').order_by(Article.publication_date.desc()).first()
             if failed_article:
@@ -138,7 +138,6 @@ class NewArticleGenerationService:
             logger.error(f"Error getting generation status: {str(e)}")
             return {
                 "is_generating": False,
-                "article_id": None,
                 "status": "error",
                 "error": str(e)
             }
@@ -175,7 +174,7 @@ class NewArticleGenerationService:
                 # This will be replaced with new implementation in next phase
                 from services.content_service import ContentService
                 content_service = ContentService()
-                
+
                 generated_article = content_service.generate_weekly_summary(
                     github_content,
                     target_date

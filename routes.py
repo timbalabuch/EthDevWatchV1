@@ -283,6 +283,31 @@ def get_technical_terms():
     return {term.term: term.explanation for term in terms}
 
 
+@app.route('/admin/article/<int:article_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_article(article_id: int):
+    """Handle deletion of an article."""
+    try:
+        article = Article.query.get_or_404(article_id)
+
+        # Delete associated sources first
+        Source.query.filter_by(article_id=article.id).delete()
+
+        # Delete the article
+        db.session.delete(article)
+        db.session.commit()
+
+        logger.info(f"Article {article_id} deleted by {current_user.email}")
+        flash('Article deleted successfully', 'success')
+
+    except Exception as e:
+        logger.error(f"Error deleting article {article_id}: {str(e)}")
+        db.session.rollback()
+        flash('An error occurred while deleting the article.', 'error')
+
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/admin/generate-article', methods=['POST'])
 @login_required
 @admin_required
