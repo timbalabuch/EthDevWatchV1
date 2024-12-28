@@ -24,6 +24,23 @@
     --bs-border-color: var(--border-color);
 }
 
+.forum-link {
+    --bs-btn-border-color: #34d399 !important;
+    --bs-btn-hover-bg: #34d399 !important;
+    color: inherit; /* Garante que a cor padrão seja herdada */
+}
+.mb-4 {
+    margin-bottom: 1rem !important;
+}
+
+.forum-link:hover {
+    color: #111928 !important; 
+}
+
+.article-header.mb-5 {
+    margin-bottom: 1rem !important;
+}
+
 .badge.bg-info.ms-2 {
     background-color: rgba(0, 0, 0, 0.2) !important;
 }
@@ -68,11 +85,18 @@ a:hover {
     color: var(--link-hover-color);
 }
 
-.ethereum-article, .article-content {
+.ethereum-article {
     color: var(--text-primary);
-    max-width: 800px;
+    max-width: 800px !important;
     margin: 0 auto;
 }
+
+.article-content {
+    color: var(--text-primary);
+    margin: 0 auto;
+}
+
+
 
 .progress-bar {
     height: 4px;
@@ -505,6 +529,28 @@ a:hover {
 }
 
 @media (max-width: 576px) {
+
+    .ethereum-article .card-body {
+        padding: 0px !important;
+    }
+
+    .forum-discussion-item {
+    padding: 1rem;
+    }
+
+    .forum-content .mb-3 {
+    padding: 0px !important;
+    background: none !important;
+    }
+
+    .ethereum-article .card {
+    border: none !important;
+    }
+
+    #searchForm {
+        width: 120px;
+    }
+    
     .hero-section h1 {
         font-size: 1.8rem;
     }
@@ -518,8 +564,8 @@ a:hover {
         line-height: 1.5;
     }
 
-    .card-title {
-        font-size: 1.1rem;
+    .forum-content .card-title {
+        font-size: 1.8rem;
     }
 
     .metric-value {
