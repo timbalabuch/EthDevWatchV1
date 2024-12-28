@@ -87,6 +87,10 @@ args = "Generate Past Articles"
 task = "workflow.run"
 args = "Cleanup Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Clean Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
