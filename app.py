@@ -2,6 +2,8 @@ import os
 import logging
 from datetime import datetime
 import pytz
+
+# Core Flask imports
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -21,6 +23,7 @@ login_manager = LoginManager()
 
 app = Flask(__name__)
 
+# Configure app
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
@@ -35,6 +38,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Initialize extensions
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -62,11 +66,15 @@ def cleanup_future_articles():
         logger.error(f"Error cleaning up future articles: {str(e)}")
         db.session.rollback()
 
+# Initialize application context
 with app.app_context():
     try:
         db.create_all()
         cleanup_future_articles()
+
+        # Import routes after db initialization to avoid circular imports
         from routes import *
+
         try:
             from services.scheduler import init_scheduler
             # Initialize scheduler but don't auto-start unless explicitly enabled

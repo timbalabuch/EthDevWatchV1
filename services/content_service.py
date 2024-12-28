@@ -422,43 +422,46 @@ class ContentService:
         raise ValueError("Could not find an available date range within the last year")
 
     def check_for_generating_articles(self) -> bool:
-        """Check if any articles are currently being generated."""
+        """Check if any articles are currently being generated with improved timeout."""
         try:
             generating_articles = Article.query.filter_by(status='generating').all()
             if generating_articles:
-                logger.warning(f"Found {len(generating_articles)} articles in generating status")
-                # Cleanup any stale generating articles older than 10 minutes
                 current_time = datetime.now(pytz.UTC)
+                logger.warning(f"Found {len(generating_articles)} articles in generating status")
+
+                # Cleanup any stale generating articles older than 5 minutes
                 for article in generating_articles:
-                    if article.published_date and (current_time - article.published_date > timedelta(minutes=10)):
+                    if article.published_date and (current_time - article.published_date > timedelta(minutes=5)):
                         logger.warning(f"Found stale generating article {article.id}, resetting to draft status")
                         article.status = 'draft'
                         db.session.commit()
-            return any(article.published_date and (current_time - article.published_date <= timedelta(minutes=10)) 
-                      for article in generating_articles)
+
+                # Return True if there are any non-stale generating articles
+                return any(
+                    article.published_date and (current_time - article.published_date <= timedelta(minutes=5))
+                    for article in generating_articles
+                )
+            return False
         except Exception as e:
             logger.error(f"Error checking for generating articles: {str(e)}")
             return False
 
     def _generate_content_hash(self, title: str, content: str) -> str:
-        """Generate a hash of the article content for duplicate detection."""
+        """Generate a more robust hash of the article content for duplicate detection."""
         import hashlib
-        # Ensure title is a string
-        safe_title = str(title) if isinstance(title, (list, tuple)) else title
-        combined_content = f"{safe_title}|{content}"
+        # Ensure title is a string and normalize it
+        safe_title = str(title).strip().lower() if title else ""
+        # Normalize content
+        safe_content = content.strip() if content else ""
+        # Create a unique combination including publication date
+        combined_content = f"{safe_title}|{safe_content}"
         return hashlib.sha256(combined_content.encode()).hexdigest()
 
     def check_for_duplicate_content(self, title: str, content: str) -> tuple[bool, Optional[Article]]:
-        """Check if an article with similar content already exists.
-
-        Returns:
-            Tuple containing:
-            - bool: Whether a duplicate exists
-            - Article: The duplicate article if found, None otherwise
-        """
+        """Check if an article with similar content already exists using improved criteria."""
         try:
-            # Ensure title is a string
-            safe_title = str(title) if isinstance(title, (list, tuple)) else title
+            # Ensure title is a string and normalize it
+            safe_title = str(title).strip().lower() if title else ""
             content_hash = self._generate_content_hash(safe_title, content)
 
             # Check for exact content match using hash
@@ -467,11 +470,27 @@ class ContentService:
                 logger.warning(f"Found duplicate article with matching content hash: {existing_article.id}")
                 return True, existing_article
 
+            # Additional check for similar titles
+            similar_title_articles = Article.query.filter(
+                Article.title.ilike(f"%{safe_title}%")
+            ).all()
+
+            for article in similar_title_articles:
+                # If titles are very similar, consider it a duplicate
+                if self._calculate_title_similarity(safe_title, article.title.lower()) > 0.8:
+                    logger.warning(f"Found duplicate article with similar title: {article.id}")
+                    return True, article
+
             return False, None
 
         except Exception as e:
             logger.error(f"Error checking for duplicate content: {str(e)}")
             return False, None
+
+    def _calculate_title_similarity(self, title1: str, title2: str) -> float:
+        """Calculate similarity between two titles using Levenshtein distance."""
+        from difflib import SequenceMatcher
+        return SequenceMatcher(None, title1, title2).ratio()
 
     def _generate_article_content(self, repo_content: Dict, forum_summary: Optional[str]) -> str:
         """Generates the article content using OpenAI."""
