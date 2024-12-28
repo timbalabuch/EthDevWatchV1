@@ -414,8 +414,8 @@ class ContentService:
     def check_for_generating_articles(self) -> bool:
         """Check if any articles are currently being generated."""
         try:
-            generating_articles = Article.query.filter_by(status='generating').first()
-            return generating_articles is not None
+            generating_article = Article.query.filter_by(status='generating').first()
+            return generating_article is not None
         except Exception as e:
             logger.error(f"Error checking for generating articles: {str(e)}")
             return False
