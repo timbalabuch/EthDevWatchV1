@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
+from werkzeug.security import generate_password_hash
 
 from flask import render_template, abort, flash, redirect, url_for, request, Response
 from flask_login import current_user, login_user, logout_user, login_required
@@ -297,3 +298,46 @@ def delete_article(article_id: int) -> Response:
         flash('An error occurred while deleting the article.', 'error')
         db.session.rollback()
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/update_credentials', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def update_admin_credentials():
+    """Handle admin credentials update."""
+    try:
+        if request.method == 'POST':
+            email = request.form.get('email')
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+
+            if not all([email, current_password, new_password, confirm_password]):
+                flash('All fields are required.', 'error')
+                return render_template('admin/update_credentials.html')
+
+            # Verify current password
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect.', 'error')
+                return render_template('admin/update_credentials.html')
+
+            # Verify new password confirmation
+            if new_password != confirm_password:
+                flash('New passwords do not match.', 'error')
+                return render_template('admin/update_credentials.html')
+
+            # Update credentials
+            current_user.email = email
+            current_user.set_password(new_password)
+            db.session.commit()
+
+            logger.info(f"Admin credentials updated for user {current_user.id}")
+            flash('Credentials updated successfully', 'success')
+            return redirect(url_for('admin_dashboard'))
+
+        return render_template('admin/update_credentials.html')
+
+    except Exception as e:
+        logger.error(f"Error updating admin credentials: {str(e)}")
+        flash('An error occurred while updating credentials.', 'error')
+        db.session.rollback()
+        return render_template('admin/update_credentials.html')

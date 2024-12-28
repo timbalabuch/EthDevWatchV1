@@ -6,8 +6,12 @@
     <!-- Header Section with New Article Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Dashboard</h1>
-        <!-- Create New Article Button -->
-        <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
+        <div>
+            <!-- Update Credentials Link -->
+            <a href="{{ url_for('update_admin_credentials') }}" class="btn btn-outline-primary me-2">Update Credentials</a>
+            <!-- Create New Article Button -->
+            <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
+        </div>
     </div>
 
     <!-- Articles Management Card -->
