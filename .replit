@@ -81,10 +81,6 @@ args = "Generate Sample Data"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Generate Past Articles"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Cleanup Articles"
 
 [[workflows.workflow.tasks]]
@@ -323,20 +319,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python scripts/generate_sample_data.py"
-
-[[workflows.workflow]]
-name = "Generate Past Articles"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scripts/generate_past_articles.py 2"
 
 [[workflows.workflow]]
 name = "Cleanup Articles"
