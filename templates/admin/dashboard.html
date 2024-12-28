@@ -19,6 +19,10 @@
                 </select>
                 <button type="submit" class="btn btn-outline-success">Generate Previous Articles</button>
             </form>
+            <!-- Generate Single Article Button -->
+            <form method="POST" action="{{ url_for('generate_single_article') }}" class="d-inline me-2">
+                <button type="submit" class="btn btn-outline-info">Generate Single Article</button>
+            </form>
             <!-- Create New Article Button -->
             <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
         </div>
