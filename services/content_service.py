@@ -358,9 +358,9 @@ class ContentService:
                 logger.error(f"Publication date must be a Monday, got {publication_date.strftime('%A')}")
                 return None
 
-            # Calculate the week range
+            # Calculate the week range with microsecond precision
             week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
 
             # Prevent creation if any part of the date range includes future dates
             if week_end > current_date:
@@ -369,10 +369,20 @@ class ContentService:
 
             logger.info(f"Validating date range: {week_start} to {week_end}")
 
-            # Enhanced check for existing articles in the same date range
+            # Query existing articles that could overlap with our date range
             existing_articles = Article.query.filter(
-                (Article.publication_date >= week_start) &
-                (Article.publication_date <= week_end + timedelta(days=1))
+                db.or_(
+                    # Direct overlap: Article's date falls within our week
+                    db.and_(
+                        Article.publication_date >= week_start,
+                        Article.publication_date <= week_end
+                    ),
+                    # Indirect overlap: Article's week range overlaps with our week
+                    db.and_(
+                        Article.publication_date <= week_end,
+                        Article.publication_date + timedelta(days=6) >= week_start
+                    )
+                )
             ).all()
 
             if existing_articles:
