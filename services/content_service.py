@@ -371,8 +371,8 @@ class ContentService:
 
             # Enhanced check for existing articles in the same date range
             existing_articles = Article.query.filter(
-                ((Article.publication_date >= week_start) & (Article.publication_date <= week_end)) |
-                (Article.publication_date == week_start)
+                (Article.publication_date >= week_start) &
+                (Article.publication_date <= week_end + timedelta(days=1))
             ).all()
 
             if existing_articles:
