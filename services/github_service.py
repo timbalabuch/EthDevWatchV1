@@ -119,6 +119,20 @@ class GitHubService:
         logger.error(f"Failed to fetch from {repo_name} after {self.max_retries} retries")
         return []
 
+    def get_content_for_period(self, start_date=None, end_date=None):
+        """
+        Fetch GitHub content for a specific time period.
+        This method is an alias for fetch_recent_content to maintain compatibility.
+
+        Args:
+            start_date: Start date for content fetching
+            end_date: End date for content fetching
+
+        Returns:
+            List of dictionaries containing fetched content
+        """
+        return self.fetch_recent_content(start_date, end_date)
+
     def fetch_recent_content(self, start_date=None, end_date=None):
         """
         Fetch content from all monitored Ethereum repositories in parallel.
