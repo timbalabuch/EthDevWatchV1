@@ -10,6 +10,8 @@ from app import app, db
 from services.github_service import GitHubService
 from services.content_service import ContentService
 from models import Article
+from services.article_generation_service import ArticleGenerationService # Added import
+
 
 # Setup logging
 logging.basicConfig(
@@ -35,8 +37,7 @@ def generate_article_for_date(target_date=None):
 
         # Initialize services
         logger.info("Initializing services...")
-        github_service = GitHubService()
-        content_service = ContentService()
+        generation_service = ArticleGenerationService()
 
         current_date = datetime.now(pytz.UTC)
         current_date = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -86,18 +87,8 @@ def generate_article_for_date(target_date=None):
                     logger.warning("Another article is currently being generated. Please wait.")
                     return False
 
-                # Get GitHub content
-                logger.info("Fetching GitHub content...")
-                github_content = github_service.fetch_recent_content()
-
-                if not github_content:
-                    logger.error("No content fetched from GitHub")
-                    return False
-
-                logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
-
-                # Generate the article with the correct Monday date
-                article = content_service.generate_weekly_summary(github_content, monday)
+                # Generate article using the service
+                article = generation_service.generate_single_article(monday) #Using monday as target date
 
                 if article:
                     logger.info(f"Successfully generated article: {article.title}")

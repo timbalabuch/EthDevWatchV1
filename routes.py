@@ -380,57 +380,22 @@ def generate_single_article():
     try:
         current_date = datetime.now(pytz.UTC)
 
-        # Get all existing articles
-        existing_articles = Article.query.order_by(Article.publication_date.desc()).all()
+        # Initialize article generation service
+        generation_service = ArticleGenerationService()
 
-        # Find the most recent Monday that doesn't have an article
-        target_date = None
-        max_attempts = 52  # Don't look more than a year back
+        # Try to generate an article
+        article = generation_service.generate_single_article()
 
-        # Start from current week's Monday
-        check_date = current_date - timedelta(days=current_date.weekday())
-        check_date = check_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        if article:
+            flash('Started generating single article. Check the status in the dashboard.', 'success')
+            logger.info("Started generating single article")
+        else:
+            status = generation_service.get_generation_status()
+            if status["is_generating"]:
+                flash('Another article is currently being generated. Please wait.', 'warning')
+            else:
+                flash('Failed to start article generation. Check the dashboard for errors.', 'error')
 
-        for _ in range(max_attempts):
-            # Check if this week already has an article
-            existing = Article.query.filter(
-                Article.publication_date >= check_date,
-                Article.publication_date < check_date + timedelta(days=7)
-            ).first()
-
-            if not existing:
-                target_date = check_date
-                break
-
-            # Move to previous week
-            check_date = check_date - timedelta(days=7)
-
-        if not target_date:
-            flash('No available weeks found for article generation.', 'error')
-            logger.warning("No available weeks found for article generation")
-            return redirect(url_for('admin_dashboard'))
-
-        logger.info(f"Found target date for article generation: {target_date.strftime('%Y-%m-%d')}")
-
-        # Create a placeholder article in generating status
-        article = Article(
-            title="Generating...",
-            content="Article is being generated...",
-            publication_date=target_date,
-            status='generating',
-            published_date=current_date
-        )
-        db.session.add(article)
-        db.session.commit()
-
-        # Execute generate_one_article script with the target date
-        workflows_set_run_config_tool(
-            name='Generate One Article',
-            command=f'python scripts/generate_one_article.py --date {target_date.strftime("%Y-%m-%d")}'
-        )
-
-        flash('Started generating single article. Check the status in the dashboard.', 'success')
-        logger.info("Started generating single article")
     except Exception as e:
         logger.error(f"Error starting single article generation: {str(e)}")
         flash('An error occurred while starting article generation.', 'error')
