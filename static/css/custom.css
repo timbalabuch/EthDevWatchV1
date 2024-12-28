@@ -24,40 +24,17 @@
     --bs-border-color: var(--border-color);
 }
 
-.btn-outline-info{
-    border-color: var(--accent-primary) !important;
-}
-
-.btn-outline-info:hover{
-    border-color: #ffffff00 !important;
-    background-color: var(--accent-primary) !important;
-    color: #111928 !important;
-}
-
-.mb-4 {
-    margin-bottom: 10px !important;
-}
-
 .badge.bg-info.ms-2 {
     background-color: rgba(0, 0, 0, 0.2) !important;
 }
 
-.card-body {
-    padding: 20px !important; 
-}
-
-
-.article-header {
-    margin-bottom: 10px !important; 
-}
-
 h4.text-muted.mb-4.fs-5 {
-    margin-bottom: 5px !important;
+    margin-bottom: 10px !important;
 }
 
 .hero-section {
-    padding-top: 20px; 
-    padding-bottom: 50px; /
+    padding-top: 20px; /* Ajuste o valor conforme necessário */
+    padding-bottom: 50px; /* Ajuste o valor conforme necessário */
 }
 
 .accordion-header {
@@ -153,6 +130,7 @@ a:hover {
 .loading-logo {
     width: 80px;
     height: 80px;
+    animation: spin 2s linear infinite;
 }
 
 @keyframes spin {
@@ -197,8 +175,6 @@ a:hover {
 }
 
 .btn-outline-light {
-    font-size: 16px;
-    padding: 7px 20px 7px 20px;
     color: var(--text-primary);
     border-color: var(--border-color);
 }
@@ -314,7 +290,8 @@ a:hover {
 
 .forum-content {
     color: var(--text-secondary);
-    font-size: 1rem;
+    line-height: 1.8;
+    font-size: 1.05rem;
     padding: 1rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 0.5rem;
@@ -490,15 +467,6 @@ a:hover {
 }
 
 @media (max-width: 768px) {
-    .ethereum-article .card-body {
-        padding: 0px !important;
-    }
-
-    .card.mb-4 {
-        border-width: 0px !important;
-    }
-
-    
     .hero-section h1 {
         font-size: 2.2rem;
     }
@@ -533,17 +501,10 @@ a:hover {
     .form-control {
         max-width: 200px;
     }
-    .forum-discussion-item {
-        padding: 1rem;
-    }
-
 
 }
 
 @media (max-width: 576px) {
-    #searchForm {
-        width: 150px;
-    }
     .hero-section h1 {
         font-size: 1.8rem;
     }
@@ -558,7 +519,7 @@ a:hover {
     }
 
     .card-title {
-        font-size: 1.5rem;
+        font-size: 1.1rem;
     }
 
     .metric-value {

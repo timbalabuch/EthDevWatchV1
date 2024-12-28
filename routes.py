@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
-from werkzeug.security import generate_password_hash
+
 from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
+
 from app import app, db
-from models import Article, User, Source, BlockchainTerm
+from models import Article, User, Source
 import pytz
 import logging
-from tools import workflows_set_run_config_tool
 from services.new_article_generation_service import NewArticleGenerationService
 
 # Setup logging
@@ -282,96 +282,8 @@ def get_technical_terms():
     terms = BlockchainTerm.query.all()
     return {term.term: term.explanation for term in terms}
 
-@app.route('/admin/article/<int:article_id>/delete', methods=['POST'])
-@login_required
-@admin_required
-def delete_article(article_id: int) -> Response:
-    """Handle deletion of articles."""
-    try:
-        article = Article.query.get_or_404(article_id)
-        # Delete only the sources for this specific article
-        Source.query.filter_by(article_id=article.id).delete()
-        # Delete the specific article
-        db.session.delete(article)
-        db.session.commit()
-        logger.info(f"Article {article_id} and its sources successfully deleted by {current_user.email}")
-        flash('Article deleted successfully', 'success')
-    except Exception as e:
-        logger.error(f"Error deleting article {article_id}: {str(e)}")
-        flash('An error occurred while deleting the article.', 'error')
-        db.session.rollback()
-    return redirect(url_for('admin_dashboard'))
 
-@app.route('/admin/update_credentials', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def update_admin_credentials():
-    """Handle admin credentials update."""
-    try:
-        if request.method == 'POST':
-            email = request.form.get('email')
-            current_password = request.form.get('current_password')
-            new_password = request.form.get('new_password')
-            confirm_password = request.form.get('confirm_password')
-
-            if not all([email, current_password, new_password, confirm_password]):
-                flash('All fields are required.', 'error')
-                return render_template('admin/update_credentials.html')
-
-            # Verify current password
-            if not current_user.check_password(current_password):
-                flash('Current password is incorrect.', 'error')
-                return render_template('admin/update_credentials.html')
-
-            # Verify new password confirmation
-            if new_password != confirm_password:
-                flash('New passwords do not match.', 'error')
-                return render_template('admin/update_credentials.html')
-
-            # Update credentials
-            current_user.email = email
-            current_user.set_password(new_password)
-            db.session.commit()
-
-            logger.info(f"Admin credentials updated for user {current_user.id}")
-            flash('Credentials updated successfully', 'success')
-            return redirect(url_for('admin_dashboard'))
-
-        return render_template('admin/update_credentials.html')
-
-    except Exception as e:
-        logger.error(f"Error updating admin credentials: {str(e)}")
-        flash('An error occurred while updating credentials.', 'error')
-        db.session.rollback()
-        return render_template('admin/update_credentials.html')
-
-@app.route('/admin/generate_previous', methods=['POST'])
-@login_required
-@admin_required
-def generate_previous_articles():
-    """Handle generation of previous articles."""
-    try:
-        num_articles = int(request.form.get('num_articles', 2))
-
-        # Execute generate_past_articles script with proper arguments
-        command = f'python scripts/generate_past_articles.py {num_articles}'
-        workflows_set_run_config_tool(
-            name='Generate Articles',
-            command=command
-        )
-
-        flash('Started generating previous articles. Check the status in the dashboard.', 'success')
-        logger.info(f"Started generating {num_articles} past articles")
-    except ValueError as e:
-        logger.error(f"Invalid number of articles: {str(e)}")
-        flash('Please select a valid number of articles to generate.', 'error')
-    except Exception as e:
-        logger.error(f"Error starting article generation: {str(e)}")
-        flash('An error occurred while starting article generation.', 'error')
-
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/generate_single', methods=['POST'])
+@app.route('/admin/generate-article', methods=['POST'])
 @login_required
 @admin_required
 def generate_single_article():
@@ -388,7 +300,7 @@ def generate_single_article():
             logger.info(f"Started generating article with ID: {article.id}")
         else:
             status = generation_service.get_generation_status()
-            if status["is_generating"]:
+            if status.get("is_generating"):
                 flash('Another article is currently being generated. Please wait.', 'warning')
             else:
                 flash('Failed to start article generation. Check the dashboard for errors.', 'error')
@@ -412,7 +324,6 @@ def get_generation_status():
         logger.error(f"Error getting generation status: {str(e)}")
         return jsonify({
             "is_generating": False,
-            "current_article": None,
-            "errors": [],
-            "last_error": None
-        })
+            "status": "error",
+            "error": str(e)
+        }), 500

@@ -6,96 +6,8 @@
     <!-- Header Section with New Article Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Dashboard</h1>
-        <div>
-            <!-- Update Credentials Link -->
-            <a href="{{ url_for('update_admin_credentials') }}" class="btn btn-outline-primary me-2">Update Credentials</a>
-            <!-- Generate Previous Articles Button -->
-            <form method="POST" action="{{ url_for('generate_previous_articles') }}" class="d-inline me-2">
-                <select name="num_articles" class="form-select d-inline-block w-auto me-2" data-bs-toggle="tooltip" title="Select how many past weeks of articles to generate">
-                    <option value="1">1 week</option>
-                    <option value="2">2 weeks</option>
-                    <option value="4">4 weeks</option>
-                    <option value="8">8 weeks</option>
-                </select>
-                <button type="submit" class="btn btn-outline-success generate-btn" data-type="multiple" data-bs-toggle="tooltip" title="Generate articles for past weeks">Generate Previous Articles</button>
-            </form>
-            <!-- Generate Single Article Button -->
-            <form method="POST" action="{{ url_for('generate_single_article') }}" class="d-inline me-2">
-                <button type="submit" class="btn btn-outline-info generate-btn" data-type="single" data-bs-toggle="tooltip" title="Generate article for the current week or most recent past week">Generate Single Article</button>
-            </form>
-            <!-- Create New Article Button -->
-            <a href="{{ url_for('new_article') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="Manually create a new article">New Article</a>
-            <!-- Help Button -->
-            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
-                <i class="bi bi-question-circle"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Generation Error Alert -->
-    <div id="generationError" class="alert alert-danger d-none mb-4">
-        <h5 class="alert-heading">Generation Error</h5>
-        <p id="errorMessage"></p>
-        <hr>
-        <p class="mb-0" id="errorDetails"></p>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div id="generationProgress" class="alert alert-info d-none">
-        <div class="d-flex flex-column">
-            <div class="d-flex align-items-center mb-2">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <span id="generationMessage">Generating article(s)...</span>
-            </div>
-            <div class="progress" style="height: 5px;">
-                <div id="generationProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Help Modal -->
-    <div class="modal fade" id="helpModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Article Generation Help</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <h6>Article Generation Process</h6>
-                    <ol>
-                        <li>A new article placeholder is created with "Generating" status</li>
-                        <li>Content is gathered from GitHub repositories and forums</li>
-                        <li>The AI processes and summarizes the content</li>
-                        <li>Technical terms are identified and explained</li>
-                        <li>The article is finalized and published</li>
-                    </ol>
-
-                    <h6>Generation Options</h6>
-                    <ul>
-                        <li><strong>Generate Single Article:</strong> Creates an article for the current week if none exists, or the most recent past week without an article</li>
-                        <li><strong>Generate Previous Articles:</strong> Generates multiple articles for past weeks, select the number of weeks from the dropdown</li>
-                        <li><strong>New Article:</strong> Manually create and edit an article</li>
-                    </ul>
-
-                    <h6>Status Indicators</h6>
-                    <ul>
-                        <li><span class="badge bg-warning text-dark">Generating</span> - Article is currently being created</li>
-                        <li><span class="badge bg-success">Published</span> - Article is complete and visible</li>
-                        <li><span class="badge bg-secondary">Draft</span> - Article is saved but not published</li>
-                    </ul>
-
-                    <h6>Error Handling</h6>
-                    <ul>
-                        <li>If an error occurs during generation, it will be displayed in the error section</li>
-                        <li>You can retry generation after addressing any reported issues</li>
-                        <li>Common issues include GitHub API rate limits and network connectivity</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <!-- Create New Article Button -->
+        <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
     </div>
 
     <!-- Articles Management Card -->
@@ -109,8 +21,7 @@
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Date Range</th>
-                            <th>Status</th>
+                            <th>Publication Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -119,40 +30,13 @@
                         {% for article in articles %}
                         <tr>
                             <td>{{ article.title }}</td>
-                            <td>{{ article.formatted_date_range }}</td>
-                            <!-- Article Status -->
-                            <td>
-                                {% if article.is_generating %}
-                                    <span class="badge bg-warning text-dark">Generating</span>
-                                {% elif article.is_published %}
-                                    <span class="badge bg-success text-light">Published</span>
-                                {% else %}
-                                    <span class="badge bg-secondary text-light">Draft</span>
-                                {% endif %}
-
-                                {% if article.is_generating %}
-                                    <br>
-                                    <small class="text-muted">Another article will start after this one completes</small>
-                                {% endif %}
-                            </td>
+                            <td>{{ article.publication_date.strftime('%Y-%m-%d') }}</td>
                             <!-- Article Actions -->
                             <td>
-                                {% if not article.is_generating %}
-                                    <!-- Edit Article Button -->
-                                    <a href="{{ url_for('edit_article', article_id=article.id) }}" 
-                                       class="btn btn-sm btn-outline-primary me-1">Edit</a>
-                                {% endif %}
+                                <!-- Edit Article Button -->
+                                <a href="{{ url_for('edit_article', article_id=article.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                 <!-- View Article Button -->
-                                <a href="{{ url_for('article', article_id=article.id) }}" 
-                                   class="btn btn-sm btn-outline-secondary me-1">View</a>
-                                <!-- Delete Article Button -->
-                                <form action="{{ url_for('delete_article', article_id=article.id) }}" 
-                                      method="POST" 
-                                      class="d-inline" 
-                                      onsubmit="return confirm('Are you sure you want to delete this article?');">
-                                    <button type="submit" 
-                                            class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                <a href="{{ url_for('article', article_id=article.id) }}" class="btn btn-sm btn-outline-secondary">View</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -162,113 +46,4 @@
         </div>
     </div>
 </div>
-
-<!-- Add JavaScript for Loading Indicator and Error Handling -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
-
-    // Get loading indicator elements
-    const progressIndicator = document.getElementById('generationProgress');
-    const generationMessage = document.getElementById('generationMessage');
-    const progressBar = document.getElementById('generationProgressBar');
-    const generateButtons = document.querySelectorAll('.generate-btn');
-    const errorAlert = document.getElementById('generationError');
-    const errorMessage = document.getElementById('errorMessage');
-    const errorDetails = document.getElementById('errorDetails');
-
-    // Progress tracking variables
-    let progressInterval;
-    let currentProgress = 0;
-
-    function updateProgress() {
-        if (currentProgress < 90) {
-            currentProgress += Math.random() * 15;
-            currentProgress = Math.min(currentProgress, 90);
-            progressBar.style.width = currentProgress + '%';
-        }
-    }
-
-    function showError(message, details = '') {
-        errorMessage.textContent = message;
-        errorDetails.textContent = details;
-        errorAlert.classList.remove('d-none');
-    }
-
-    function hideError() {
-        errorAlert.classList.add('d-none');
-    }
-
-    // Check generation status periodically
-    function checkGenerationStatus() {
-        fetch('/api/generation-status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_generating) {
-                    progressIndicator.classList.remove('d-none');
-                    generateButtons.forEach(btn => btn.disabled = true);
-
-                    if (data.last_error) {
-                        showError(
-                            'Error during generation', 
-                            `Type: ${data.last_error.type}, Message: ${data.last_error.message}`
-                        );
-                    } else {
-                        hideError();
-                    }
-                } else {
-                    progressIndicator.classList.add('d-none');
-                    generateButtons.forEach(btn => btn.disabled = false);
-                    progressBar.style.width = '0%';
-                    currentProgress = 0;
-                    clearInterval(progressInterval);
-
-                    if (data.last_error) {
-                        showError(
-                            'Generation failed', 
-                            `Type: ${data.last_error.type}, Message: ${data.last_error.message}`
-                        );
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error checking generation status:', error);
-            });
-    }
-
-    // Add click handlers to all generate buttons
-    generateButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            // Show loading indicator
-            progressIndicator.classList.remove('d-none');
-            currentProgress = 0;
-            progressBar.style.width = '0%';
-            hideError();
-
-            // Disable all generate buttons
-            generateButtons.forEach(btn => btn.disabled = true);
-
-            // Update message based on button type
-            const type = this.dataset.type;
-            generationMessage.textContent = type === 'single' 
-                ? 'Generating single article...' 
-                : 'Generating multiple articles...';
-
-            // Start progress simulation
-            clearInterval(progressInterval);
-            progressInterval = setInterval(updateProgress, 1000);
-        });
-    });
-
-    // Check status every 5 seconds
-    setInterval(checkGenerationStatus, 5000);
-
-    // Initial status check
-    checkGenerationStatus();
-});
-</script>
 {% endblock %}

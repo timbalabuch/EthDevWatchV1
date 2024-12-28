@@ -1,5 +1,4 @@
 import logging
-import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
@@ -81,13 +80,8 @@ def generate_weekly_article():
     except Exception as e:
         logger.error(f"Error in weekly article generation task: {str(e)}")
 
-def init_scheduler(auto_start=False):
-    """Initialize the scheduler with weekly article generation task.
-
-    Args:
-        auto_start (bool): Whether to automatically start the scheduler.
-                          Set to False during system updates or migrations.
-    """
+def init_scheduler():
+    """Initialize the scheduler with weekly article generation task"""
     scheduler = BackgroundScheduler()
 
     # Schedule article generation every Monday at 9:00 UTC
@@ -99,11 +93,5 @@ def init_scheduler(auto_start=False):
         replace_existing=True
     )
 
-    # Only start if auto_start is True or ENABLE_SCHEDULER env var is set
-    if auto_start or os.environ.get('ENABLE_SCHEDULER', '').lower() == 'true':
-        scheduler.start()
-        logger.info("Scheduler initialized and started with article generation task")
-    else:
-        logger.info("Scheduler initialized but not started (auto-start disabled)")
-
-    return scheduler
+    scheduler.start()
+    logger.info("Scheduler initialized with article generation task")
