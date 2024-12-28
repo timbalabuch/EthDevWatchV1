@@ -421,6 +421,15 @@ class ContentService:
 
         raise ValueError("Could not find an available date range within the last year")
 
+    def check_for_generating_articles(self) -> bool:
+        """Check if any articles are currently being generated."""
+        try:
+            generating_articles = Article.query.filter_by(status='generating').first()
+            return generating_articles is not None
+        except Exception as e:
+            logger.error(f"Error checking for generating articles: {str(e)}")
+            return False
+
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
         if not github_content:
@@ -428,6 +437,11 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
+            # Check if any articles are currently being generated
+            if self.check_for_generating_articles():
+                logger.warning("Another article is currently being generated. Skipping this generation.")
+                return None
+
             # Validate and prepare the publication date
             if publication_date:
                 if not isinstance(publication_date, datetime):
