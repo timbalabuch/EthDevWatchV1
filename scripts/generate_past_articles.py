@@ -1,24 +1,3 @@
-import sys
-import os
-import logging
-from datetime import datetime, timedelta
-import time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app import app, db
-from scripts.generate_one_article import generate_article_for_date
-from models import Article
-
-# Setup logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
-
 def wait_for_generating_articles():
     """Wait until there are no articles in generating status."""
     while True:

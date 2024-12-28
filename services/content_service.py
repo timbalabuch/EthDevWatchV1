@@ -452,7 +452,6 @@ class ContentService:
                     return existing_articles[0]  # Return the first existing article
                 return None
 
-
             logger.info(f"Starting article generation for date: {publication_date}")
 
             # Calculate the week range with microsecond precision
@@ -567,7 +566,7 @@ class ContentService:
                 'forum_summary': forum_summary
             })
 
-            # Create and save the article
+            # Create and save the article with initial generating status
             article = Article(
                 title=sections['title'],
                 content=article_content,
