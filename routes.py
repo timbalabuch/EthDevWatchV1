@@ -2,10 +2,8 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
 from werkzeug.security import generate_password_hash
-
-from flask import render_template, abort, flash, redirect, url_for, request, Response
+from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
-
 from app import app, db
 from models import Article, User, Source
 import pytz
@@ -401,3 +399,21 @@ def generate_single_article():
         flash('An error occurred while starting article generation.', 'error')
 
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/api/generation-status')
+@login_required
+@admin_required
+def get_generation_status():
+    """Get the current article generation status."""
+    try:
+        service = ArticleGenerationService()
+        status = service.get_generation_status()
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Error getting generation status: {str(e)}")
+        return jsonify({
+            "is_generating": False,
+            "current_article": None,
+            "errors": [],
+            "last_error": None
+        })
