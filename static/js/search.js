@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Search in featured article
             if (featuredArticle) {
                 const featuredTitle = featuredArticle.querySelector('.card-title').textContent.toLowerCase();
-                const featuredContent = featuredArticle.querySelector('.article-content').textContent.toLowerCase();
+                const featuredContent = featuredArticle.querySelector('.article-summary').textContent.toLowerCase();
 
                 featuredArticle.style.display = 
                     (featuredTitle.includes(searchTerm) || featuredContent.includes(searchTerm)) 
@@ -30,7 +30,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const articles = articleList.querySelectorAll('.card');
                 articles.forEach(article => {
                     const title = article.querySelector('.h5').textContent.toLowerCase();
-                    article.style.display = title.includes(searchTerm) ? 'block' : 'none';
+                    const content = article.textContent.toLowerCase();
+                    article.style.display = 
+                        (title.includes(searchTerm) || content.includes(searchTerm)) 
+                        ? 'block' 
+                        : 'none';
                 });
             }
         });
