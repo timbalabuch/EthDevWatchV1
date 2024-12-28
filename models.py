@@ -37,10 +37,10 @@ class Article(db.Model):
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
-    forum_summary = db.Column(db.Text)  # New field for forum discussions
+    forum_summary = db.Column(db.Text)  # Field for forum discussions
 
     # Publishing workflow columns
-    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
+    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, generating, published
     scheduled_publish_date = db.Column(db.DateTime)
     published_date = db.Column(db.DateTime)
 
@@ -49,18 +49,12 @@ class Article(db.Model):
         return self.status == 'published'
 
     @property
-    def is_scheduled(self):
-        return self.status == 'scheduled'
+    def is_generating(self):
+        return self.status == 'generating'
 
-    def publish(self):
-        self.status = 'published'
-        self.published_date = datetime.now(pytz.UTC)
-        db.session.commit()
-
-    def schedule(self, publish_date):
-        self.status = 'scheduled'
-        self.scheduled_publish_date = publish_date
-        db.session.commit()
+    @property
+    def is_draft(self):
+        return self.status == 'draft'
 
     @property
     def brief_summary(self):
