@@ -5,11 +5,11 @@ from werkzeug.security import generate_password_hash
 from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
 from app import app, db
-from models import Article, User, Source
+from models import Article, User, Source, BlockchainTerm
 import pytz
 import logging
 from tools import workflows_set_run_config_tool
-from services.article_generation_service import ArticleGenerationService
+from services.new_article_generation_service import NewArticleGenerationService
 
 # Setup logging
 logging.basicConfig(
@@ -377,15 +377,15 @@ def generate_previous_articles():
 def generate_single_article():
     """Handle generation of a single article."""
     try:
-        # Initialize article generation service
-        generation_service = ArticleGenerationService()
+        # Initialize new article generation service
+        generation_service = NewArticleGenerationService()
 
         # Try to generate an article
-        article = generation_service.generate_single_article()
+        article = generation_service.generate_article()
 
         if article:
-            flash('Started generating single article. Check the status in the dashboard.', 'success')
-            logger.info("Started generating single article")
+            flash('Article generation started. Check the status in the dashboard.', 'success')
+            logger.info(f"Started generating article with ID: {article.id}")
         else:
             status = generation_service.get_generation_status()
             if status["is_generating"]:
@@ -394,7 +394,7 @@ def generate_single_article():
                 flash('Failed to start article generation. Check the dashboard for errors.', 'error')
 
     except Exception as e:
-        logger.error(f"Error starting single article generation: {str(e)}")
+        logger.error(f"Error starting article generation: {str(e)}")
         flash('An error occurred while starting article generation.', 'error')
 
     return redirect(url_for('admin_dashboard'))
@@ -405,7 +405,7 @@ def generate_single_article():
 def get_generation_status():
     """Get the current article generation status."""
     try:
-        service = ArticleGenerationService()
+        service = NewArticleGenerationService()
         status = service.get_generation_status()
         return jsonify(status)
     except Exception as e:
