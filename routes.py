@@ -354,16 +354,45 @@ def generate_previous_articles():
     try:
         num_articles = int(request.form.get('num_articles', 2))
 
-        # Execute generate_past_articles script
+        # Execute generate_past_articles script with proper arguments
+        command = f'python scripts/generate_past_articles.py {num_articles}'
         workflows_set_run_config_tool(
-            name='Generate Past Articles',
-            command=f'python scripts/generate_past_articles.py {num_articles}'
+            name='Generate Articles',
+            command=command
         )
 
         flash('Started generating previous articles. Check the status in the dashboard.', 'success')
         logger.info(f"Started generating {num_articles} past articles")
+    except ValueError as e:
+        logger.error(f"Invalid number of articles: {str(e)}")
+        flash('Please select a valid number of articles to generate.', 'error')
     except Exception as e:
         logger.error(f"Error starting article generation: {str(e)}")
+        flash('An error occurred while starting article generation.', 'error')
+
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/generate_single', methods=['POST'])
+@login_required
+@admin_required
+def generate_single_article():
+    """Handle generation of a single article."""
+    try:
+        current_date = datetime.now(pytz.UTC)
+        # Get the most recent Monday
+        monday = current_date - timedelta(days=current_date.weekday())
+        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Execute generate_one_article script
+        workflows_set_run_config_tool(
+            name='Generate One Article',
+            command=f'python scripts/generate_one_article.py {monday.strftime("%Y-%m-%d")}'
+        )
+
+        flash('Started generating single article. Check the status in the dashboard.', 'success')
+        logger.info("Started generating single article")
+    except Exception as e:
+        logger.error(f"Error starting single article generation: {str(e)}")
         flash('An error occurred while starting article generation.', 'error')
 
     return redirect(url_for('admin_dashboard'))

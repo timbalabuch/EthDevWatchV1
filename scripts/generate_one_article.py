@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import argparse
 from datetime import datetime, timedelta
 import pytz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -8,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app, db
 from services.github_service import GitHubService
 from services.content_service import ContentService
-from models import Article, Source
+from models import Article
 
 # Setup logging
 logging.basicConfig(
@@ -114,11 +115,15 @@ def generate_article_for_date(target_date=None):
         return False
 
 if __name__ == "__main__":
-    # If a date is provided as argument, use it
+    parser = argparse.ArgumentParser(description='Generate a single article for a specific date')
+    parser.add_argument('--date', type=str, help='Target date in YYYY-MM-DD format')
+
+    args = parser.parse_args()
+
     target_date = None
-    if len(sys.argv) > 1:
+    if args.date:
         try:
-            target_date = datetime.strptime(sys.argv[1], '%Y-%m-%d')
+            target_date = datetime.strptime(args.date, '%Y-%m-%d')
             print(f"\n=== Generating Article for week of {target_date.strftime('%Y-%m-%d')} ===\n")
         except ValueError as e:
             print(f"Error parsing date: {e}")
