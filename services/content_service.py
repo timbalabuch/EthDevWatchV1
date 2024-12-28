@@ -482,8 +482,19 @@ class ContentService:
                         forum_error = f"Error fetching forum discussions: {str(e)}"
                         logger.error(forum_error)
 
-                    repo_content = self.organize_content_by_repository(github_content)
-                    if not repo_content:
+                    # Create repository summaries
+                    repo_summaries = []
+                    for repo, content in self.organize_content_by_repository(github_content).items():
+                        summary = {
+                            'repository': repo,
+                            'total_issues': len(content['issues']),
+                            'total_commits': len(content['commits']),
+                            'sample_issues': [{'title': issue['title'], 'url': issue['url']} for issue in content['issues'][:3]],
+                            'sample_commits': [{'title': commit['title'], 'url': commit['url']} for commit in content['commits'][:3]]
+                        }
+                        repo_summaries.append(summary)
+
+                    if not repo_summaries:
                         logger.warning("No content found to summarize")
                         db.session.delete(article)
                         db.session.commit()
@@ -495,14 +506,14 @@ class ContentService:
                             "role": "system",
                             "content": """You are a technical writer specializing in blockchain technology documentation. 
                             Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
-                            
+
                             Most important rules:
                             1. Use plain language that anyone can understand
                             2. Explain complex ideas in simple terms
                             3. Focus on real-world impact and benefits
                             4. Avoid technical jargon in titles
                             5. Make concepts accessible to regular users
-                            
+
                             Title requirements:
                             - Create simple, clear titles that describe the main improvements
                             - Write titles that anyone can understand
@@ -511,7 +522,7 @@ class ContentService:
                             - DO NOT use technical terms, parentheses, or quotation marks
                             - Example: "Making Smart Contracts Better and Network Updates"
                             - Example: "Network Speed Improvements and Better Security"
-                            
+
                             Required sections:
                             1. A clear, simple title following the above format
                             2. A detailed overview (at least 700 characters)
@@ -531,7 +542,7 @@ class ContentService:
                             - Focus on real-world benefits
                             - Keep explanations clear and simple
                             - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
-                            
+
                             Here are the technical updates to analyze:
                             {json.dumps(repo_summaries, indent=2)}"""
                         }
