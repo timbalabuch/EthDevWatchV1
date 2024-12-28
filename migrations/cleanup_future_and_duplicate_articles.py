@@ -24,12 +24,13 @@ def cleanup_articles():
 
             # Get all articles ordered by publication date
             articles = Article.query.order_by(Article.publication_date.asc()).all()
-            seen_weeks = {}
+            week_articles = {}
             articles_to_delete = []
 
+            # First pass: group articles by week and identify future dates
             for article in articles:
-                # Skip if article has no date range (shouldn't happen but let's be safe)
                 if not article.date_range:
+                    logger.warning(f"Article {article.id} has no date range, skipping")
                     continue
 
                 week_start, week_end = article.date_range
@@ -42,17 +43,38 @@ def cleanup_articles():
 
                 # Group articles by week start date
                 week_key = week_start.strftime('%Y-%m-%d')
-                if week_key in seen_weeks:
-                    # If we already have an article for this week, keep the newest one
-                    existing_article = seen_weeks[week_key]
-                    if article.publication_date > existing_article.publication_date:
-                        articles_to_delete.append(existing_article)
-                        seen_weeks[week_key] = article
-                    else:
-                        articles_to_delete.append(article)
-                    logger.info(f"Found duplicate article for week of {week_key}")
-                else:
-                    seen_weeks[week_key] = article
+                if week_key not in week_articles:
+                    week_articles[week_key] = []
+                week_articles[week_key].append(article)
+
+            # Second pass: handle duplicates
+            for week_key, week_group in week_articles.items():
+                if len(week_group) > 1:
+                    logger.info(f"Found {len(week_group)} articles for week of {week_key}")
+
+                    # Sort by publication date, newest first
+                    week_group.sort(key=lambda x: x.publication_date, reverse=True)
+
+                    # Keep only the newest article that starts on Monday
+                    kept_article = None
+                    for article in week_group:
+                        week_start, _ = article.date_range
+                        if week_start.weekday() == 0:  # Monday
+                            if kept_article is None:
+                                kept_article = article
+                                logger.info(f"Keeping article {article.id}: {article.title} (published {article.publication_date})")
+                            else:
+                                logger.info(f"Marking duplicate article {article.id} for deletion: {article.title} (published {article.publication_date})")
+                                articles_to_delete.append(article)
+                        else:
+                            logger.info(f"Marking non-Monday article {article.id} for deletion: {article.title} (starts on {week_start.strftime('%A')})")
+                            articles_to_delete.append(article)
+
+                    # If no Monday article was found, keep the newest one
+                    if kept_article is None and week_group:
+                        kept_article = week_group[0]
+                        logger.info(f"No Monday article found, keeping newest article {kept_article.id}: {kept_article.title}")
+                        articles_to_delete.extend([a for a in week_group if a != kept_article])
 
             # Delete problematic articles
             if articles_to_delete:
