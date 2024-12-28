@@ -20,7 +20,12 @@ def cleanup_articles():
     try:
         with app.app_context():
             current_date = datetime.now(pytz.UTC)
-            logger.info(f"Starting cleanup of articles...")
+            logger.info(f"Current UTC time: {current_date}")
+
+            # Calculate the start of next Monday for future date comparison
+            days_until_monday = (7 - current_date.weekday()) % 7
+            next_monday = current_date.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=days_until_monday)
+            logger.info(f"Next Monday starts at: {next_monday}")
 
             # Get all articles ordered by publication date
             articles = Article.query.order_by(Article.publication_date.asc()).all()
@@ -55,7 +60,7 @@ def cleanup_articles():
                 # If we already have an article for this week
                 if week_key in week_ranges:
                     existing_article = week_ranges[week_key]
-                    # Keep the newest article
+                    # Keep the newer article
                     if article.publication_date > existing_article.publication_date:
                         logger.info(f"Found newer article for week {week_key}, marking older article for deletion")
                         articles_to_delete.append(existing_article)
@@ -75,7 +80,7 @@ def cleanup_articles():
                 db.session.commit()
                 logger.info("Articles removed successfully")
             else:
-                logger.info("No problematic articles found")
+                logger.info("No future articles found")
 
             return True
 
