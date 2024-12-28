@@ -10,6 +10,7 @@ from app import app, db
 from models import Article, User, Source
 import pytz
 import logging
+from tools import workflows_set_run_config_tool  # Add this import
 
 # Setup logging
 logging.basicConfig(
@@ -354,10 +355,9 @@ def generate_previous_articles():
         num_articles = int(request.form.get('num_articles', 2))
 
         # Execute generate_past_articles script
-        command = f'python scripts/generate_past_articles.py {num_articles}'
         workflows_set_run_config_tool(
             name='Generate Past Articles',
-            command=command
+            command=f'python scripts/generate_past_articles.py {num_articles}'
         )
 
         flash('Started generating previous articles. Check the status in the dashboard.', 'success')
