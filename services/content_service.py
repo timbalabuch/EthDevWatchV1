@@ -424,8 +424,18 @@ class ContentService:
     def check_for_generating_articles(self) -> bool:
         """Check if any articles are currently being generated."""
         try:
-            generating_articles = Article.query.filter_by(status='generating').first()
-            return generating_articles is not None
+            generating_articles = Article.query.filter_by(status='generating').all()
+            if generating_articles:
+                logger.warning(f"Found {len(generating_articles)} articles in generating status")
+                # Cleanup any stale generating articles older than 10 minutes
+                current_time = datetime.now(pytz.UTC)
+                for article in generating_articles:
+                    if article.published_date and (current_time - article.published_date > timedelta(minutes=10)):
+                        logger.warning(f"Found stale generating article {article.id}, resetting to draft status")
+                        article.status = 'draft'
+                        db.session.commit()
+            return any(article.published_date and (current_time - article.published_date <= timedelta(minutes=10)) 
+                      for article in generating_articles)
         except Exception as e:
             logger.error(f"Error checking for generating articles: {str(e)}")
             return False
@@ -433,7 +443,9 @@ class ContentService:
     def _generate_content_hash(self, title: str, content: str) -> str:
         """Generate a hash of the article content for duplicate detection."""
         import hashlib
-        combined_content = f"{title}|{content}"
+        # Ensure title is a string
+        safe_title = str(title) if isinstance(title, (list, tuple)) else title
+        combined_content = f"{safe_title}|{content}"
         return hashlib.sha256(combined_content.encode()).hexdigest()
 
     def check_for_duplicate_content(self, title: str, content: str) -> tuple[bool, Optional[Article]]:
@@ -445,7 +457,9 @@ class ContentService:
             - Article: The duplicate article if found, None otherwise
         """
         try:
-            content_hash = self._generate_content_hash(title, content)
+            # Ensure title is a string
+            safe_title = str(title) if isinstance(title, (list, tuple)) else title
+            content_hash = self._generate_content_hash(safe_title, content)
 
             # Check for exact content match using hash
             existing_article = Article.query.filter_by(content_hash=content_hash).first()
@@ -601,7 +615,7 @@ class ContentService:
             # Check for duplicate content
             has_duplicate, duplicate_article = self.check_for_duplicate_content(sections['title'], content)
             if has_duplicate:
-                logger.warning(f"Duplicate content detected. Similar to article ID: {duplicate_article.id}")
+                logger.warning(f"Duplicate content detected. Similar to article ID: {duplicate_article.id if duplicate_article else 'Unknown'}")
                 return None
 
             # Format the content as HTML
@@ -614,38 +628,53 @@ class ContentService:
                 'forum_summary': forum_summary
             })
 
-            # Create and save the article with content hash
-            article = Article(
-                title=sections['title'],
-                content=article_content,
-                publication_date=publication_date,
-                status='generating',
-                published_date=datetime.now(pytz.UTC),
-                forum_summary=forum_summary if forum_summary else forum_error,
-                content_hash=self._generate_content_hash(sections['title'], article_content)
-            )
+            # Begin transaction
+            db.session.begin_nested()
 
-            # Add sources
-            for item in github_content:
-                source = Source(
-                    url=item['url'],
-                    type=item['type'],
-                    title=item.get('title', ''),
-                    repository=item['repository'],
-                    article=article
+            try:
+                # Create and save the article with content hash
+                article = Article(
+                    title=sections['title'],
+                    content=article_content,
+                    publication_date=publication_date,
+                    status='generating',
+                    published_date=datetime.now(pytz.UTC),
+                    forum_summary=forum_summary if forum_summary else forum_error,
+                    content_hash=self._generate_content_hash(sections['title'], article_content)
                 )
-                db.session.add(source)
 
-            db.session.add(article)
-            db.session.commit()
+                # Add sources
+                for item in github_content:
+                    source = Source(
+                        url=item['url'],
+                        type=item['type'],
+                        title=item.get('title', ''),
+                        repository=item['repository'],
+                        article=article
+                    )
+                    db.session.add(source)
 
-            # Update status to published after successful generation
-            article.status = 'published'
-            db.session.commit()
+                db.session.add(article)
 
-            logger.info(f"Successfully created article: {article.title}")
+                # Double-check for duplicates before committing
+                db.session.flush()
+                has_duplicate, _ = self.check_for_duplicate_content(sections['title'], article_content)
+                if has_duplicate:
+                    logger.warning("Duplicate detected during final check, rolling back")
+                    db.session.rollback()
+                    return None
 
-            return article
+                # Update status to published and commit
+                article.status = 'published'
+                db.session.commit()
+
+                logger.info(f"Successfully created article: {article.title}")
+                return article
+
+            except Exception as e:
+                logger.error(f"Error saving article: {str(e)}")
+                db.session.rollback()
+                return None
 
         except Exception as e:
             logger.error(f"Error in generate_weekly_summary: {str(e)}", exc_info=True)

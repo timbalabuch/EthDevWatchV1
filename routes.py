@@ -288,18 +288,30 @@ def get_technical_terms():
 def delete_article(article_id: int) -> Response:
     """Handle deletion of articles."""
     try:
+        # Get the specific article using get_or_404
         article = Article.query.get_or_404(article_id)
+        logger.info(f"Attempting to delete article {article_id} by user {current_user.email}")
+
+        # Begin transaction
+        db.session.begin_nested()
+
         # Delete only the sources for this specific article
-        Source.query.filter_by(article_id=article.id).delete()
+        source_count = Source.query.filter_by(article_id=article.id).delete()
+        logger.info(f"Deleted {source_count} sources for article {article_id}")
+
         # Delete the specific article
         db.session.delete(article)
+
+        # Commit the transaction
         db.session.commit()
         logger.info(f"Article {article_id} and its sources successfully deleted by {current_user.email}")
         flash('Article deleted successfully', 'success')
+
     except Exception as e:
         logger.error(f"Error deleting article {article_id}: {str(e)}")
         flash('An error occurred while deleting the article.', 'error')
         db.session.rollback()
+
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/update_credentials', methods=['GET', 'POST'])
