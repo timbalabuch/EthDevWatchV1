@@ -95,6 +95,10 @@ args = "Clean Articles"
 task = "workflow.run"
 args = "Cleanup Future and Duplicate Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Add Content Hash"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -375,6 +379,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/cleanup_future_and_duplicate_articles.py"
+
+[[workflows.workflow]]
+name = "Add Content Hash"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrations/add_content_hash.py"
 
 [[ports]]
 localPort = 3000

@@ -430,74 +430,38 @@ class ContentService:
             logger.error(f"Error checking for generating articles: {str(e)}")
             return False
 
-    def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
-        """Generate a weekly summary article from GitHub content."""
-        if not github_content:
-            logger.error("No GitHub content provided for summary generation")
-            raise ValueError("GitHub content is required for summary generation")
+    def _generate_content_hash(self, title: str, content: str) -> str:
+        """Generate a hash of the article content for duplicate detection."""
+        import hashlib
+        combined_content = f"{title}|{content}"
+        return hashlib.sha256(combined_content.encode()).hexdigest()
 
+    def check_for_duplicate_content(self, title: str, content: str) -> tuple[bool, Optional[Article]]:
+        """Check if an article with similar content already exists.
+
+        Returns:
+            Tuple containing:
+            - bool: Whether a duplicate exists
+            - Article: The duplicate article if found, None otherwise
+        """
         try:
-            # Check if any articles are currently being generated
-            if self.check_for_generating_articles():
-                logger.warning("Another article is currently being generated. Skipping this generation.")
-                return None
+            content_hash = self._generate_content_hash(title, content)
 
-            # Validate and prepare the publication date
-            if publication_date:
-                if not isinstance(publication_date, datetime):
-                    publication_date = datetime.fromisoformat(str(publication_date))
-                if publication_date.tzinfo is None:
-                    publication_date = pytz.UTC.localize(publication_date)
-            else:
-                # Get the most recent Monday if no date specified
-                current_date = datetime.now(pytz.UTC)
-                publication_date = self.get_available_date_range(current_date)
+            # Check for exact content match using hash
+            existing_article = Article.query.filter_by(content_hash=content_hash).first()
+            if existing_article:
+                logger.warning(f"Found duplicate article with matching content hash: {existing_article.id}")
+                return True, existing_article
 
-            # Check for date range conflicts
-            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
-            if has_conflict:
-                logger.warning(error_msg)
-                return None
+            return False, None
 
+        except Exception as e:
+            logger.error(f"Error checking for duplicate content: {str(e)}")
+            return False, None
 
-            logger.info(f"Starting article generation for date: {publication_date}")
-
-            # Calculate the week range with microsecond precision
-            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
-
-            # Get forum discussions summary with error handling
-            forum_summary = None
-            forum_error = None
-            try:
-                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
-                if not forum_summary:
-                    forum_error = "No forum discussions found for this week"
-                    logger.warning(forum_error)
-            except Exception as e:
-                forum_error = f"Error fetching forum discussions: {str(e)}"
-                logger.error(forum_error)
-
-            repo_content = self.organize_content_by_repository(github_content)
-            if not repo_content:
-                logger.warning("No content found to summarize")
-                return None
-
-            # Create repository summaries
-            repo_summaries = []
-            for repo, content in repo_content.items():
-                summary = {
-                    'repository': repo,
-                    'total_issues': len(content['issues']),
-                    'total_commits': len(content['commits']),
-                    'sample_issues': [{'title': issue['title'], 'url': issue['url']} for issue in content['issues'][:3]],
-                    'sample_commits': [{'title': commit['title'], 'url': commit['url']} for commit in content['commits'][:3]]
-                }
-                repo_summaries.append(summary)
-
-            logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
-
-            # Generate article content using OpenAI
+    def _generate_article_content(self, repo_content: Dict, forum_summary: Optional[str]) -> str:
+        """Generates the article content using OpenAI."""
+        try:
             messages = [
                 {
                     "role": "system",
@@ -529,7 +493,7 @@ class ContentService:
                 },
                 {
                     "role": "user",
-                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
+                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week.
                     Remember:
                     - Create clear, simple titles without technical terms
                     - Explain the main improvements in plain language
@@ -541,7 +505,8 @@ class ContentService:
                     - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
                     
                     Here are the technical updates to analyze:
-                    {json.dumps(repo_summaries, indent=2)}"""
+                    {json.dumps(repo_content, indent=2)}
+                    Forum Summary: {forum_summary or ''}"""
                 }
             ]
 
@@ -558,13 +523,76 @@ class ContentService:
                 raise ValueError("Invalid response from OpenAI API")
 
             logger.info("Received response from OpenAI API")
-            content = response.choices[0].message.content
+            return response.choices[0].message.content
+
+        except Exception as e:
+            logger.error(f"Error generating article content: {str(e)}", exc_info=True)
+            raise
+
+
+    def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
+        """Generate a weekly summary article from GitHub content."""
+        if not github_content:
+            logger.error("No GitHub content provided for summary generation")
+            raise ValueError("GitHub content is required for summary generation")
+
+        try:
+            # Check if any articles are currently being generated
+            if self.check_for_generating_articles():
+                logger.warning("Another article is currently being generated. Skipping this generation.")
+                return None
+
+            # Validate and prepare the publication date
+            if publication_date:
+                if not isinstance(publication_date, datetime):
+                    publication_date = datetime.fromisoformat(str(publication_date))
+                if publication_date.tzinfo is None:
+                    publication_date = pytz.UTC.localize(publication_date)
+            else:
+                # Get the most recent Monday if no date specified
+                current_date = datetime.now(pytz.UTC)
+                publication_date = self.get_available_date_range(current_date)
+
+            # Check for date range conflicts
+            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
+            if has_conflict:
+                logger.warning(error_msg)
+                return None
+
+            logger.info(f"Starting article generation for date: {publication_date}")
+
+            # Calculate the week range with microsecond precision
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
+
+            # Get forum discussions summary with error handling
+            forum_summary = None
+            forum_error = None
+            try:
+                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
+                if not forum_summary:
+                    forum_error = "No forum discussions found for this week"
+                    logger.warning(forum_error)
+            except Exception as e:
+                forum_error = f"Error fetching forum discussions: {str(e)}"
+                logger.error(forum_error)
+
+            repo_content = self.organize_content_by_repository(github_content)
+            if not repo_content:
+                logger.warning("No content found to summarize")
+                return None
+
+            # Generate content and check for duplicates
+            content = self._generate_article_content(repo_content, forum_summary)
             sections = self._extract_content_sections(content)
 
-            # Log sections for debugging
-            logger.debug(f"Extracted sections: {json.dumps({k: v[:100] + '...' if isinstance(v, str) else v for k, v in sections.items()})}")
+            # Check for duplicate content
+            has_duplicate, duplicate_article = self.check_for_duplicate_content(sections['title'], content)
+            if has_duplicate:
+                logger.warning(f"Duplicate content detected. Similar to article ID: {duplicate_article.id}")
+                return None
 
-            # Format the content as HTML with the added forum summary or error message
+            # Format the content as HTML
             article_content = self._format_article_content({
                 'title': sections['title'],
                 'brief_summary': sections['brief_summary'],
@@ -574,14 +602,15 @@ class ContentService:
                 'forum_summary': forum_summary
             })
 
-            # Create and save the article
+            # Create and save the article with content hash
             article = Article(
                 title=sections['title'],
                 content=article_content,
                 publication_date=publication_date,
-                status='generating',  # Set initial status to generating
+                status='generating',
                 published_date=datetime.now(pytz.UTC),
-                forum_summary=forum_summary if forum_summary else forum_error
+                forum_summary=forum_summary if forum_summary else forum_error,
+                content_hash=self._generate_content_hash(sections['title'], article_content)
             )
 
             # Add sources
