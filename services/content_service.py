@@ -452,151 +452,148 @@ class ContentService:
                     return existing_articles[0]  # Return the first existing article
                 return None
 
-            logger.info(f"Starting article generation for date: {publication_date}")
-
-            # Calculate the week range with microsecond precision
-            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
-
-            # Get forum discussions summary with error handling
-            forum_summary = None
-            forum_error = None
+            # Start transaction
             try:
-                forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
-                if not forum_summary:
-                    forum_error = "No forum discussions found for this week"
-                    logger.warning(forum_error)
-            except Exception as e:
-                forum_error = f"Error fetching forum discussions: {str(e)}"
-                logger.error(forum_error)
-
-            repo_content = self.organize_content_by_repository(github_content)
-            if not repo_content:
-                logger.warning("No content found to summarize")
-                return None
-
-            # Create repository summaries
-            repo_summaries = []
-            for repo, content in repo_content.items():
-                summary = {
-                    'repository': repo,
-                    'total_issues': len(content['issues']),
-                    'total_commits': len(content['commits']),
-                    'sample_issues': [{'title': issue['title'], 'url': issue['url']} for issue in content['issues'][:3]],
-                    'sample_commits': [{'title': commit['title'], 'url': commit['url']} for commit in content['commits'][:3]]
-                }
-                repo_summaries.append(summary)
-
-            logger.info(f"Generated summaries for {len(repo_summaries)} repositories")
-
-            # Generate article content using OpenAI
-            messages = [
-                {
-                    "role": "system",
-                    "content": """You are a technical writer specializing in blockchain technology documentation. 
-                    Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
-                    
-                    Most important rules:
-                    1. Use plain language that anyone can understand
-                    2. Explain complex ideas in simple terms
-                    3. Focus on real-world impact and benefits
-                    4. Avoid technical jargon in titles
-                    5. Make concepts accessible to regular users
-                    
-                    Title requirements:
-                    - Create simple, clear titles that describe the main improvements
-                    - Write titles that anyone can understand
-                    - Combine multiple key changes in plain language
-                    - DO NOT include dates or week references
-                    - DO NOT use technical terms, parentheses, or quotation marks
-                    - Example: "Making Smart Contracts Better and Network Updates"
-                    - Example: "Network Speed Improvements and Better Security"
-                    
-                    Required sections:
-                    1. A clear, simple title following the above format
-                    2. A detailed overview (at least 700 characters)
-                    3. Repository updates (start with 'Repository Updates:')
-                    4. Technical highlights (start with 'Technical Highlights:')
-                    5. Next Steps (start with 'Next Steps:')"""
-                },
-                {
-                    "role": "user",
-                    "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
-                    Remember:
-                    - Create clear, simple titles without technical terms
-                    - Explain the main improvements in plain language
-                    - Avoid technical jargon and quotation marks in titles
-                    - Use everyday language
-                    - Make complex ideas easy to understand
-                    - Focus on real-world benefits
-                    - Keep explanations clear and simple
-                    - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
-                    
-                    Here are the technical updates to analyze:
-                    {json.dumps(repo_summaries, indent=2)}"""
-                }
-            ]
-
-            logger.info("Sending request to OpenAI API...")
-            response = self._retry_with_exponential_backoff(
-                self.openai.chat.completions.create,
-                model=self.model,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=2000
-            )
-
-            if not response or not hasattr(response, 'choices') or not response.choices:
-                raise ValueError("Invalid response from OpenAI API")
-
-            logger.info("Received response from OpenAI API")
-            content = response.choices[0].message.content
-            sections = self._extract_content_sections(content)
-
-            # Log sections for debugging
-            logger.debug(f"Extracted sections: {json.dumps({k: v[:100] + '...' if isinstance(v, str) else v for k, v in sections.items()})}")
-
-            # Format the content as HTML with the added forum summary or error message
-            article_content = self._format_article_content({
-                'title': sections['title'],
-                'brief_summary': sections['brief_summary'],
-                'repository_updates': [{'summary': update} for update in sections['repo_updates']],
-                'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
-                'next_steps': sections['next_steps'],
-                'forum_summary': forum_summary
-            })
-
-            # Create and save the article with initial generating status
-            article = Article(
-                title=sections['title'],
-                content=article_content,
-                publication_date=publication_date,
-                status='generating',  # Set initial status to generating
-                published_date=datetime.now(pytz.UTC),
-                forum_summary=forum_summary if forum_summary else forum_error
-            )
-
-            # Add sources
-            for item in github_content:
-                source = Source(
-                    url=item['url'],
-                    type=item['type'],
-                    title=item.get('title', ''),
-                    repository=item['repository'],
-                    article=article
+                # Create and save the article with initial generating status
+                article = Article(
+                    title="Generating...",
+                    content="Article is being generated...",
+                    publication_date=publication_date,
+                    status='generating',
+                    published_date=datetime.now(pytz.UTC)
                 )
-                db.session.add(source)
+                db.session.add(article)
+                db.session.commit()
+                logger.info(f"Created article in generating status for date: {publication_date}")
 
-            db.session.add(article)
-            db.session.commit()
+                # Generate content
+                try:
+                    logger.info(f"Starting content generation for date: {publication_date}")
 
-            # Update status to published after successful generation
-            article.status = 'published'
-            db.session.commit()
+                    # Get forum discussions summary with error handling
+                    forum_summary = None
+                    forum_error = None
+                    try:
+                        forum_summary = self.forum_service.get_weekly_forum_summary(publication_date)
+                        if not forum_summary:
+                            forum_error = "No forum discussions found for this week"
+                            logger.warning(forum_error)
+                    except Exception as e:
+                        forum_error = f"Error fetching forum discussions: {str(e)}"
+                        logger.error(forum_error)
 
-            logger.info(f"Successfully created article: {article.title}")
+                    repo_content = self.organize_content_by_repository(github_content)
+                    if not repo_content:
+                        logger.warning("No content found to summarize")
+                        db.session.delete(article)
+                        db.session.commit()
+                        return None
 
-            return article
+                    # Generate article content using OpenAI
+                    messages = [
+                        {
+                            "role": "system",
+                            "content": """You are a technical writer specializing in blockchain technology documentation. 
+                            Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
+                            
+                            Most important rules:
+                            1. Use plain language that anyone can understand
+                            2. Explain complex ideas in simple terms
+                            3. Focus on real-world impact and benefits
+                            4. Avoid technical jargon in titles
+                            5. Make concepts accessible to regular users
+                            
+                            Title requirements:
+                            - Create simple, clear titles that describe the main improvements
+                            - Write titles that anyone can understand
+                            - Combine multiple key changes in plain language
+                            - DO NOT include dates or week references
+                            - DO NOT use technical terms, parentheses, or quotation marks
+                            - Example: "Making Smart Contracts Better and Network Updates"
+                            - Example: "Network Speed Improvements and Better Security"
+                            
+                            Required sections:
+                            1. A clear, simple title following the above format
+                            2. A detailed overview (at least 700 characters)
+                            3. Repository updates (start with 'Repository Updates:')
+                            4. Technical highlights (start with 'Technical Highlights:')
+                            5. Next Steps (start with 'Next Steps:')"""
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""Create a simple, easy-to-understand update about Ethereum development for the week of {publication_date.strftime('%Y-%m-%d')}.
+                            Remember:
+                            - Create clear, simple titles without technical terms
+                            - Explain the main improvements in plain language
+                            - Avoid technical jargon and quotation marks in titles
+                            - Use everyday language
+                            - Make complex ideas easy to understand
+                            - Focus on real-world benefits
+                            - Keep explanations clear and simple
+                            - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
+                            
+                            Here are the technical updates to analyze:
+                            {json.dumps(repo_summaries, indent=2)}"""
+                        }
+                    ]
+
+                    logger.info("Sending request to OpenAI API...")
+                    response = self._retry_with_exponential_backoff(
+                        self.openai.chat.completions.create,
+                        model=self.model,
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=2000
+                    )
+
+                    if not response or not hasattr(response, 'choices') or not response.choices:
+                        raise ValueError("Invalid response from OpenAI API")
+
+                    logger.info("Received response from OpenAI API")
+                    content = response.choices[0].message.content
+                    sections = self._extract_content_sections(content)
+
+                    # Update article with generated content
+                    article_content = self._format_article_content({
+                        'title': sections['title'],
+                        'brief_summary': sections['brief_summary'],
+                        'repository_updates': [{'summary': update} for update in sections['repo_updates']],
+                        'technical_highlights': [{'description': highlight} for highlight in sections['tech_highlights']],
+                        'next_steps': sections['next_steps'],
+                        'forum_summary': forum_summary
+                    })
+
+                    article.title = sections['title']
+                    article.content = article_content
+                    article.forum_summary = forum_summary if forum_summary else forum_error
+                    article.status = 'published'
+
+                    # Add sources
+                    for item in github_content:
+                        source = Source(
+                            url=item['url'],
+                            type=item['type'],
+                            title=item.get('title', ''),
+                            repository=item['repository'],
+                            article=article
+                        )
+                        db.session.add(source)
+
+                    db.session.commit()
+                    logger.info(f"Successfully created article: {article.title}")
+                    return article
+
+                except Exception as e:
+                    logger.error(f"Error generating article content: {str(e)}")
+                    if article.id:
+                        db.session.delete(article)
+                        db.session.commit()
+                    raise
+
+            except Exception as e:
+                logger.error(f"Transaction error in generate_weekly_summary: {str(e)}")
+                db.session.rollback()
+                raise
 
         except Exception as e:
             logger.error(f"Error in generate_weekly_summary: {str(e)}", exc_info=True)
