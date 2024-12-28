@@ -32,25 +32,24 @@ def generate_article_for_date(target_date=None):
 
         current_date = datetime.now(pytz.UTC)
 
-        # Get Monday for the target date or current week
+        # Only allow article generation on Mondays
+        if current_date.weekday() != 0 and not target_date:
+            logger.warning("Articles can only be generated on Mondays")
+            return False
+
+        # Calculate the appropriate Monday
         if target_date:
             if not target_date.tzinfo:
                 target_date = pytz.UTC.localize(target_date)
             monday = target_date - timedelta(days=target_date.weekday())
         else:
-            # If no target date, only allow creation for past weeks
+            # For current week, use the previous Monday
             days_since_monday = current_date.weekday()
             monday = current_date - timedelta(days=days_since_monday)
-            next_monday = monday + timedelta(days=7)
-            # Prevent creation of current week's article
-            if current_date < next_monday:
-                logger.warning(f"Cannot create article before {next_monday.strftime('%Y-%m-%d')}")
-                return False
 
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
-        next_monday = monday + timedelta(days=7)
 
-        # Prevent creation of future articles
+        # Prevent article generation for future weeks
         if monday >= current_date.replace(hour=0, minute=0, second=0, microsecond=0):
             logger.warning(f"Cannot create article for future week of {monday.strftime('%Y-%m-%d')}")
             return False
@@ -62,14 +61,14 @@ def generate_article_for_date(target_date=None):
                 # Check if article already exists for this week
                 existing_article = Article.query.filter(
                     Article.publication_date >= monday,
-                    Article.publication_date < next_monday
+                    Article.publication_date < monday + timedelta(days=7)
                 ).first()
 
                 if existing_article:
                     logger.warning(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
                     return False
 
-                # Get real GitHub content
+                # Get GitHub content
                 logger.info("Fetching GitHub content...")
                 github_content = github_service.fetch_recent_content()
 
@@ -79,7 +78,7 @@ def generate_article_for_date(target_date=None):
 
                 logger.info(f"Successfully fetched {len(github_content)} items from GitHub")
 
-                # Generate the article
+                # Generate the article with the correct Monday date
                 article = content_service.generate_weekly_summary(github_content, monday)
 
                 if article:
