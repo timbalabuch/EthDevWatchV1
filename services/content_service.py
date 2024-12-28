@@ -322,6 +322,105 @@ class ContentService:
             formatted_highlights.append(highlight_html)
         return '\n'.join(formatted_highlights)
 
+    def check_date_range_conflicts(self, target_date: datetime) -> tuple[bool, Optional[str], Optional[List[Article]]]:
+        """
+        Check for potential date range conflicts before article creation.
+
+        Args:
+            target_date: The publication date to check for conflicts
+
+        Returns:
+            Tuple containing:
+            - bool: Whether there is a conflict
+            - str: Description of the conflict if any
+            - List[Article]: List of conflicting articles if any
+        """
+        if target_date.tzinfo is None:
+            target_date = pytz.UTC.localize(target_date)
+
+        # Ensure the date is a Monday
+        if target_date.weekday() != 0:
+            days_until_monday = (7 - target_date.weekday()) % 7
+            suggested_date = target_date + timedelta(days=days_until_monday)
+            return True, f"Date must be a Monday. Suggested date: {suggested_date.strftime('%Y-%m-%d')}", None
+
+        # Calculate week range with microsecond precision
+        week_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
+
+        # Check for future dates
+        current_date = datetime.now(pytz.UTC)
+        if week_end > current_date:
+            return True, "Cannot create articles with future dates", None
+
+        # Find any overlapping articles
+        existing_articles = Article.query.filter(
+            db.or_(
+                # Direct overlap: Article's date falls within our week
+                db.and_(
+                    Article.publication_date >= week_start,
+                    Article.publication_date <= week_end
+                ),
+                # Indirect overlap: Article's week range overlaps with our week
+                db.and_(
+                    Article.publication_date <= week_end,
+                    Article.publication_date + timedelta(days=6) >= week_start
+                )
+            )
+        ).all()
+
+        if existing_articles:
+            conflicting_dates = [
+                f"{article.publication_date.strftime('%Y-%m-%d')} (ID: {article.id})"
+                for article in existing_articles
+            ]
+            error_msg = (
+                f"Found {len(existing_articles)} existing article(s) for week of "
+                f"{week_start.strftime('%Y-%m-%d')}: {', '.join(conflicting_dates)}"
+            )
+            return True, error_msg, existing_articles
+
+        return False, None, None
+
+    def get_available_date_range(self, target_date: Optional[datetime] = None) -> datetime:
+        """
+        Find the next available date range for article creation.
+
+        Args:
+            target_date: Optional starting point for the search
+
+        Returns:
+            datetime: The next available Monday that doesn't have a conflict
+        """
+        if target_date is None:
+            target_date = datetime.now(pytz.UTC)
+
+        if target_date.tzinfo is None:
+            target_date = pytz.UTC.localize(target_date)
+
+        # Start from the given date and find the next available Monday
+        current_date = target_date
+        max_attempts = 52  # Don't look more than a year back
+        attempts = 0
+
+        while attempts < max_attempts:
+            # If not a Monday, move to the previous Monday
+            days_since_monday = current_date.weekday()
+            if days_since_monday != 0:
+                current_date = current_date - timedelta(days=days_since_monday)
+
+            # Check for conflicts
+            has_conflict, _, _ = self.check_date_range_conflicts(current_date)
+
+            if not has_conflict:
+                return current_date
+
+            # Move to the previous week
+            current_date = current_date - timedelta(days=7)
+            attempts += 1
+
+        raise ValueError("Could not find an available date range within the last year")
+
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
         if not github_content:
@@ -329,70 +428,29 @@ class ContentService:
             raise ValueError("GitHub content is required for summary generation")
 
         try:
-            current_date = datetime.now(pytz.UTC)
-
-            # Enhanced logging for publication date handling
-            logger.info(f"Starting article generation for date: {publication_date}")
-
-            # Handle publication date
+            # Validate and prepare the publication date
             if publication_date:
                 if not isinstance(publication_date, datetime):
                     publication_date = datetime.fromisoformat(str(publication_date))
                 if publication_date.tzinfo is None:
                     publication_date = pytz.UTC.localize(publication_date)
             else:
-                # Get the most recent Monday
-                days_since_monday = current_date.weekday()
-                last_monday = current_date - timedelta(days=days_since_monday)
+                # Get the most recent Monday if no date specified
+                current_date = datetime.now(pytz.UTC)
+                publication_date = self.get_available_date_range(current_date)
 
-                # Ensure we're only creating articles for complete weeks
-                if current_date.weekday() < 6:  # If it's not Sunday yet
-                    logger.warning(f"Cannot create article until the week is complete (Sunday)")
-                    return None
-
-                publication_date = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
-                publication_date = pytz.UTC.localize(publication_date)
-
-            # Validate that publication date is a Monday
-            if publication_date.weekday() != 0:
-                logger.error(f"Publication date must be a Monday, got {publication_date.strftime('%A')}")
+            # Check for date range conflicts
+            has_conflict, error_msg, _ = self.check_date_range_conflicts(publication_date)
+            if has_conflict:
+                logger.warning(error_msg)
                 return None
+
+
+            logger.info(f"Starting article generation for date: {publication_date}")
 
             # Calculate the week range with microsecond precision
             week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
             week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59, microseconds=999999)
-
-            # Prevent creation if any part of the date range includes future dates
-            if week_end > current_date:
-                logger.warning(f"Cannot create article with future dates in range. Week end: {week_end}, Current: {current_date}")
-                return None
-
-            logger.info(f"Validating date range: {week_start} to {week_end}")
-
-            # Query existing articles that could overlap with our date range
-            existing_articles = Article.query.filter(
-                db.or_(
-                    # Direct overlap: Article's date falls within our week
-                    db.and_(
-                        Article.publication_date >= week_start,
-                        Article.publication_date <= week_end
-                    ),
-                    # Indirect overlap: Article's week range overlaps with our week
-                    db.and_(
-                        Article.publication_date <= week_end,
-                        Article.publication_date + timedelta(days=6) >= week_start
-                    )
-                )
-            ).all()
-
-            if existing_articles:
-                logger.warning(
-                    f"Found {len(existing_articles)} existing article(s) for week of {week_start.strftime('%Y-%m-%d')}: " +
-                    ", ".join([f"{a.id}: {a.publication_date}" for a in existing_articles])
-                )
-                return None
-
-            logger.info(f"Date range validation passed. Proceeding with article generation for week of {week_start.strftime('%Y-%m-%d')}")
 
             # Get forum discussions summary with error handling
             forum_summary = None
@@ -508,7 +566,7 @@ class ContentService:
                 content=article_content,
                 publication_date=publication_date,
                 status='generating',  # Set initial status to generating
-                published_date=current_date,
+                published_date=datetime.now(pytz.UTC),
                 forum_summary=forum_summary if forum_summary else forum_error
             )
 
