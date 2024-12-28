@@ -95,6 +95,10 @@ args = "Clean Articles"
 task = "workflow.run"
 args = "Cleanup Future and Duplicate Articles"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate Articles"
+
 [[workflows.workflow]]
 name = "Flask Server"
 author = "agent"
@@ -290,7 +294,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scripts/generate_one_article.py"
+args = "python scripts/generate_one_article.py --date 2024-12-09"
 
 [[workflows.workflow]]
 name = "Regenerate Articles"
@@ -375,6 +379,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python migrations/cleanup_future_and_duplicate_articles.py"
+
+[[workflows.workflow]]
+name = "Generate Articles"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scripts/generate_past_articles.py 2"
 
 [[ports]]
 localPort = 3000
