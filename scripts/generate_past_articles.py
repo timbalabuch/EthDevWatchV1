@@ -23,10 +23,10 @@ def wait_for_generating_articles():
     """Wait until there are no articles in generating status."""
     while True:
         with app.app_context():
-            generating = Article.query.filter_by(status='generating').first()
-            if not generating:
+            generating = Article.query.filter_by(status='generating').count()
+            if generating == 0:
                 return
-            logger.info("Waiting for article to finish generating...")
+            logger.info(f"Waiting for {generating} article(s) to finish generating...")
             time.sleep(5)  # Wait for 5 seconds before checking again
 
 def generate_past_articles(num_articles=10):
@@ -41,17 +41,31 @@ def generate_past_articles(num_articles=10):
 
         success_count = 0
 
+        # Wait for any currently generating articles to complete before starting
+        wait_for_generating_articles()
+
         # Generate articles for past weeks
         for i in range(1, num_articles + 1):
-            # Wait for any currently generating articles to complete
-            wait_for_generating_articles()
-
             target_date = current_monday - timedelta(weeks=i)
             logger.info(f"Generating article for week of {target_date.strftime('%Y-%m-%d')}")
+
+            # Check for existing article before generating
+            with app.app_context():
+                existing = Article.query.filter(
+                    Article.publication_date >= target_date,
+                    Article.publication_date < target_date + timedelta(days=7)
+                ).first()
+
+                if existing:
+                    logger.info(f"Article already exists for week of {target_date.strftime('%Y-%m-%d')}")
+                    continue
 
             if generate_article_for_date(target_date):
                 success_count += 1
                 logger.info(f"Successfully generated article {success_count} of {num_articles}")
+
+                # Wait for the current article to finish before starting the next one
+                wait_for_generating_articles()
             else:
                 logger.warning(f"Failed to generate article for week of {target_date.strftime('%Y-%m-%d')}")
 
