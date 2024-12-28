@@ -24,6 +24,16 @@
     --bs-border-color: var(--border-color);
 }
 
+.btn-outline-info{
+    border-color: var(--accent-primary) !important;
+}
+
+.btn-outline-info:hover{
+    border-color: #ffffff00 !important;
+    background-color: var(--accent-primary) !important;
+    color: #111928 !important;
+}
+
 .mb-4 {
     margin-bottom: 10px !important;
 }

@@ -52,11 +52,6 @@ def generate_article_for_date(target_date=None):
             days_since_monday = current_date.weekday()
             monday = current_date - timedelta(days=days_since_monday + 7)
 
-            # Only allow article generation on Mondays
-            if current_date.weekday() != 0:
-                logger.warning("Articles can only be generated on Mondays")
-                return False
-
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
         next_monday = get_next_monday(monday)
 
@@ -83,6 +78,12 @@ def generate_article_for_date(target_date=None):
 
                 if existing_article:
                     logger.warning(f"Article already exists for week of {monday.strftime('%Y-%m-%d')}")
+                    return False
+
+                # Check if any articles are currently being generated
+                generating_article = Article.query.filter_by(status='generating').first()
+                if generating_article:
+                    logger.warning("Another article is currently being generated. Please wait.")
                     return False
 
                 # Get GitHub content
