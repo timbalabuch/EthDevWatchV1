@@ -530,6 +530,9 @@ a:hover {
 }
 
 @media (max-width: 576px) {
+    #searchForm {
+        width: 150px;
+    }
     .hero-section h1 {
         font-size: 1.8rem;
     }
