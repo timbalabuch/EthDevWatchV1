@@ -497,7 +497,7 @@ class ContentService:
                 title=sections['title'],
                 content=article_content,
                 publication_date=publication_date,
-                status='published',
+                status='generating',  # Set initial status to generating
                 published_date=current_date,
                 forum_summary=forum_summary if forum_summary else forum_error
             )
@@ -515,6 +515,11 @@ class ContentService:
 
             db.session.add(article)
             db.session.commit()
+
+            # Update status to published after successful generation
+            article.status = 'published'
+            db.session.commit()
+
             logger.info(f"Successfully created article: {article.title}")
 
             return article
