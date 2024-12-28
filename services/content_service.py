@@ -462,19 +462,31 @@ class ContentService:
     def _generate_article_content(self, repo_content: Dict, forum_summary: Optional[str]) -> str:
         """Generates the article content using OpenAI."""
         try:
+            # Convert datetime objects to strings in repo_content
+            def serialize_content(content):
+                if isinstance(content, dict):
+                    return {k: serialize_content(v) for k, v in content.items()}
+                elif isinstance(content, list):
+                    return [serialize_content(item) for item in content]
+                elif isinstance(content, datetime):
+                    return content.isoformat()
+                return content
+
+            serialized_content = serialize_content(repo_content)
+
             messages = [
                 {
                     "role": "system",
                     "content": """You are a technical writer specializing in blockchain technology documentation. 
                     Your task is to create comprehensive weekly summaries of Ethereum development that balance technical accuracy with accessibility.
-                    
+
                     Most important rules:
                     1. Use plain language that anyone can understand
                     2. Explain complex ideas in simple terms
                     3. Focus on real-world impact and benefits
                     4. Avoid technical jargon in titles
                     5. Make concepts accessible to regular users
-                    
+
                     Title requirements:
                     - Create simple, clear titles that describe the main improvements
                     - Write titles that anyone can understand
@@ -483,7 +495,7 @@ class ContentService:
                     - DO NOT use technical terms, parentheses, or quotation marks
                     - Example: "Making Smart Contracts Better and Network Updates"
                     - Example: "Network Speed Improvements and Better Security"
-                    
+
                     Required sections:
                     1. A clear, simple title following the above format
                     2. A detailed overview (at least 700 characters)
@@ -503,9 +515,9 @@ class ContentService:
                     - Focus on real-world benefits
                     - Keep explanations clear and simple
                     - Include clear 'Repository Updates:', 'Technical Highlights:', and 'Next Steps:' sections
-                    
+
                     Here are the technical updates to analyze:
-                    {json.dumps(repo_content, indent=2)}
+                    {json.dumps(serialized_content, indent=2)}
                     Forum Summary: {forum_summary or ''}"""
                 }
             ]

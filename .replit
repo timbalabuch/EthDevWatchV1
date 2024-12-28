@@ -336,7 +336,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scripts/generate_past_articles.py"
+args = "python scripts/generate_past_articles.py 2"
 
 [[workflows.workflow]]
 name = "Cleanup Articles"
