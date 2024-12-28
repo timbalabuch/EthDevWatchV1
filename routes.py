@@ -379,14 +379,43 @@ def generate_single_article():
     """Handle generation of a single article."""
     try:
         current_date = datetime.now(pytz.UTC)
-        # Get the most recent Monday
-        monday = current_date - timedelta(days=current_date.weekday())
-        monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Execute generate_one_article script
+        # Get all existing articles
+        existing_articles = Article.query.order_by(Article.publication_date.desc()).all()
+
+        # Find the most recent Monday that doesn't have an article
+        target_date = None
+        max_attempts = 52  # Don't look more than a year back
+
+        # Start from current week's Monday
+        check_date = current_date - timedelta(days=current_date.weekday())
+        check_date = check_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        for _ in range(max_attempts):
+            # Check if this week already has an article
+            existing = Article.query.filter(
+                Article.publication_date >= check_date,
+                Article.publication_date < check_date + timedelta(days=7)
+            ).first()
+
+            if not existing:
+                target_date = check_date
+                break
+
+            # Move to previous week
+            check_date = check_date - timedelta(days=7)
+
+        if not target_date:
+            flash('No available weeks found for article generation.', 'error')
+            logger.warning("No available weeks found for article generation")
+            return redirect(url_for('admin_dashboard'))
+
+        logger.info(f"Found target date for article generation: {target_date.strftime('%Y-%m-%d')}")
+
+        # Execute generate_one_article script with the target date
         workflows_set_run_config_tool(
             name='Generate One Article',
-            command=f'python scripts/generate_one_article.py {monday.strftime("%Y-%m-%d")}'
+            command=f'python scripts/generate_one_article.py --date {target_date.strftime("%Y-%m-%d")}'
         )
 
         flash('Started generating single article. Check the status in the dashboard.', 'success')

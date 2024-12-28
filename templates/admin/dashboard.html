@@ -11,30 +11,74 @@
             <a href="{{ url_for('update_admin_credentials') }}" class="btn btn-outline-primary me-2">Update Credentials</a>
             <!-- Generate Previous Articles Button -->
             <form method="POST" action="{{ url_for('generate_previous_articles') }}" class="d-inline me-2">
-                <select name="num_articles" class="form-select d-inline-block w-auto me-2">
+                <select name="num_articles" class="form-select d-inline-block w-auto me-2" data-bs-toggle="tooltip" title="Select how many past weeks of articles to generate">
                     <option value="1">1 week</option>
                     <option value="2">2 weeks</option>
                     <option value="4">4 weeks</option>
                     <option value="8">8 weeks</option>
                 </select>
-                <button type="submit" class="btn btn-outline-success generate-btn" data-type="multiple">Generate Previous Articles</button>
+                <button type="submit" class="btn btn-outline-success generate-btn" data-type="multiple" data-bs-toggle="tooltip" title="Generate articles for past weeks">Generate Previous Articles</button>
             </form>
             <!-- Generate Single Article Button -->
             <form method="POST" action="{{ url_for('generate_single_article') }}" class="d-inline me-2">
-                <button type="submit" class="btn btn-outline-info generate-btn" data-type="single">Generate Single Article</button>
+                <button type="submit" class="btn btn-outline-info generate-btn" data-type="single" data-bs-toggle="tooltip" title="Generate article for the current week or most recent past week">Generate Single Article</button>
             </form>
             <!-- Create New Article Button -->
-            <a href="{{ url_for('new_article') }}" class="btn btn-primary">New Article</a>
+            <a href="{{ url_for('new_article') }}" class="btn btn-primary" data-bs-toggle="tooltip" title="Manually create a new article">New Article</a>
+            <!-- Help Button -->
+            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+                <i class="bi bi-question-circle"></i>
+            </button>
         </div>
     </div>
 
     <!-- Loading Indicator -->
     <div id="generationProgress" class="alert alert-info d-none">
-        <div class="d-flex align-items-center">
-            <div class="spinner-border spinner-border-sm me-2" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <div class="d-flex flex-column">
+            <div class="d-flex align-items-center mb-2">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span id="generationMessage">Generating article(s)...</span>
             </div>
-            <span id="generationMessage">Generating article(s)...</span>
+            <div class="progress" style="height: 5px;">
+                <div id="generationProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Article Generation Help</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Article Generation Process</h6>
+                    <ol>
+                        <li>Articles are generated on a weekly basis</li>
+                        <li>Each article summarizes Ethereum development activity for one week</li>
+                        <li>Content is gathered from GitHub repositories, forums, and other sources</li>
+                        <li>Articles are automatically processed to ensure readability</li>
+                    </ol>
+
+                    <h6>Generation Options</h6>
+                    <ul>
+                        <li><strong>Generate Single Article:</strong> Creates an article for the current week if none exists, or the most recent past week without an article</li>
+                        <li><strong>Generate Previous Articles:</strong> Generates multiple articles for past weeks, select the number of weeks from the dropdown</li>
+                        <li><strong>New Article:</strong> Manually create and edit an article</li>
+                    </ul>
+
+                    <h6>Status Indicators</h6>
+                    <ul>
+                        <li><span class="badge bg-warning text-dark">Generating</span> - Article is currently being created</li>
+                        <li><span class="badge bg-success">Published</span> - Article is complete and visible</li>
+                        <li><span class="badge bg-secondary">Draft</span> - Article is saved but not published</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -124,16 +168,37 @@ python scripts/manage_scheduler.py disable</pre>
 <!-- Add JavaScript for Loading Indicator -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
     // Get loading indicator elements
     const progressIndicator = document.getElementById('generationProgress');
     const generationMessage = document.getElementById('generationMessage');
+    const progressBar = document.getElementById('generationProgressBar');
     const generateButtons = document.querySelectorAll('.generate-btn');
+
+    // Progress simulation variables
+    let progressInterval;
+    let currentProgress = 0;
+
+    function updateProgress() {
+        if (currentProgress < 90) {
+            currentProgress += Math.random() * 15;
+            currentProgress = Math.min(currentProgress, 90);
+            progressBar.style.width = currentProgress + '%';
+        }
+    }
 
     // Add click handlers to all generate buttons
     generateButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             // Show loading indicator
             progressIndicator.classList.remove('d-none');
+            currentProgress = 0;
+            progressBar.style.width = '0%';
 
             // Disable all generate buttons
             generateButtons.forEach(btn => btn.disabled = true);
@@ -143,6 +208,16 @@ document.addEventListener('DOMContentLoaded', function() {
             generationMessage.textContent = type === 'single' 
                 ? 'Generating single article...' 
                 : 'Generating multiple articles...';
+
+            // Start progress simulation
+            clearInterval(progressInterval);
+            progressInterval = setInterval(updateProgress, 1000);
+
+            // Simulate completion after some time (you may want to replace this with actual progress tracking)
+            setTimeout(() => {
+                progressBar.style.width = '100%';
+                clearInterval(progressInterval);
+            }, 30000);
         });
     });
 });
