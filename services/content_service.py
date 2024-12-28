@@ -358,26 +358,31 @@ class ContentService:
                 logger.error(f"Publication date must be a Monday, got {publication_date.strftime('%A')}")
                 return None
 
-            # Calculate the end of the week (Sunday)
-            week_end = publication_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            # Calculate the week range
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
             # Prevent creation if any part of the date range includes future dates
             if week_end > current_date:
                 logger.warning(f"Cannot create article with future dates in range. Week end: {week_end}, Current: {current_date}")
                 return None
 
-            logger.info(f"Finalized publication date: {publication_date}, Week end: {week_end}")
+            logger.info(f"Validating date range: {week_start} to {week_end}")
 
-            # Check for existing article in the same week to prevent duplicates
-            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            existing_article = Article.query.filter(
-                Article.publication_date >= week_start,
-                Article.publication_date < week_start + timedelta(days=7)
-            ).first()
+            # Enhanced check for existing articles in the same date range
+            existing_articles = Article.query.filter(
+                ((Article.publication_date >= week_start) & (Article.publication_date <= week_end)) |
+                (Article.publication_date == week_start)
+            ).all()
 
-            if existing_article:
-                logger.warning(f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}")
+            if existing_articles:
+                logger.warning(
+                    f"Found {len(existing_articles)} existing article(s) for week of {week_start.strftime('%Y-%m-%d')}: " +
+                    ", ".join([f"{a.id}: {a.publication_date}" for a in existing_articles])
+                )
                 return None
+
+            logger.info(f"Date range validation passed. Proceeding with article generation for week of {week_start.strftime('%Y-%m-%d')}")
 
             # Get forum discussions summary with error handling
             forum_summary = None
