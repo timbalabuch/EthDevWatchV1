@@ -38,11 +38,14 @@ def generate_article_for_date(target_date=None):
                 target_date = pytz.UTC.localize(target_date)
             monday = target_date - timedelta(days=target_date.weekday())
         else:
-            # If no target date, use current week's Monday only if it's Monday
-            if current_date.weekday() != 0:
-                logger.info("Today is not Monday. Articles can only be created on Mondays.")
+            # If no target date, only allow creation for past weeks
+            days_since_monday = current_date.weekday()
+            monday = current_date - timedelta(days=days_since_monday)
+            next_monday = monday + timedelta(days=7)
+            # Prevent creation of current week's article
+            if current_date < next_monday:
+                logger.warning(f"Cannot create article before {next_monday.strftime('%Y-%m-%d')}")
                 return False
-            monday = current_date - timedelta(days=current_date.weekday())
 
         monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
         next_monday = monday + timedelta(days=7)
@@ -52,12 +55,6 @@ def generate_article_for_date(target_date=None):
             logger.warning(f"Cannot create article for future week of {monday.strftime('%Y-%m-%d')}")
             return False
 
-        # Prevent creation of current week's article before the next Monday
-        if monday == current_date.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=current_date.weekday()):
-            if current_date < next_monday:
-                logger.warning(f"Cannot create article for current week until {next_monday.strftime('%Y-%m-%d')}")
-                return False
-
         with app.app_context():
             try:
                 logger.info(f"Generating article for week of {monday.strftime('%Y-%m-%d')}")
@@ -65,7 +62,7 @@ def generate_article_for_date(target_date=None):
                 # Check if article already exists for this week
                 existing_article = Article.query.filter(
                     Article.publication_date >= monday,
-                    Article.publication_date < monday + timedelta(days=7)
+                    Article.publication_date < next_monday
                 ).first()
 
                 if existing_article:
