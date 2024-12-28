@@ -55,11 +55,15 @@
                         {% for article in articles %}
                         <tr>
                             <td>{{ article.title }}</td>
-                            <td>{{ article.publication_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ article.publication_date.strftime('%Y-%m-%d') if article.publication_date else 'N/A' }}</td>
                             <td>
-                                {% set monday = article.publication_date.replace(hour=0, minute=0, second=0, microsecond=0) %}
-                                {% set sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59) %}
-                                {{ monday.strftime('%b %d') }} - {{ sunday.strftime('%b %d, %Y') }}
+                                {% if article.publication_date %}
+                                    {% set monday = article.publication_date.replace(hour=0, minute=0, second=0, microsecond=0) %}
+                                    {% set sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59) %}
+                                    {{ monday.strftime('%b %d') }} - {{ sunday.strftime('%b %d, %Y') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
                             </td>
                             <td>{{ article.status }}</td>
                             <!-- Article Actions -->

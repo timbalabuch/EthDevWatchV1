@@ -354,6 +354,18 @@ class ContentService:
 
             logger.info(f"Finalized publication date: {publication_date}")
 
+            # Check for existing article for this week
+            week_start = publication_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=7)
+            existing_article = Article.query.filter(
+                Article.publication_date >= week_start,
+                Article.publication_date < week_end
+            ).first()
+
+            if existing_article:
+                logger.warning(f"Article already exists for week of {week_start.strftime('%Y-%m-%d')}")
+                return existing_article
+
             # Get forum discussions summary with error handling
             forum_summary = None
             forum_error = None
