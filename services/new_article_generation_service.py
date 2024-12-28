@@ -52,15 +52,22 @@ class NewArticleGenerationService:
 
     def check_conflicts(self, target_date: datetime) -> Tuple[bool, str, Optional[Article]]:
         """Check for existing or in-progress articles."""
-        week_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        week_end = week_start + timedelta(days=7)
-
         # First check for any article in generating status
         generating_article = Article.query.filter_by(status='generating').first()
         if generating_article:
-            return True, "Another article is currently being generated", generating_article
+            # If an article has been in generating status for more than 10 minutes, mark it as failed
+            generation_timeout = datetime.now(pytz.UTC) - timedelta(minutes=10)
+            if generating_article.published_date and generating_article.published_date < generation_timeout:
+                generating_article.status = 'failed'
+                generating_article.content = "<div class='alert alert-danger'>Article generation timed out</div>"
+                db.session.commit()
+                logger.warning(f"Article {generating_article.id} marked as failed due to timeout")
+            else:
+                return True, "Another article is currently being generated", generating_article
 
         # Then check for existing article in the target week
+        week_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end = week_start + timedelta(days=7)
         existing_article = Article.query.filter(
             Article.publication_date >= week_start,
             Article.publication_date < week_end
@@ -79,7 +86,8 @@ class NewArticleGenerationService:
                 title="Generating Article...",
                 content="<div class='alert alert-info'>Article content is being generated...</div>",
                 publication_date=target_date,
-                status='generating'
+                status='generating',
+                published_date=datetime.now(pytz.UTC)  # Add published_date for timeout tracking
             )
             db.session.add(article)
             db.session.commit()
@@ -96,6 +104,8 @@ class NewArticleGenerationService:
             article.status = status
             if error:
                 article.content = f"<div class='alert alert-danger'>{error}</div>"
+            if status == 'published':
+                article.published_date = datetime.now(pytz.UTC)
             db.session.commit()
             logger.info(f"Updated article {article.id} status to: {status}")
         except Exception as e:
@@ -106,13 +116,24 @@ class NewArticleGenerationService:
     def get_generation_status(self) -> Dict[str, Union[bool, str, int]]:
         """Get current generation status and any errors."""
         try:
-            generating_article = Article.query.filter_by(status='generating').first()
+            # First cleanup any stale generating articles
+            generating_articles = Article.query.filter_by(status='generating').all()
+            for article in generating_articles:
+                if article.published_date:
+                    generation_timeout = datetime.now(pytz.UTC) - timedelta(minutes=10)
+                    if article.published_date < generation_timeout:
+                        article.status = 'failed'
+                        article.content = "<div class='alert alert-danger'>Article generation timed out</div>"
+                        db.session.commit()
+                        logger.warning(f"Article {article.id} marked as failed due to timeout")
 
+            # Get current status after cleanup
+            generating_article = Article.query.filter_by(status='generating').first()
             if generating_article:
                 return {
                     "is_generating": True,
                     "article_id": generating_article.id,
-                    "start_time": generating_article.publication_date.isoformat(),
+                    "start_time": generating_article.published_date.isoformat() if generating_article.published_date else None,
                     "status": "generating",
                     "error": None
                 }
