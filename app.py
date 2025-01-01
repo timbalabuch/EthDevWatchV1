@@ -25,12 +25,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
-    raise ValueError("DATABASE_URL environment variable is not set")
+    logger.warning("DATABASE_URL not set, using SQLite fallback")
+    database_url = "sqlite:///fallback.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
+    "pool_timeout": 30,
+    "max_overflow": 10,
     "pool_timeout": 30,
     "max_overflow": 5
 }
