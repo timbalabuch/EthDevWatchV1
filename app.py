@@ -30,13 +30,13 @@ if not database_url:
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
+    "pool_recycle": 280,
     "pool_pre_ping": True,
-    "pool_timeout": 30,
-    "max_overflow": 10,
-    "pool_timeout": 30,
-    "max_overflow": 5
+    "pool_size": 10,
+    "max_overflow": 20,
+    "pool_timeout": 30
 }
+app.config["SQLALCHEMY_POOL_RECYCLE"] = 280
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
