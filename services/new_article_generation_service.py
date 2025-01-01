@@ -121,10 +121,10 @@ class NewArticleGenerationService:
             target_date = self.get_target_date(target_date)
             logger.info(f"Starting article generation for week of {target_date.strftime('%Y-%m-%d')}")
 
-            # Check for conflicts
+            # Check for conflicts and prevent regeneration on deployment
             has_conflict, msg, existing_article = self.check_conflicts(target_date)
-            if has_conflict:
-                logger.warning(msg)
+            if has_conflict or existing_article:
+                logger.warning(f"Article already exists or conflict found: {msg}")
                 return existing_article
 
             try:
