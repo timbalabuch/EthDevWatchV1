@@ -189,6 +189,7 @@ def edit_article(article_id: int) -> Union[str, Response]:
             title = request.form.get('title')
             content = request.form.get('content')
             pub_date_str = request.form.get('publication_date')
+            custom_url = request.form.get('custom_url')
 
             if not all([title, content, pub_date_str]):
                 flash('All fields are required.', 'error')
@@ -204,6 +205,7 @@ def edit_article(article_id: int) -> Union[str, Response]:
             article.title = title
             article.content = content
             article.publication_date = pub_date
+            article.custom_url = custom_url
             db.session.commit()
 
             logger.info(f"Article {article_id} updated by {current_user.email}")
