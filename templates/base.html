@@ -25,7 +25,7 @@
 <body>
     <script>
         tinymce.init({
-            selector: '#content', // Seleciona apenas o textarea com o ID "editor"
+            selector: '#content',
             plugins: [
                 'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 
                 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 
@@ -45,7 +45,6 @@
             ],
             ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
         });
-
     </script>
     <div class="loading-container" id="loadingScreen">
         <img src="{{ url_for('static', filename='images/eth-logo.gif') }}" alt="Loading..." class="loading-logo">
@@ -57,12 +56,27 @@
                 EthDevWatch
             </a>
             <div class="d-flex align-items-center">
-                <form class="d-flex" id="searchForm">
-                    <input class="form-control me-2" type="search" placeholder="Search" id="searchInput">
-                </form>
+                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#subscribeModal">
+                    Subscribe
+                </button>
             </div>
         </div>
     </nav>
+
+    <!-- Subscribe Modal -->
+    <div class="modal fade" id="subscribeModal" tabindex="-1" aria-labelledby="subscribeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subscribeModalLabel">Subscribe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Empty modal body ready for iframe -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="container my-4">
         {% with messages = get_flashed_messages(with_categories=true) %}

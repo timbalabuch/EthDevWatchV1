@@ -74,37 +74,6 @@
             </section>
             {% endif %}
 
-            <!-- Repository Updates Section -->
-            {% if article.repository_updates or article.technical_highlights or article.next_steps %}
-            <section class="repo-updates-section mb-5">
-                <div class="section-container">
-                    {% if article.repository_updates %}
-                        <div class="repository-updates mb-4">
-                            {{ article.repository_updates | safe }}
-                        </div>
-                    {% endif %}
-
-                    {% if article.technical_highlights %}
-                        <div class="technical-highlights mb-4">
-                            {{ article.technical_highlights | safe }}
-                        </div>
-                    {% endif %}
-
-                    {% if article.next_steps %}
-                        <div class="next-steps mb-4">
-                            <h3 class="h4 mb-3">Next Steps</h3>
-                            <ul class="list-unstyled">
-                                {% for step in article.next_steps %}
-                                    <li class="mb-2 d-flex align-items-start">
-                                        {{ step }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                </div>
-            </section>
-            {% endif %}
 
             <!-- Sources Section -->
             {% if article.sources %}
