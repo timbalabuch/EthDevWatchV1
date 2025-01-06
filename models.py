@@ -35,6 +35,7 @@ class Article(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+    custom_url = db.Column(db.String(200), unique=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
     forum_summary = db.Column(db.Text)  # New field for forum discussions

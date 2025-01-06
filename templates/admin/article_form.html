@@ -10,6 +10,13 @@
                 <input type="text" class="form-control" id="title" name="title" required
                        value="{{ article.title if article else '' }}">
             </div>
+            <div class="mb-3">
+                <label for="custom_url" class="form-label">Custom URL (optional)</label>
+                <input type="text" class="form-control" id="custom_url" name="custom_url"
+                       value="{{ article.custom_url if article else '' }}"
+                       placeholder="custom-url-slug">
+                <small class="form-text text-muted">Leave empty to use default URL structure</small>
+            </div>
             
             <div class="mb-3">
                 <label for="content" class="form-label">Content</label>

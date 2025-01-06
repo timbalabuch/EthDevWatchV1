@@ -222,12 +222,21 @@ def edit_article(article_id: int) -> Union[str, Response]:
 
     return render_template('admin/article_form.html', article=article)
 
-@app.route('/article/<int:article_id>')
-def article(article_id: int) -> Union[str, Tuple[str, int]]:
+@app.route('/article/<path:article_path>')
+def article(article_path: str) -> Union[str, Tuple[str, int]]:
     """Display a single article."""
     try:
-        logger.info(f"Attempting to retrieve article with ID: {article_id}")
-        article = Article.query.get_or_404(article_id)
+        # Try to find by custom URL first
+        article = Article.query.filter_by(custom_url=article_path).first()
+        
+        # If not found, try to find by ID
+        if not article and article_path.isdigit():
+            article = Article.query.get(int(article_path))
+        
+        if not article:
+            abort(404)
+            
+        logger.info(f"Retrieved article: {article.id}")
         
         logger.info(f"Article found: {article.title}")
         return render_template('article.html', article=article)
