@@ -20,7 +20,7 @@
 
             <div class="mb-3">
                 <label for="content" class="form-label">Content</label>
-                <textarea class="form-control" id="content" name="content" rows="10" required>{{ article.content if article else '' }}</textarea>
+                <textarea class="form-control" id="content" name="content">{{ article.content if article else '' }}</textarea>
             </div>
 
             <div class="mb-3">
@@ -45,4 +45,19 @@
         </div>
     </form>
 </div>
+
+<!-- TinyMCE -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+  tinymce.init({
+    selector: '#content',
+    plugins: 'advlist autolink lists link charmap preview anchor',
+    toolbar: 'bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat',
+    height: 400,
+    menubar: false,
+    branding: false,
+    promotion: false
+  });
+</script>
+
 {% endblock %}
