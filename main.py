@@ -15,6 +15,7 @@ def find_available_port(start_port=5000, max_port=5100):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('0.0.0.0', port))
+                s.close()  # Important: close the socket after checking
                 logger.info(f"Found available port: {port}")
                 return port
         except socket.error:
@@ -25,10 +26,16 @@ def find_available_port(start_port=5000, max_port=5100):
 if __name__ == "__main__":
     try:
         logger.info("Starting Flask server...")
-        port = find_available_port(
-            start_port=int(os.environ.get('PORT', 5000)),
-            max_port=5100
-        )
+        # Try port 5000 first, if not available, find another port
+        try:
+            port = 5000
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('0.0.0.0', port))
+                s.close()
+        except socket.error:
+            logger.warning("Port 5000 is in use, finding another port...")
+            port = find_available_port(start_port=5001, max_port=5100)
+
         logger.info(f"Server will start on port {port}")
         app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:

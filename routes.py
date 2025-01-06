@@ -51,28 +51,33 @@ def index() -> str:
         page = request.args.get('page', 1, type=int)
         per_page = 6
 
-        current_date = get_current_utc()
-        today_start = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        logger.info("Fetching articles for home page")
 
-        # Get current week's article (most recent one before current time)
-        current_week_article = Article.query.filter(
-            Article.publication_date < today_start
-        ).order_by(Article.publication_date.desc()).first()
+        # Get published articles ordered by publication date
+        query = Article.query.filter_by(status='published').order_by(Article.publication_date.desc())
 
-        # Get all other articles (excluding the current week's article)
-        other_articles = None
-        if current_week_article:
-            other_articles = Article.query.filter(
-                Article.id != current_week_article.id
-            ).order_by(Article.publication_date.desc()).paginate(
-                page=page, per_page=per_page, error_out=False
-            )
+        # Log the total number of articles before pagination
+        total_articles = query.count()
+        logger.info(f"Total articles in database: {total_articles}")
+
+        # Paginate the results
+        paginated_articles = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        if paginated_articles and paginated_articles.items:
+            logger.info(f"Found {paginated_articles.total} articles, current page: {page}")
+            # Get the first article as current week's article
+            current_week_article = paginated_articles.items[0] if page == 1 else None
+            # Get the rest as other articles
+            other_articles = paginated_articles
+
+            if current_week_article:
+                logger.info(f"Current week article: {current_week_article.title}")
+            else:
+                logger.warning("No current week article found")
         else:
-            other_articles = Article.query.order_by(
-                Article.publication_date.desc()
-            ).paginate(page=page, per_page=per_page, error_out=False)
-
-        logger.info(f"Found {other_articles.total if other_articles else 0} total articles")
+            logger.warning("No articles found in pagination")
+            current_week_article = None
+            other_articles = None
 
         return render_template('index.html', 
                             current_week_article=current_week_article,
