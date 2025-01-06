@@ -20,7 +20,7 @@
 
             <div class="mb-3">
                 <label for="content" class="form-label">Content</label>
-                <textarea class="form-control" id="content" name="content" rows="10" required>{{ article.content if article else '' }}</textarea>
+                <textarea class="form-control" id="content" name="content" rows="20" required>{{ article.content if article else '' }}</textarea>
             </div>
 
             <div class="mb-3">
@@ -38,6 +38,18 @@
                 </select>
             </div>
 
+            <div class="mb-3">
+                <button type="button" class="btn btn-secondary" id="previewBtn">Toggle Preview</button>
+            </div>
+
+            <div id="preview" class="mb-3" style="display: none;">
+                <h3>Preview</h3>
+                <div class="card">
+                    <div class="card-body" id="previewContent">
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary">{{ 'Save Changes' if article else 'Create Article' }}</button>
@@ -45,4 +57,48 @@
         </div>
     </form>
 </div>
+
+<!-- TinyMCE Integration -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+    tinymce.init({
+        selector: '#content',
+        height: 500,
+        menubar: false,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | formatselect | ' +
+            'bold italic backcolor | alignleft aligncenter ' +
+            'alignright alignjustify | bullist numlist outdent indent | ' +
+            'removeformat | help',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+        formats: {
+            p: { block: 'p' },
+            h1: { block: 'h1' },
+            h2: { block: 'h2' },
+            h3: { block: 'h3' },
+            h4: { block: 'h4' },
+            pre: { block: 'pre' }
+        },
+        setup: function(editor) {
+            // Handle preview button click
+            document.getElementById('previewBtn').addEventListener('click', function() {
+                const previewDiv = document.getElementById('preview');
+                const previewContent = document.getElementById('previewContent');
+
+                if (previewDiv.style.display === 'none') {
+                    previewContent.innerHTML = editor.getContent();
+                    previewDiv.style.display = 'block';
+                    this.textContent = 'Hide Preview';
+                } else {
+                    previewDiv.style.display = 'none';
+                    this.textContent = 'Toggle Preview';
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
