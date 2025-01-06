@@ -1,12 +1,5 @@
 {% extends "base.html" %}
 
-{% block head %}
-    {% if tinymce_enabled %}
-    <script src="https://cdn.tiny.cloud/1/{{ config['TINYMCE_API_KEY'] }}/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
-    {% endif %}
-    {{ super() }}
-{% endblock %}
-
 {% block content %}
 <div class="container">
     <h1>{{ 'Edit Article' if article else 'New Article' }}</h1>
@@ -27,7 +20,7 @@
 
             <div class="mb-3">
                 <label for="content" class="form-label">Content</label>
-                <textarea class="form-control" id="content" name="content" rows="20" required>{{ article.content if article else '' }}</textarea>
+                <textarea class="form-control" id="content" name="content" rows="10" required>{{ article.content if article else '' }}</textarea>
             </div>
 
             <div class="mb-3">
@@ -45,18 +38,6 @@
                 </select>
             </div>
 
-            <div class="mb-3">
-                <button type="button" class="btn btn-secondary" id="previewBtn">Toggle Preview</button>
-            </div>
-
-            <div id="preview" class="mb-3" style="display: none;">
-                <h3>Preview</h3>
-                <div class="card">
-                    <div class="card-body" id="previewContent">
-                    </div>
-                </div>
-            </div>
-
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary">{{ 'Save Changes' if article else 'Create Article' }}</button>
@@ -64,67 +45,4 @@
         </div>
     </form>
 </div>
-
-<!-- TinyMCE Integration -->
-{% if tinymce_enabled %}
-<script>
-    tinymce.init({
-        selector: '#content',  // Only target the content textarea
-        height: 500,
-        menubar: true,
-        plugins: [
-            // Core editing features
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
-            'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-            // Premium features
-            'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 
-            'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 
-            'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 
-            'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 
-            'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
-        ],
-        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-        tinycomments_mode: 'embedded',
-        tinycomments_author: 'Author',
-        mergetags_list: [
-            { value: 'First.Name', title: 'First Name' },
-            { value: 'Email', title: 'Email' },
-        ],
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
-        ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
-        setup: function(editor) {
-            editor.on('init', function() {
-                editor.getContainer().style.visibility = 'visible';
-            });
-
-            // Handle preview button click
-            document.getElementById('previewBtn').addEventListener('click', function() {
-                const previewDiv = document.getElementById('preview');
-                const previewContent = document.getElementById('previewContent');
-
-                if (previewDiv.style.display === 'none') {
-                    previewContent.innerHTML = editor.getContent();
-                    previewDiv.style.display = 'block';
-                    this.textContent = 'Hide Preview';
-                } else {
-                    previewDiv.style.display = 'none';
-                    this.textContent = 'Toggle Preview';
-                }
-            });
-        }
-    });
-</script>
-{% else %}
-<!-- Fallback for when TinyMCE is not available -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const contentArea = document.getElementById('content');
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-warning mt-2';
-        errorDiv.innerHTML = 'Rich text editor is not available. Basic text editing enabled. <br>' +
-                           'Status: ' + ({{ config['TINYMCE_API_KEY']|tojson }} ? 'API Key present but invalid' : 'No API Key configured');
-        contentArea.parentNode.insertBefore(errorDiv, contentArea.nextSibling);
-    });
-</script>
-{% endif %}
 {% endblock %}

@@ -1,3 +1,4 @@
+
 import os
 import logging
 from datetime import datetime
@@ -22,16 +23,6 @@ login_manager = LoginManager()
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
-
-# Add TinyMCE configuration
-tinymce_api_key = os.environ.get("TINYMCE_API_KEY")
-if not tinymce_api_key:
-    logger.warning("TINYMCE_API_KEY not set, editor functionality may be limited")
-    app.config["TINYMCE_API_KEY"] = ""
-else:
-    logger.info("TinyMCE API key configured successfully")
-    app.config["TINYMCE_API_KEY"] = tinymce_api_key
-
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     logger.warning("DATABASE_URL not set, using SQLite fallback")
@@ -85,15 +76,6 @@ def cleanup_future_articles():
     except Exception as e:
         logger.error(f"Error cleaning up future articles: {str(e)}")
         db.session.rollback()
-
-# Add context processor to make TinyMCE status available to all templates
-@app.context_processor
-def inject_tinymce_status():
-    api_key = app.config.get("TINYMCE_API_KEY")
-    logger.debug(f"TinyMCE API key status: {'configured' if api_key else 'not configured'}")
-    return {
-        'tinymce_enabled': bool(api_key)
-    }
 
 with app.app_context():
     try:
