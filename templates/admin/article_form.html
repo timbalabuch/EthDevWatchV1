@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 
+{% block head %}
+    {% if tinymce_enabled %}
+    <script src="https://cdn.tiny.cloud/1/{{ config['TINYMCE_API_KEY'] }}/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    {% endif %}
+    {{ super() }}
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h1>{{ 'Edit Article' if article else 'New Article' }}</h1>
@@ -60,31 +67,33 @@
 
 <!-- TinyMCE Integration -->
 {% if tinymce_enabled %}
-<script src="https://cdn.tiny.cloud/1/{{ config['TINYMCE_API_KEY'] }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     tinymce.init({
         selector: '#content',
         height: 500,
         menubar: true,
-        readonly: false,
         plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            // Core editing features
+            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
+            'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+            // Premium features
+            'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 
+            'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 
+            'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 
+            'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 
+            'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
         ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic backcolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'removeformat | help',
+        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
+                'link image media table mergetags | addcomment showcomments | ' +
+                'spellcheckdialog a11ycheck typography | align lineheight | ' +
+                'checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+        tinycomments_mode: 'embedded',
+        tinycomments_author: 'Author',
+        mergetags_list: [
+            { value: 'First.Name', title: 'First Name' },
+            { value: 'Email', title: 'Email' },
+        ],
         content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
-        formats: {
-            p: { block: 'p' },
-            h1: { block: 'h1' },
-            h2: { block: 'h2' },
-            h3: { block: 'h3' },
-            h4: { block: 'h4' },
-            pre: { block: 'pre' }
-        },
         setup: function(editor) {
             editor.on('init', function() {
                 editor.getContainer().style.visibility = 'visible';
