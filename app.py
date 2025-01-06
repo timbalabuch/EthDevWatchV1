@@ -66,8 +66,12 @@ def load_user(user_id):
 
 def cleanup_future_articles():
     """Remove any articles with future dates in development environment"""
-    from models import Article
     try:
+        if is_production:
+            logger.warning("Cleanup operation attempted in production - skipping")
+            return
+
+        from models import Article
         current_time = datetime.now(pytz.UTC)
         future_articles = Article.query.filter(Article.publication_date > current_time).all()
         if future_articles:
@@ -85,8 +89,18 @@ with app.app_context():
         logger.info("Creating database tables...")
         # Import models here to ensure they're registered with SQLAlchemy
         from models import Article, Source, BlockchainTerm, User
-        db.create_all()
-        logger.info("Database tables created successfully")
+
+        # Check if tables exist before creating
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+
+        if not existing_tables:
+            logger.info("No existing tables found, creating database schema")
+            db.create_all()
+            logger.info("Database tables created successfully")
+        else:
+            logger.info(f"Found existing tables: {', '.join(existing_tables)}")
 
         if not is_production:  # Only run cleanup in development
             cleanup_future_articles()
