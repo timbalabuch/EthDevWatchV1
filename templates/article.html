@@ -21,134 +21,107 @@
                         <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="white"/>
                     </svg>
                 </a>
-
             </header>
-            <!-- Overview Section: Brief summary of the article -->
-            <section class="overview-section mb-5">
+
+            <!-- Article Content Section -->
+            <section class="content-section mb-5">
                 <div class="section-container">
-                    <h2 class="h3 mb-4">Overview</h2>
-                    <div class="overview-content">
-                        {{ article.brief_summary | safe }}
-                    </div>
+                    {{ article.content | safe }}
                 </div>
             </section>
 
-            <!-- Community Discussions Section: Forum discussions from Ethereum Magicians and Research -->
+            <!-- Community Discussions Section -->
+            {% if article.magicians_discussions or article.ethresearch_discussions %}
             <section class="community-section mb-5">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Community Discussions</h2>
                     <div class="forum-content">
-                        {% if article.magicians_discussions or article.ethresearch_discussions %}
-                            <!-- Ethereum Magicians Discussions -->
-                            {% if article.magicians_discussions %}
-                                <div class="ethereum-magicians mb-4">
-                                    <h3 class="h4 mb-3 d-flex align-items-center">
-                                        <!-- Ethereum Magicians Logo -->
-                                        <img src="/static/images/ethmagicians.png" alt="Ethereum Logo" class="eth-logo me-2">
-                                        <a href="https://ethereum-magicians.org" target="_blank" class="text-decoration-none">
-                                            Ethereum Magicians
-                                            <!-- External Link Icon -->
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
-                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                                <polyline points="15 3 21 3 21 9"></polyline>
-                                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                                            </svg>
-                                        </a>
-                                    </h3>
-                                    <!-- Magicians Discussions Content -->
-                                    {{ article.magicians_discussions | safe }}
-                                </div>
-                            {% endif %}
+                        {% if article.magicians_discussions %}
+                            <div class="ethereum-magicians mb-4">
+                                <h3 class="h4 mb-3 d-flex align-items-center">
+                                    <img src="/static/images/ethmagicians.png" alt="Ethereum Logo" class="eth-logo me-2">
+                                    <a href="https://ethereum-magicians.org" target="_blank" class="text-decoration-none">
+                                        Ethereum Magicians
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                    </a>
+                                </h3>
+                                {{ article.magicians_discussions | safe }}
+                            </div>
+                        {% endif %}
 
-                            <!-- Ethereum Research Discussions -->
-                        &nbsp;
-                            {% if article.ethresearch_discussions %}
-                                <div class="ethresearch mb-4">
-                                    <h3 class="h4 mb-3 d-flex align-items-center">
-                                        <!-- Ethereum Research Logo -->
-                                        <img src="/static/images/ethresearch.png" alt="Ethereum Logo" class="eth-logo me-2">
-                                        <a href="https://ethresear.ch" target="_blank" class="text-decoration-none">
-                                            Ethereum Research
-                                            <!-- External Link Icon -->
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
-                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                                <polyline points="15 3 21 3 21 9"></polyline>
-                                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                                            </svg>
-                                        </a>
-                                    </h3>
-                                    <!-- Research Discussions Content -->
-                                    {{ article.ethresearch_discussions | safe }}
-                                </div>
-                            {% endif %}
-                        {% else %}
-                            <!-- No Discussions Found Message -->
-                            <div class="alert alert-info">
-                                <p class="mb-0">No forum discussions available for this period.</p>
+                        {% if article.ethresearch_discussions %}
+                            <div class="ethresearch mb-4">
+                                <h3 class="h4 mb-3 d-flex align-items-center">
+                                    <img src="/static/images/ethresearch.png" alt="Ethereum Logo" class="eth-logo me-2">
+                                    <a href="https://ethresear.ch" target="_blank" class="text-decoration-none">
+                                        Ethereum Research
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-1">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                    </a>
+                                </h3>
+                                {{ article.ethresearch_discussions | safe }}
                             </div>
                         {% endif %}
                     </div>
                 </div>
             </section>
+            {% endif %}
 
-            <!-- Repository Updates Section: Changes and technical details -->
+            <!-- Repository Updates Section -->
+            {% if article.repository_updates or article.technical_highlights or article.next_steps %}
             <section class="repo-updates-section mb-5">
                 <div class="section-container">
-                    <!-- Latest Changes Subsection -->
                     {% if article.repository_updates %}
                         <div class="repository-updates mb-4">
                             {{ article.repository_updates | safe }}
                         </div>
                     {% endif %}
 
-                    <!-- Technical Highlights Subsection -->
                     {% if article.technical_highlights %}
                         <div class="technical-highlights mb-4">
                             {{ article.technical_highlights | safe }}
                         </div>
                     {% endif %}
 
-                    <!-- Next Steps Subsection -->
                     {% if article.next_steps %}
                         <div class="next-steps mb-4">
                             <h3 class="h4 mb-3">Next Steps</h3>
                             <ul class="list-unstyled">
                                 {% for step in article.next_steps %}
-                                    <li class="mb-2 d-flex align-items-start">                                       
+                                    <li class="mb-2 d-flex align-items-start">
                                         {{ step }}
                                     </li>
                                 {% endfor %}
                             </ul>
                         </div>
                     {% endif %}
-
-                    <!-- Content Update Message -->
-                    {% if not article.repository_updates and not article.technical_highlights and not article.next_steps %}
-                        <div class="alert alert-info">
-                            <p class="mb-0">Content update in progress. Please check back in a few minutes.</p>
-                        </div>
-                    {% endif %}
                 </div>
             </section>
+            {% endif %}
 
             <!-- Sources Section -->
+            {% if article.sources %}
             <section class="source-section">
                 <div class="section-container">
                     <h2 class="h3 mb-4">Sources</h2>
-                    {% if article.sources %}
-                        <!-- Sources Accordion -->
-                        <div class="accordion" id="sourcesAccordion">
-                            {% with sources=article.sources %}
-                                {% include '_source_section.html' %}
-                            {% endwith %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No sources available for this article.</p>
-                    {% endif %}
+                    <div class="accordion" id="sourcesAccordion">
+                        {% with sources=article.sources %}
+                            {% include '_source_section.html' %}
+                        {% endwith %}
+                    </div>
                 </div>
             </section>
+            {% endif %}
         </div>
     </div>
+
     <!-- Social Share Button -->
     <div class="d-flex justify-content-center">
         <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
@@ -160,7 +133,6 @@
             </svg>
         </a>
     </div>
-
 </article>
 
 <!-- JavaScript Dependencies -->
