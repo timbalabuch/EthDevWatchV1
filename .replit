@@ -1,6 +1,6 @@
 
 run = "python main.py"
-modules = ["python-3.11:v3-20230116-0f51a50"]
+modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
