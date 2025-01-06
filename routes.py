@@ -230,20 +230,19 @@ def article(article_path: str) -> Union[str, Tuple[str, int]]:
     try:
         # Try to find by custom URL first
         article = Article.query.filter_by(custom_url=article_path).first()
-        
+
         # If not found, try to find by ID
         if not article and article_path.isdigit():
             article = Article.query.get(int(article_path))
-        
+
         if not article:
+            logger.warning(f"Article not found for path: {article_path}")
             abort(404)
-            
+
         logger.info(f"Retrieved article: {article.id}")
-        
-        logger.info(f"Article found: {article.title}")
         return render_template('article.html', article=article)
     except Exception as e:
-        logger.error(f"Error retrieving article {article_id}: {str(e)}", exc_info=True)
+        logger.error(f"Error retrieving article for path {article_path}: {str(e)}", exc_info=True)
         return render_template('404.html'), 404
 
 @app.errorhandler(404)
