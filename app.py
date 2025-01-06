@@ -22,11 +22,23 @@ login_manager = LoginManager()
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
-database_url = os.environ.get("DATABASE_URL")
 
-if not database_url:
-    logger.warning("DATABASE_URL not set, using SQLite fallback")
-    database_url = "sqlite:///fallback.db"
+# Determine environment
+is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+logger.info(f"Running in {'production' if is_production else 'development'} environment")
+
+# Configure database URL based on environment
+if is_production:
+    # Use PostgreSQL in production
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        logger.error("DATABASE_URL not set in production environment")
+        raise ValueError("DATABASE_URL must be set in production environment")
+    logger.info("Using production PostgreSQL database")
+else:
+    # Use SQLite for local development
+    database_url = "sqlite:///development.db"
+    logger.info("Using local SQLite database for development")
 
 # Configure SQLAlchemy
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
@@ -35,9 +47,10 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_size": 5,
     "max_overflow": 10,
     "pool_timeout": 30
-}
+} if is_production else {}  # Only use connection pool in production
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Initialize extensions
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -52,6 +65,7 @@ def load_user(user_id):
         return None
 
 def cleanup_future_articles():
+    """Remove any articles with future dates in development environment"""
     from models import Article
     try:
         current_time = datetime.now(pytz.UTC)
@@ -65,17 +79,29 @@ def cleanup_future_articles():
         logger.error(f"Error cleaning up future articles: {str(e)}")
         db.session.rollback()
 
+# Initialize database and load routes
 with app.app_context():
     try:
+        logger.info("Creating database tables...")
+        # Import models here to ensure they're registered with SQLAlchemy
+        from models import Article, Source, BlockchainTerm, User
         db.create_all()
-        cleanup_future_articles()
+        logger.info("Database tables created successfully")
+
+        if not is_production:  # Only run cleanup in development
+            cleanup_future_articles()
+
+        # Import routes after database initialization
         from routes import *
+        logger.info("Routes imported successfully")
+
         try:
             from services.scheduler import init_scheduler
             init_scheduler()
-            logger.info("Application initialized successfully")
+            logger.info("Scheduler initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize scheduler: {str(e)}")
+
     except Exception as e:
         logger.error(f"Failed to initialize application: {str(e)}")
         raise
