@@ -1,7 +1,4 @@
 
-[env]
-REPL_ENVIRONMENT = "production"
-
 run = "python main.py"
 modules = ["python-3.11"]
 
@@ -16,32 +13,5 @@ deploymentTarget = "cloudrun"
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
-[workflows]
-runButton = "Project"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+[env]
+REPL_ENVIRONMENT = "production"
