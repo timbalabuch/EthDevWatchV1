@@ -664,3 +664,8 @@ a:hover {
     border-radius: 0.5rem;
     margin-bottom: 1rem;
 }
+
+.modal-backdrop.show {
+    opacity: 0.8;
+    background: var(--bg-primary);
+}
