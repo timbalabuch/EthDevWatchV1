@@ -666,6 +666,6 @@ a:hover {
 }
 
 .modal-backdrop.show {
-    opacity: 0.8;
-    background: var(--bg-primary);
+    opacity: 0.9;
+    background: #000000;
 }
