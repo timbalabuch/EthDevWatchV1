@@ -3,6 +3,27 @@
 <head>
     <script src="https://cdn.tiny.cloud/1/l7x2eq94vx07ldwmbbcoylq02otfj24uy0x6v416b6g6b52z/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}EthDevWatch{% endblock %}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}" />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.png') }}" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.png') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        :root {
+            --bs-body-color: var(--text-primary);
+            --bs-body-bg: var(--bg-primary);
+            --bs-link-color: var(--link-color);
+            --bs-link-hover-color: var(--link-hover-color);
+        }
+    </style>
+</head>
+<body>
     <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
     <script>
       tinymce.init({
@@ -27,27 +48,6 @@
     <textarea>
       Welcome to TinyMCE!
     </textarea>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}EthDevWatch{% endblock %}</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}" />
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.png') }}" />
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.png') }}" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
-    <style>
-        :root {
-            --bs-body-color: var(--text-primary);
-            --bs-body-bg: var(--bg-primary);
-            --bs-link-color: var(--link-color);
-            --bs-link-hover-color: var(--link-hover-color);
-        }
-    </style>
-</head>
-<body>
     <div class="loading-container" id="loadingScreen">
         <img src="{{ url_for('static', filename='images/eth-logo.gif') }}" alt="Loading..." class="loading-logo">
     </div>

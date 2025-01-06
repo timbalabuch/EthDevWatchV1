@@ -24,6 +24,8 @@
     --bs-border-color: var(--border-color);
 }
 
+
+
 .forum-link {
     --bs-btn-border-color: #34d399 !important;
     --bs-btn-hover-bg: #34d399 !important;
