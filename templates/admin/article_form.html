@@ -59,18 +59,19 @@
 </div>
 
 <!-- TinyMCE Integration -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/{{ config['TINYMCE_API_KEY'] }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     tinymce.init({
         selector: '#content',
         height: 500,
-        menubar: false,
+        menubar: true,
+        readonly: false,
         plugins: [
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
             'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
             'insertdatetime', 'media', 'table', 'help', 'wordcount'
         ],
-        toolbar: 'undo redo | formatselect | ' +
+        toolbar: 'undo redo | blocks | ' +
             'bold italic backcolor | alignleft aligncenter ' +
             'alignright alignjustify | bullist numlist outdent indent | ' +
             'removeformat | help',
@@ -84,6 +85,10 @@
             pre: { block: 'pre' }
         },
         setup: function(editor) {
+            editor.on('init', function() {
+                editor.getContainer().style.visibility = 'visible';
+            });
+
             // Handle preview button click
             document.getElementById('previewBtn').addEventListener('click', function() {
                 const previewDiv = document.getElementById('preview');

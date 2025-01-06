@@ -1,4 +1,3 @@
-
 import os
 import logging
 from datetime import datetime
@@ -49,6 +48,11 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 app.config["SQLALCHEMY_POOL_RECYCLE"] = 280
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Add TinyMCE configuration
+app.config["TINYMCE_API_KEY"] = os.environ.get("TINYMCE_API_KEY")
+if not app.config["TINYMCE_API_KEY"]:
+    logger.warning("TINYMCE_API_KEY not set, editor functionality may be limited")
 
 db.init_app(app)
 login_manager.init_app(app)
