@@ -1,4 +1,3 @@
-
 import os
 import logging
 from datetime import datetime
@@ -32,7 +31,12 @@ if not database_url:
 if database_url and 'neon.tech' in database_url:
     database_url = database_url.replace('.us-east-2', '-pooler.us-east-2')
 
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+# Use different database for production vs development
+if os.environ.get('REPL_ENVIRONMENT') == 'production':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///production.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///development.db'
+
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 280,
     "pool_pre_ping": True,

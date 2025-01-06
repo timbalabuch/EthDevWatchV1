@@ -1,4 +1,7 @@
 
+[env]
+REPL_ENVIRONMENT = "production"
+
 run = "python main.py"
 modules = ["python-3.11"]
 
