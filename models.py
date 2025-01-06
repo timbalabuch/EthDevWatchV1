@@ -63,6 +63,21 @@ class Article(db.Model):
         db.session.commit()
 
     @property
+    def bullet_points(self):
+        """Extract bullet points summary from content."""
+        if not self.content:
+            return []
+        try:
+            soup = BeautifulSoup(self.content, 'lxml')
+            bullet_points = soup.find('div', class_='bullet-points')
+            if bullet_points:
+                return [point.get_text(strip=True) for point in bullet_points.find_all('li')]
+            return []
+        except Exception as e:
+            logger.error(f"Error extracting bullet points: {e}", exc_info=True)
+            return []
+
+    @property
     def brief_summary(self):
         """Extract brief summary from content."""
         if not self.content:

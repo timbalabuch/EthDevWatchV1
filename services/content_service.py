@@ -147,6 +147,52 @@ class ContentService:
             elif current_section == 'tech' and part:
                 tech_highlights.append(part)
             elif current_section == 'next' and part:
+
+    def _generate_bullet_points(self, content: Dict) -> List[str]:
+        """Generate bullet points summarizing the article content."""
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": """Create 3-5 concise bullet points that summarize the most important updates and changes.
+                    Each bullet point should be a single sentence focused on one key development or change.
+                    Focus on technical changes, milestones, and user-facing updates."""
+                },
+                {
+                    "role": "user",
+                    "content": f"""Create bullet points summarizing these updates:
+
+                    Repository Updates:
+                    {' '.join(str(update.get('summary', '')) for update in content.get('repository_updates', []))}
+
+                    Technical Highlights:
+                    {' '.join(str(highlight.get('description', '')) for highlight in content.get('technical_highlights', []))}
+                    """
+                }
+            ]
+
+            response = self._retry_with_exponential_backoff(
+                self.openai.chat.completions.create,
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=300
+            )
+
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                return ["Summary generation in progress..."]
+
+            bullet_points = [point.strip().lstrip('•-* ') for point in 
+                           response.choices[0].message.content.strip().split('\n') 
+                           if point.strip()]
+            
+            return bullet_points
+
+        except Exception as e:
+            logger.error(f"Error generating bullet points: {str(e)}")
+            return ["Summary generation in progress..."]
+
+
                 if part.startswith('- '):
                     next_steps.extend([step.strip() for step in part.split('\n')])
                 else:
@@ -217,8 +263,16 @@ class ContentService:
             # Generate overview summary
             overview_summary = self._generate_overview_summary(summary_data)
 
+            # Generate bullet points
+            bullet_points = self._generate_bullet_points(summary_data)
+            
             article_html = f"""
                 <article class="ethereum-article">
+                    <div class="bullet-points mb-4">
+                        <ul>
+                            {''.join(f"<li>{point}</li>" for point in bullet_points)}
+                        </ul>
+                    </div>
                     <div class="overview-section mb-4">
                         <div class="overview-content">
                             {overview_summary}
