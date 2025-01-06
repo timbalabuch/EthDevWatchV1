@@ -69,7 +69,7 @@
 {% if tinymce_enabled %}
 <script>
     tinymce.init({
-        selector: '#content',
+        selector: '#content',  // Only target the content textarea
         height: 500,
         menubar: true,
         plugins: [
@@ -91,6 +91,7 @@
             { value: 'Email', title: 'Email' },
         ],
         content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+        ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
         setup: function(editor) {
             editor.on('init', function() {
                 editor.getContainer().style.visibility = 'visible';
