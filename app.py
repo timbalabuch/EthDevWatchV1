@@ -23,35 +23,19 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
 database_url = os.environ.get("DATABASE_URL")
+
 if not database_url:
     logger.warning("DATABASE_URL not set, using SQLite fallback")
     database_url = "sqlite:///fallback.db"
 
-# Modify the database URL to use the connection pooler
-if database_url and 'neon.tech' in database_url:
-    database_url = database_url.replace('.us-east-2', '-pooler.us-east-2')
-
-# Use different database for production vs development
-if os.environ.get('REPL_ENVIRONMENT') == 'production':
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///production.db'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///development.db'
-
+# Configure SQLAlchemy
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 280,
     "pool_pre_ping": True,
     "pool_size": 5,
     "max_overflow": 10,
-    "pool_timeout": 30,
-    "connect_args": {
-        "connect_timeout": 10,
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5
-    }
+    "pool_timeout": 30
 }
-app.config["SQLALCHEMY_POOL_RECYCLE"] = 280
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
