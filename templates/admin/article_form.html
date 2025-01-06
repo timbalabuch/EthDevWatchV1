@@ -61,6 +61,7 @@
 <!-- TinyMCE Integration -->
 <script src="https://cdn.tiny.cloud/1/{{ config['TINYMCE_API_KEY'] }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
+    {% if config['TINYMCE_API_KEY'] %}
     tinymce.init({
         selector: '#content',
         height: 500,
@@ -105,5 +106,15 @@
             });
         }
     });
+    {% else %}
+    // Show error message if API key is not configured
+    document.addEventListener('DOMContentLoaded', function() {
+        const contentArea = document.getElementById('content');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-warning mt-2';
+        errorDiv.textContent = 'TinyMCE editor is not available. Please contact the administrator to configure the API key.';
+        contentArea.parentNode.insertBefore(errorDiv, contentArea.nextSibling);
+    });
+    {% endif %}
 </script>
 {% endblock %}
