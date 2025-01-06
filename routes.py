@@ -58,14 +58,14 @@ def index() -> str:
 
         # Log the total number of articles before pagination
         total_articles = query.count()
-        logger.info(f"Total articles in database: {total_articles}")
+        logger.info(f"Total published articles in database: {total_articles}")
 
         # Paginate the results
         paginated_articles = query.paginate(page=page, per_page=per_page, error_out=False)
 
         if paginated_articles and paginated_articles.items:
-            logger.info(f"Found {paginated_articles.total} articles, current page: {page}")
-            # Get the first article as current week's article
+            logger.info(f"Found {len(paginated_articles.items)} articles on page {page}")
+            # Get the first article as current week's article only on first page
             current_week_article = paginated_articles.items[0] if page == 1 else None
             # Get the rest as other articles
             other_articles = paginated_articles
@@ -73,21 +73,21 @@ def index() -> str:
             if current_week_article:
                 logger.info(f"Current week article: {current_week_article.title}")
             else:
-                logger.warning("No current week article found")
+                logger.warning("No current week article available")
         else:
             logger.warning("No articles found in pagination")
             current_week_article = None
             other_articles = None
 
         return render_template('index.html', 
-                            current_week_article=current_week_article,
-                            other_articles=other_articles)
+                          current_week_article=current_week_article,
+                          other_articles=other_articles)
 
     except Exception as e:
         logger.error(f"Error retrieving articles: {str(e)}", exc_info=True)
         return render_template('index.html', 
-                            current_week_article=None,
-                            other_articles=None)
+                          current_week_article=None,
+                          other_articles=None)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login() -> Union[str, Response]:
@@ -160,12 +160,13 @@ def new_article() -> Union[str, Response]:
                 title=title,
                 content=content,
                 publication_date=pub_date,
-                author_id=current_user.id
+                author_id=current_user.id,
+                status='published'  # Set status to published by default
             )
             db.session.add(article)
             db.session.commit()
 
-            logger.info(f"New article created: {article.id} by {current_user.email}")
+            logger.info(f"New article created: {article.id} by {current_user.email} with status: {article.status}")
             flash('Article created successfully', 'success')
             return redirect(url_for('admin_dashboard'))
 

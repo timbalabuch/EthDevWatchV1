@@ -17,18 +17,27 @@
                        placeholder="custom-url-slug">
                 <small class="form-text text-muted">Leave empty to use default URL structure</small>
             </div>
-            
+
             <div class="mb-3">
                 <label for="content" class="form-label">Content</label>
                 <textarea class="form-control" id="content" name="content" rows="10" required>{{ article.content if article else '' }}</textarea>
             </div>
-            
+
             <div class="mb-3">
                 <label for="publication_date" class="form-label">Publication Date</label>
                 <input type="date" class="form-control" id="publication_date" name="publication_date" required
                        value="{{ article.publication_date.strftime('%Y-%m-%d') if article else '' }}">
             </div>
-            
+
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="published" {% if article and article.status == 'published' %}selected{% endif %}>Published</option>
+                    <option value="draft" {% if article and article.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="scheduled" {% if article and article.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                </select>
+            </div>
+
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary">{{ 'Save Changes' if article else 'Create Article' }}</button>
