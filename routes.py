@@ -55,6 +55,10 @@ def index() -> str:
 
         # Get published articles ordered by publication date
         query = Article.query.filter_by(status='published').order_by(Article.publication_date.desc())
+        total_count = Article.query.count()
+        published_count = query.count()
+        logger.info(f"Total articles in database: {total_count}")
+        logger.info(f"Published articles in database: {published_count}")
 
         # Log the total number of articles before pagination
         total_articles = query.count()
