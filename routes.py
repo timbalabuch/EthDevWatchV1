@@ -80,10 +80,9 @@ def index() -> str:
 
     except Exception as e:
         logger.error(f"Error retrieving articles: {str(e)}", exc_info=True)
-        flash('An error occurred while loading articles.', 'error')
         return render_template('index.html', 
                             current_week_article=None,
-                            other_articles=None), 500
+                            other_articles=None)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login() -> Union[str, Response]:

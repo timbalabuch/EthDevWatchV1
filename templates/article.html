@@ -13,17 +13,6 @@
                 <p class="text-muted mb-3 fs-5">
                     {{ format_date(article.publication_date) }}
                 </p>
-                <!-- Bullet Points Summary -->
-                {% if article.bullet_points %}
-                <div class="bullet-points mb-4">
-                    <h2 class="h4">Key Points</h2>
-                    <ul class="list-unstyled">
-                        {% for point in article.bullet_points %}
-                        <li class="mb-2">• {{ point }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
                 <!-- Social Share Button -->
                 <a href="https://twitter.com/intent/tweet?text={{ article.title|urlencode }}&url={{ request.url|urlencode }}"
                    target="_blank"

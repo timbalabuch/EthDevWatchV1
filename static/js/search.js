@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 articles.forEach(article => {
                     const title = article.querySelector('.card-title').textContent.toLowerCase();
-                    const content = article.querySelector('.article-content').textContent.toLowerCase();
+                    const content = article.querySelector('.article-content')?.textContent.toLowerCase() || '';
                     const isMatch = title.includes(searchTerm) || content.includes(searchTerm);
 
                     article.style.display = isMatch ? 'block' : 'none';
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Show/hide no results message
                 let noResultsMsg = articleList.querySelector('.no-results-message');
-                if (!hasVisibleArticles && searchTerm !== '') {
+                if (!hasVisibleArticles) {
                     if (!noResultsMsg) {
                         noResultsMsg = document.createElement('div');
                         noResultsMsg.className = 'no-results-message alert alert-info mt-3';

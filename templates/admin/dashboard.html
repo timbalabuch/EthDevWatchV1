@@ -65,17 +65,7 @@
                                     N/A
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if article.status == 'generating' %}
-                                    <span class="badge bg-info">Generating...</span>
-                                {% elif article.status == 'published' %}
-                                    <span class="badge bg-success">Published</span>
-                                {% elif article.status == 'failed' %}
-                                    <span class="badge bg-danger">Failed</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ article.status }}</span>
-                                {% endif %}
-                            </td>
+                            <td>{{ article.status }}</td>
                             <!-- Article Actions -->
                             <td>
                                 <!-- Edit Article Button -->
@@ -107,17 +97,13 @@
                     statusDiv.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger');
 
                     if (data.is_generating) {
-                        statusDiv.classList.add('alert', 'alert-info');
+                        statusDiv.classList.add('alert-info');
                         statusMessage.textContent = 'Article generation in progress...';
                     } else if (data.error) {
-                        statusDiv.classList.add('alert', 'alert-danger');
+                        statusDiv.classList.add('alert-danger');
                         statusMessage.textContent = `Error: ${data.error}`;
                     } else if (data.status === 'idle') {
                         statusDiv.classList.add('d-none');
-                    } else {
-                        statusDiv.classList.add('alert', 'alert-success');
-                        statusMessage.textContent = 'Article generated successfully!';
-                        setTimeout(() => window.location.reload(), 2000);
                     }
                 })
                 .catch(error => {
