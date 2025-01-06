@@ -48,22 +48,39 @@ class NewArticleGenerationService:
 
         # Ensure date is a Monday and at start of day
         target_date = target_date - timedelta(days=target_date.weekday())
-        return target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        target_date = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        if target_date.tzinfo is None:
+            target_date = pytz.UTC.localize(target_date)
+        return target_date
 
     def check_conflicts(self, target_date: datetime) -> Tuple[bool, str, Optional[Article]]:
         """Check for existing or in-progress articles."""
         try:
-            # First check for any article in generating status
-            generating_article = Article.query.filter_by(status='generating').first()
+            # First check for any article in generating status that hasn't been updated in 5 minutes
+            five_minutes_ago = datetime.now(pytz.UTC) - timedelta(minutes=5)
+            generating_article = Article.query.filter(
+                Article.status == 'generating',
+                Article.updated_at < five_minutes_ago
+            ).first()
+
             if generating_article:
-                return True, "Another article is currently being generated", generating_article
+                # Reset status of stale generating article
+                generating_article.status = 'failed'
+                generating_article.content = 'Article generation timed out'
+                db.session.commit()
+
+            # Check for any active generating article
+            active_generating = Article.query.filter_by(status='generating').first()
+            if active_generating:
+                return True, "Another article is currently being generated", active_generating
 
             # Then check for existing article in the target week
             week_start = target_date
             week_end = week_start + timedelta(days=7)
             existing_article = Article.query.filter(
                 Article.publication_date >= week_start,
-                Article.publication_date < week_end
+                Article.publication_date < week_end,
+                Article.status != 'failed'
             ).first()
 
             if existing_article:
@@ -75,6 +92,87 @@ class NewArticleGenerationService:
         except Exception as e:
             logger.error(f"Error checking for conflicts: {str(e)}")
             raise
+
+    def generate_article(self, target_date: Optional[datetime] = None) -> Optional[Article]:
+        """Generate a new article with improved status tracking."""
+        try:
+            # Calculate target date
+            target_date = self.get_target_date(target_date)
+            logger.info(f"Starting article generation for week of {target_date.strftime('%Y-%m-%d')}")
+
+            # Check for conflicts and prevent regeneration on deployment
+            has_conflict, msg, existing_article = self.check_conflicts(target_date)
+            if has_conflict:
+                logger.warning(f"Article generation conflict: {msg}")
+                return existing_article
+
+            # Create a placeholder article with generating status
+            new_article = Article(
+                title="Generating Article...",
+                content="<div class='alert alert-info'>Article is being generated. This may take a few minutes...</div>",
+                publication_date=target_date,
+                status='generating',
+                created_at=datetime.now(pytz.UTC),
+                updated_at=datetime.now(pytz.UTC)
+            )
+            db.session.add(new_article)
+            db.session.commit()
+
+            try:
+                # Fetch GitHub content
+                github_content = self.github_service.fetch_recent_content(
+                    start_date=target_date,
+                    end_date=target_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+                )
+
+                if not github_content:
+                    raise ValueError("No content found for the specified week")
+
+                # Generate the article content
+                from services.content_service import ContentService
+                content_service = ContentService()
+
+                generated_article = content_service.generate_weekly_summary(
+                    github_content,
+                    target_date
+                )
+
+                if not generated_article:
+                    raise ValueError("Failed to generate article content")
+
+                # Update the placeholder article with the generated content
+                new_article.title = generated_article.title
+                new_article.content = generated_article.content
+                new_article.status = 'published'
+                new_article.updated_at = datetime.now(pytz.UTC)
+                new_article.published_date = datetime.now(pytz.UTC)
+
+                # Add sources
+                for item in github_content:
+                    source = Source(
+                        url=item['url'],
+                        type=item['type'],
+                        title=item.get('title', ''),
+                        repository=item['repository'],
+                        article=new_article
+                    )
+                    db.session.add(source)
+
+                db.session.commit()
+                logger.info(f"Successfully generated article: {new_article.title}")
+                return new_article
+
+            except Exception as e:
+                logger.error(f"Error during article generation: {str(e)}")
+                new_article.status = 'failed'
+                new_article.content = f"<div class='alert alert-danger'>Failed to generate article: {str(e)}</div>"
+                new_article.updated_at = datetime.now(pytz.UTC)
+                db.session.commit()
+                return None
+
+        except Exception as e:
+            logger.error(f"Fatal error in generate_article: {str(e)}")
+            return None
 
     def get_generation_status(self) -> Dict[str, Union[bool, str, int]]:
         """Get current generation status and any errors."""
@@ -113,54 +211,6 @@ class NewArticleGenerationService:
                 "status": "error",
                 "error": str(e)
             }
-
-    def generate_article(self, target_date: Optional[datetime] = None) -> Optional[Article]:
-        """Generate a new article with improved status tracking."""
-        try:
-            # Calculate target date
-            target_date = self.get_target_date(target_date)
-            logger.info(f"Starting article generation for week of {target_date.strftime('%Y-%m-%d')}")
-
-            # Check for conflicts and prevent regeneration on deployment
-            has_conflict, msg, existing_article = self.check_conflicts(target_date)
-            if has_conflict or existing_article:
-                logger.warning(f"Article already exists or conflict found: {msg}")
-                return existing_article
-
-            try:
-                # Fetch GitHub content
-                github_content = self.github_service.fetch_recent_content(
-                    start_date=target_date,
-                    end_date=target_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
-                )
-
-                if not github_content:
-                    logger.warning("No content found for the specified week")
-                    return None
-
-                # Generate the article content
-                from services.content_service import ContentService
-                content_service = ContentService()
-
-                generated_article = content_service.generate_weekly_summary(
-                    github_content,
-                    target_date
-                )
-
-                if not generated_article:
-                    logger.error("Failed to generate article content")
-                    return None
-
-                logger.info(f"Successfully generated article: {generated_article.title}")
-                return generated_article
-
-            except Exception as e:
-                logger.error(f"Error during article generation: {str(e)}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Fatal error in generate_article: {str(e)}")
-            return None
 
     def update_article_status(self, article: Article, status: str, error: Optional[str] = None) -> None:
         """Update article status and error message if any."""

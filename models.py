@@ -7,10 +7,10 @@ from app import db
 import pytz
 from bs4 import BeautifulSoup
 
-# Configure logging (adjust as needed for your application)
+# Configure logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set the desired logging level
-handler = logging.StreamHandler() # Or file handler for production
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -37,29 +37,29 @@ class Article(db.Model):
     publication_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     sources = db.relationship('Source', backref='article', lazy=True)
-    forum_summary = db.Column(db.Text)  # New field for forum discussions
+    forum_summary = db.Column(db.Text)
 
     # Publishing workflow columns
-    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, scheduled, published
-    scheduled_publish_date = db.Column(db.DateTime)
+    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, generating, published, failed
     published_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC), onupdate=lambda: datetime.now(pytz.UTC))
 
     @property
     def is_published(self):
         return self.status == 'published'
 
     @property
-    def is_scheduled(self):
-        return self.status == 'scheduled'
+    def is_generating(self):
+        return self.status == 'generating'
+
+    @property
+    def has_failed(self):
+        return self.status == 'failed'
 
     def publish(self):
         self.status = 'published'
         self.published_date = datetime.now(pytz.UTC)
-        db.session.commit()
-
-    def schedule(self, publish_date):
-        self.status = 'scheduled'
-        self.scheduled_publish_date = publish_date
         db.session.commit()
 
     @property
@@ -84,10 +84,8 @@ class Article(db.Model):
             return None
         try:
             soup = BeautifulSoup(self.content, 'lxml')
-            # Look for the overview content div
             overview = soup.find('div', class_='overview-section')
             if overview:
-                # Get the actual content div inside overview section
                 overview_content = overview.find('div', class_='overview-content')
                 if overview_content:
                     return overview_content.get_text(strip=True)
@@ -95,56 +93,6 @@ class Article(db.Model):
         except Exception as e:
             logger.error(f"Error extracting brief summary: {e}", exc_info=True)
             return None
-
-    @property
-    def magicians_discussions(self):
-        """Extract Ethereum Magicians discussions."""
-        try:
-            if not self.forum_summary:
-                logger.info("No forum summary available")
-                return '<div class="alert alert-info">No forum discussions available for this period.</div>'
-
-            soup = BeautifulSoup(self.forum_summary, 'lxml')
-            discussions = []
-
-            # Look for discussions in both formats
-            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
-                if 'ethereum-magicians.org' in str(item):
-                    discussions.append(str(item))
-
-            if discussions:
-                return ''.join(discussions)
-
-            return '<div class="alert alert-info">No discussions found on ethereum-magicians.org for this period.</div>'
-
-        except Exception as e:
-            logger.error(f"Error processing magicians discussions: {str(e)}", exc_info=True)
-            return '<div class="alert alert-warning">Unable to load forum discussions at this time.</div>'
-
-    @property
-    def ethresearch_discussions(self):
-        """Extract Ethereum Research discussions."""
-        try:
-            if not self.forum_summary:
-                logger.info("No forum summary available")
-                return '<div class="alert alert-info">No research discussions available for this period.</div>'
-
-            soup = BeautifulSoup(self.forum_summary, 'lxml')
-            discussions = []
-
-            # Look for discussions in both formats
-            for item in soup.find_all(['div', 'section'], class_=['forum-discussion-item', 'forum-section', 'forum-discussion-summary']):
-                if 'ethresear.ch' in str(item):
-                    discussions.append(str(item))
-
-            if discussions:
-                return ''.join(discussions)
-
-            return '<div class="alert alert-info">No discussions found on ethresear.ch for this period.</div>'
-
-        except Exception as e:
-            logger.error(f"Error processing research discussions: {str(e)}", exc_info=True)
-            return '<div class="alert alert-warning">Unable to load research discussions at this time.</div>'
 
     @property
     def repository_updates(self):
@@ -181,7 +129,7 @@ class Source(db.Model):
     url = db.Column(db.String(500), nullable=False)
     type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(200))
-    repository = db.Column(db.String(100), nullable=False)  # Added repository field
+    repository = db.Column(db.String(100), nullable=False)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     fetch_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
 

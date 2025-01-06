@@ -147,6 +147,20 @@ class ContentService:
             elif current_section == 'tech' and part:
                 tech_highlights.append(part)
             elif current_section == 'next' and part:
+                if part.startswith('- '):
+                    next_steps.extend([step.strip() for step in part.split('\n')])
+                else:
+                    next_steps.append(part)
+            elif not current_section and len(brief_summary) < 700:
+                brief_summary += ' ' + part
+
+        return {
+            'title': title,
+            'brief_summary': brief_summary.strip(),
+            'repo_updates': repo_updates,
+            'tech_highlights': tech_highlights,
+            'next_steps': next_steps
+        }
 
     def _generate_bullet_points(self, content: Dict) -> List[str]:
         """Generate bullet points summarizing the article content."""
@@ -182,31 +196,16 @@ class ContentService:
             if not response or not hasattr(response, 'choices') or not response.choices:
                 return ["Summary generation in progress..."]
 
-            bullet_points = [point.strip().lstrip('•-* ') for point in 
-                           response.choices[0].message.content.strip().split('\n') 
+            bullet_points = [point.strip().lstrip('•-* ') for point in
+                           response.choices[0].message.content.strip().split('\n')
                            if point.strip()]
-            
+
             return bullet_points
 
         except Exception as e:
             logger.error(f"Error generating bullet points: {str(e)}")
             return ["Summary generation in progress..."]
 
-
-                if part.startswith('- '):
-                    next_steps.extend([step.strip() for step in part.split('\n')])
-                else:
-                    next_steps.append(part)
-            elif not current_section and len(brief_summary) < 700:
-                brief_summary += ' ' + part
-
-        return {
-            'title': title,
-            'brief_summary': brief_summary.strip(),
-            'repo_updates': repo_updates,
-            'tech_highlights': tech_highlights,
-            'next_steps': next_steps
-        }
 
     def _generate_overview_summary(self, content: Dict) -> str:
         """Generate a concise overview summary of the article content."""
@@ -265,7 +264,7 @@ class ContentService:
 
             # Generate bullet points
             bullet_points = self._generate_bullet_points(summary_data)
-            
+
             article_html = f"""
                 <article class="ethereum-article">
                     <div class="bullet-points mb-4">
