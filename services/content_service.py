@@ -324,12 +324,21 @@ class ContentService:
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
+        # Check environment
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
 
         try:
             current_date = datetime.now(pytz.UTC)
+            
+            # In production, only allow generation of current week's article
+            if is_production:
+                if publication_date and publication_date < current_date - timedelta(days=7):
+                    logger.error("Cannot generate past articles in production")
+                    return None
 
             # Enhanced logging for publication date handling
             logger.info(f"Starting article generation for date: {publication_date}")

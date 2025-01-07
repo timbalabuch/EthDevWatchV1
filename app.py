@@ -67,6 +67,8 @@ def load_user(user_id):
 def cleanup_future_articles():
     """Remove any articles with future dates in development environment"""
     try:
+        # Strict production check
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
         if is_production:
             logger.warning("Cleanup operation attempted in production - skipping")
             return
