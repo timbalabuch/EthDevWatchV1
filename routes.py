@@ -65,14 +65,21 @@ def index() -> str:
         logger.info(f"Total published articles in database: {total_articles}")
 
         # Paginate the results
-        paginated_articles = query.paginate(page=page, per_page=per_page, error_out=False)
+        paginated_articles = query.paginate(page=page, per_per=per_page, error_out=False)
 
         if paginated_articles and paginated_articles.items:
             logger.info(f"Found {len(paginated_articles.items)} articles on page {page}")
             # Get the first article as current week's article only on first page
             current_week_article = paginated_articles.items[0] if page == 1 else None
-            # Get the rest as other articles
-            other_articles = paginated_articles
+            
+            # Create a new query excluding the current week article
+            if current_week_article and page == 1:
+                other_query = Article.query.filter_by(status='published')\
+                    .filter(Article.id != current_week_article.id)\
+                    .order_by(Article.publication_date.desc())
+                other_articles = other_query.paginate(page=page, per_page=per_page, error_out=False)
+            else:
+                other_articles = paginated_articles
 
             if current_week_article:
                 logger.info(f"Current week article: {current_week_article.title}")
