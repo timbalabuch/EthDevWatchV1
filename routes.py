@@ -65,7 +65,7 @@ def index() -> str:
         logger.info(f"Total published articles in database: {total_articles}")
 
         # Paginate the results
-        paginated_articles = query.paginate(page=page, per_per=per_page, error_out=False)
+        paginated_articles = query.paginate(page=page, per_page=per_page, error_out=False)
 
         if paginated_articles and paginated_articles.items:
             logger.info(f"Found {len(paginated_articles.items)} articles on page {page}")
