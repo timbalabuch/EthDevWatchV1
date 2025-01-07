@@ -17,6 +17,12 @@ logger = logging.getLogger(__name__)
 
 def update_forum_summaries():
     """Update forum summaries for articles."""
+    # Check environment
+    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+    if is_production:
+        logger.error("Cannot update forum summaries in production environment")
+        return False
+
     try:
         with app.app_context():
             # Get articles ordered by date, focusing on recent ones first
@@ -26,7 +32,7 @@ def update_forum_summaries():
 
             if not articles:
                 logger.info("No articles found needing forum summaries")
-                return
+                return True
 
             forum_service = ForumService()
 
@@ -62,11 +68,19 @@ def update_forum_summaries():
                     continue
 
             logger.info("Successfully completed forum summaries update")
+            return True
 
     except Exception as e:
         logger.error(f"Error updating forum summaries: {str(e)}")
         raise
 
 if __name__ == '__main__':
+    # Check environment before running
+    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+    if is_production:
+        logger.error("This script cannot be run in production environment")
+        sys.exit(1)
+
     logger.info("Starting forum summaries update")
-    update_forum_summaries()
+    success = update_forum_summaries()
+    sys.exit(0 if success else 1)

@@ -61,7 +61,14 @@ def get_missing_weeks():
 def generate_sample_articles():
     """Generate articles for missing weeks"""
     try:
+        # Check if we're in production environment
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        if is_production:
+            logger.error("Cannot generate sample articles in production environment")
+            return False
+
         logger.info("=== Starting Sample Data Generation ===")
+        logger.info("Running in development environment - proceeding with sample data generation")
 
         # Find which weeks need articles
         missing_weeks = get_missing_weeks()
@@ -94,7 +101,7 @@ def generate_sample_articles():
                 try:
                     logger.info(f"=== Generating article for week {monday.strftime('%Y-%m-%d')} ===")
 
-                    # Add delay between article generations to handle rate limits
+                    # Add delay between article generations
                     if success_count > 0:
                         delay = 30  # 30 seconds between generations
                         logger.info(f"Waiting {delay} seconds before generating next article...")
@@ -122,6 +129,12 @@ def generate_sample_articles():
         return False
 
 if __name__ == "__main__":
+    # Check environment before running
+    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+    if is_production:
+        logger.error("This script cannot be run in production environment")
+        sys.exit(1)
+
     print("\n=== Starting Sample Data Generation Script ===\n")
     success = generate_sample_articles()
     exit_code = 0 if success else 1
