@@ -483,6 +483,7 @@ class ContentService:
                 published_date=current_date,
                 forum_summary=forum_summary if forum_summary else forum_error
             )
+            article.generate_slug()
 
             # Add sources
             for item in github_content:
