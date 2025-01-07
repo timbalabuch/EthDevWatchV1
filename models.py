@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -160,6 +160,17 @@ class Article(db.Model):
         if not steps:
             return []
         return [step.get_text(strip=True) for step in steps.find_all('li')]
+
+    def generate_slug(self):
+        """Generate URL-friendly slug from week range."""
+        if not self.custom_url:
+            # Get Monday of the week
+            monday = self.publication_date - timedelta(days=self.publication_date.weekday())
+            monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Get Sunday of the week
+            sunday = monday + timedelta(days=6)
+            # Format as week-of-YYYY-MM-DD
+            self.custom_url = f"week-of-{monday.strftime('%Y-%m-%d')}"
 
 
 class Source(db.Model):
