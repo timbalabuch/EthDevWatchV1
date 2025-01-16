@@ -370,8 +370,13 @@ def generate_single_article():
             status = generation_service.get_generation_status()
             if status.get("is_generating"):
                 flash('Another article is currently being generated. Please wait.', 'warning')
+            elif not os.environ.get('REPLIT_DEPLOYMENT'):
+                flash('Cannot generate articles without deployment flag. Please deploy first.', 'error')
+            elif not os.environ.get('DATABASE_URL'):
+                flash('Database URL not configured. Check environment variables.', 'error')
             else:
-                flash('Failed to start article generation. Check the dashboard for errors.', 'error')
+                flash('Failed to start article generation. Check logs for details.', 'error')
+            logger.error(f"Article generation failed. Environment: REPLIT_DEPLOYMENT={os.environ.get('REPLIT_DEPLOYMENT')}, DATABASE_URL={'set' if os.environ.get('DATABASE_URL') else 'not set'}")
 
     except Exception as e:
         logger.error(f"Error starting article generation: {str(e)}")
