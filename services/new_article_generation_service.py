@@ -122,7 +122,19 @@ class NewArticleGenerationService:
             target_date = self.get_target_date(target_date)
             logger.info(f"Starting article generation for week of {target_date.strftime('%Y-%m-%d')}")
 
-            # Check for conflicts and prevent regeneration on deployment
+            # Environment checks
+            is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+            is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
+
+            logger.info(f"Environment: Production={is_production}, Deployment={is_deployment}")
+
+            # Check database configuration
+            if not os.environ.get('DATABASE_URL'):
+                error_msg = "Database URL not configured. Check environment variables."
+                logger.error(error_msg)
+                return None
+
+            # Check for conflicts and prevent regeneration
             has_conflict, msg, existing_article = self.check_conflicts(target_date)
             if has_conflict or existing_article:
                 logger.warning(f"Article already exists or conflict found: {msg}")
@@ -156,11 +168,11 @@ class NewArticleGenerationService:
                 return generated_article
 
             except Exception as e:
-                logger.error(f"Error during article generation: {str(e)}")
+                logger.error(f"Error during article generation: {str(e)}", exc_info=True)
                 return None
 
         except Exception as e:
-            logger.error(f"Fatal error in generate_article: {str(e)}")
+            logger.error(f"Fatal error in generate_article: {str(e)}", exc_info=True)
             return None
 
     def update_article_status(self, article: Article, status: str, error: Optional[str] = None) -> None:

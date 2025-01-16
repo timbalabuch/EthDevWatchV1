@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Tuple, Union
+import os
 
 from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
@@ -71,7 +72,7 @@ def index() -> str:
             logger.info(f"Found {len(paginated_articles.items)} articles on page {page}")
             # Get the first article as current week's article only on first page
             current_week_article = paginated_articles.items[0] if page == 1 else None
-            
+
             # Create a new query excluding the current week article
             if current_week_article and page == 1:
                 other_query = Article.query.filter_by(status='published')\
@@ -91,14 +92,14 @@ def index() -> str:
             other_articles = None
 
         return render_template('index.html', 
-                          current_week_article=current_week_article,
-                          other_articles=other_articles)
+                              current_week_article=current_week_article,
+                              other_articles=other_articles)
 
     except Exception as e:
         logger.error(f"Error retrieving articles: {str(e)}", exc_info=True)
         return render_template('index.html', 
-                          current_week_article=None,
-                          other_articles=None)
+                              current_week_article=None,
+                              other_articles=None)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login() -> Union[str, Response]:
@@ -353,12 +354,21 @@ def generate_single_article():
                 # Adjust to the Monday of the selected week
                 generation_date = generation_date - timedelta(days=generation_date.weekday())
             generation_date = pytz.UTC.localize(generation_date)
-        except ValueError:
+        except ValueError as e:
+            logger.error(f"Invalid date format: {str(e)}")
             flash('Invalid date format.', 'error')
             return redirect(url_for('admin_dashboard'))
 
         # Initialize new article generation service
         generation_service = NewArticleGenerationService()
+
+        # Log environment information
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
+        has_db_url = bool(os.environ.get('DATABASE_URL'))
+
+        logger.info(f"Article generation request - Environment: Production={is_production}, "
+                   f"Deployment={is_deployment}, Database configured={has_db_url}")
 
         # Try to generate an article for the specified date
         article = generation_service.generate_article(generation_date)
@@ -370,16 +380,19 @@ def generate_single_article():
             status = generation_service.get_generation_status()
             if status.get("is_generating"):
                 flash('Another article is currently being generated. Please wait.', 'warning')
-            elif not os.environ.get('REPLIT_DEPLOYMENT'):
-                flash('Cannot generate articles without deployment flag. Please deploy first.', 'error')
-            elif not os.environ.get('DATABASE_URL'):
-                flash('Database URL not configured. Check environment variables.', 'error')
             else:
-                flash('Failed to start article generation. Check logs for details.', 'error')
-            logger.error(f"Article generation failed. Environment: REPLIT_DEPLOYMENT={os.environ.get('REPLIT_DEPLOYMENT')}, DATABASE_URL={'set' if os.environ.get('DATABASE_URL') else 'not set'}")
+                error_details = []
+                if not os.environ.get('DATABASE_URL'):
+                    error_details.append("Database URL not configured")
+                if status.get("error"):
+                    error_details.append(status.get("error"))
+
+                error_message = " | ".join(error_details) if error_details else "Unknown error occurred"
+                flash(f'Failed to start article generation: {error_message}', 'error')
+                logger.error(f"Article generation failed: {error_message}")
 
     except Exception as e:
-        logger.error(f"Error starting article generation: {str(e)}")
+        logger.error(f"Error starting article generation: {str(e)}", exc_info=True)
         flash('An error occurred while starting article generation.', 'error')
 
     return redirect(url_for('admin_dashboard'))
