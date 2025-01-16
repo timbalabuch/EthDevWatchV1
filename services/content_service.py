@@ -324,35 +324,17 @@ class ContentService:
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
-        # Strict environment check
-        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
-        is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
-        
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
-            
-        # Environment protection
-        if is_production:
-            if not is_deployment:
-                logger.error("Cannot generate articles in production from local environment")
-                return None
-            if not os.environ.get('DATABASE_URL'):
-                logger.error("Production database URL not configured")
-                return None
-        else:
-            if is_deployment:
-                logger.error("Deployment detected in development environment")
-                return None
+
+        # Database protection
+        if not os.environ.get('DATABASE_URL'):
+            logger.error("Database URL not configured")
+            return None
 
         try:
             current_date = datetime.now(pytz.UTC)
-            
-            # In production, only allow generation of current week's article
-            if is_production:
-                if publication_date and publication_date < current_date - timedelta(days=7):
-                    logger.error("Cannot generate past articles in production")
-                    return None
 
             # Enhanced logging for publication date handling
             logger.info(f"Starting article generation for date: {publication_date}")

@@ -116,17 +116,11 @@ class NewArticleGenerationService:
             }
 
     def generate_article(self, target_date: Optional[datetime] = None) -> Optional[Article]:
-        """Generate a new article with improved status tracking."""
+        """Generate a new article with improved error handling."""
         try:
             # Calculate target date
             target_date = self.get_target_date(target_date)
             logger.info(f"Starting article generation for week of {target_date.strftime('%Y-%m-%d')}")
-
-            # Environment checks
-            is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
-            is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
-
-            logger.info(f"Environment: Production={is_production}, Deployment={is_deployment}")
 
             # Check database configuration
             if not os.environ.get('DATABASE_URL'):
@@ -148,7 +142,7 @@ class NewArticleGenerationService:
                 )
 
                 if not github_content:
-                    logger.warning("No content found for the specified week")
+                    logger.warning(f"No content found for the week of {target_date.strftime('%Y-%m-%d')}")
                     return None
 
                 # Generate the article content
