@@ -324,12 +324,18 @@ class ContentService:
 
     def generate_weekly_summary(self, github_content: List[Dict], publication_date: Optional[datetime] = None) -> Optional[Article]:
         """Generate a weekly summary article from GitHub content."""
-        # Check environment
+        # Strict environment check
         is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
         
         if not github_content:
             logger.error("No GitHub content provided for summary generation")
             raise ValueError("GitHub content is required for summary generation")
+            
+        # Prevent local data overwriting production
+        if is_production and not is_deployment:
+            logger.error("Cannot generate articles in production from local environment")
+            return None
 
         try:
             current_date = datetime.now(pytz.UTC)
