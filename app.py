@@ -23,9 +23,15 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "ethereum-weekly-secret")
 
-# Determine environment
+# Strict environment validation
 is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
 logger.info(f"Running in {'production' if is_production else 'development'} environment")
+logger.info(f"Deployment status: {'deployment' if is_deployment else 'local'}")
+
+if is_production and not is_deployment:
+    logger.error("Production environment detected without deployment flag - preventing startup")
+    raise EnvironmentError("Cannot run production environment locally")
 
 # Configure database URL based on environment
 if is_production:
