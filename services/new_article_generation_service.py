@@ -22,7 +22,8 @@ class NewArticleGenerationService:
         try:
             api_key = os.environ.get('OPENAI_API_KEY')
             if not api_key:
-                raise ValueError("OPENAI_API_KEY environment variable is not set")
+                logger.error("OPENAI_API_KEY environment variable is not set")
+                raise ValueError("OpenAI API key not configured. Please set up environment variables.")
 
             self.openai = OpenAI(api_key=api_key)
             self.model = "gpt-4"  # Using stable model
