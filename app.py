@@ -46,6 +46,29 @@ else:
     database_url = "sqlite:///development.db"
     logger.info("Using local SQLite database for development")
 
+# Strict environment validation
+is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+is_deployment = os.environ.get('REPLIT_DEPLOYMENT') == '1'
+logger.info(f"Running in {'production' if is_production else 'development'} environment")
+logger.info(f"Deployment status: {'deployment' if is_deployment else 'local'}")
+
+if is_production and not is_deployment:
+    logger.error("Production environment detected without deployment flag - preventing startup")
+    raise EnvironmentError("Cannot run production environment locally")
+
+# Configure database URL based on environment
+if is_production:
+    # Use PostgreSQL in production
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        logger.error("DATABASE_URL not set in production environment")
+        raise ValueError("DATABASE_URL must be set in production environment")
+    logger.info("Using production PostgreSQL database")
+else:
+    # Use SQLite for local development
+    database_url = "sqlite:///development.db"
+    logger.info("Using local SQLite database for development")
+
 # Configure SQLAlchemy
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
