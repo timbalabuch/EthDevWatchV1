@@ -157,10 +157,28 @@ def admin_dashboard() -> str:
     logger.info(f"Admin dashboard accessed by {current_user.email}")
     return render_template('admin/dashboard.html', articles=articles, backups=backups)
 
-@app.route('/admin/backup', methods=['POST'])
+@app.route('/admin/backups')
 @login_required
 @admin_required
-def backup_database_route():
+def backup_management():
+    """Render backup management page"""
+    backups = []
+    for filename in get_backup_files():
+        try:
+            stat = os.stat(filename)
+            created = datetime.fromtimestamp(stat.st_ctime, pytz.UTC)
+            backups.append({
+                'filename': filename,
+                'created': created.strftime('%Y-%m-%d %H:%M:%S UTC')
+            })
+        except OSError:
+            continue
+    return render_template('admin/backup_management.html', backups=backups)
+
+@app.route('/admin/backup/create', methods=['POST'])
+@login_required
+@admin_required
+def create_backup():
     """Handle database backup creation"""
     try:
         backup_database()
@@ -168,17 +186,17 @@ def backup_database_route():
     except Exception as e:
         logger.error(f"Error creating backup: {str(e)}")
         flash('Error creating backup', 'error')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('backup_management'))
 
-@app.route('/admin/restore', methods=['POST'])
+@app.route('/admin/backup/restore', methods=['POST'])
 @login_required
 @admin_required
-def restore_database_route():
+def restore_backup():
     """Handle database restore"""
     backup_file = request.form.get('backup_file')
     if not backup_file:
         flash('No backup file selected', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('backup_management'))
     
     try:
         restore_database(backup_file)
@@ -186,7 +204,25 @@ def restore_database_route():
     except Exception as e:
         logger.error(f"Error restoring backup: {str(e)}")
         flash('Error restoring backup', 'error')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('backup_management'))
+
+@app.route('/admin/backup/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_backup():
+    """Handle backup deletion"""
+    backup_file = request.form.get('backup_file')
+    if not backup_file:
+        flash('No backup file selected', 'error')
+        return redirect(url_for('backup_management'))
+    
+    try:
+        os.remove(backup_file)
+        flash('Backup deleted successfully', 'success')
+    except Exception as e:
+        logger.error(f"Error deleting backup {backup_file}: {str(e)}")
+        flash('Error deleting backup', 'error')
+    return redirect(url_for('backup_management'))
 
 @app.route('/admin/article/new', methods=['GET', 'POST'])
 @login_required
