@@ -141,8 +141,10 @@ def logout() -> Response:
 
 def get_backup_files() -> List[str]:
     """Get list of available backup files"""
+    backup_dir = 'instance/backups'
+    os.makedirs(backup_dir, exist_ok=True)
     dev_backups = glob.glob('backup_dev_*.db')
-    prod_backups = glob.glob('backup_prod_*.sql')
+    prod_backups = glob.glob(os.path.join(backup_dir, 'backup_prod_*.sql'))
     return sorted(dev_backups + prod_backups, reverse=True)
 
 @app.route('/admin')

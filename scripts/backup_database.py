@@ -30,8 +30,11 @@ def backup_database():
                     raise ValueError("DATABASE_URL not set in production")
                 
                 backup_file = f'backup_prod_{timestamp}.sql'
-                os.system(f'pg_dump {database_url} > {backup_file}')
-                logger.info(f"Production database backed up to {backup_file}")
+                backup_dir = 'instance/backups'
+                os.makedirs(backup_dir, exist_ok=True)
+                backup_path = os.path.join(backup_dir, backup_file)
+                os.system(f'pg_dump {database_url} > {backup_path}')
+                logger.info(f"Production database backed up to {backup_path}")
             else:
                 # For SQLite, just copy the file
                 src = "instance/development.db"
