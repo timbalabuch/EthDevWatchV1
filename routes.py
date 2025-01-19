@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 import os
+import glob
+from scripts.backup_database import backup_database
+from scripts.restore_database import restore_database
 
 from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
@@ -136,14 +139,52 @@ def logout() -> Response:
     logout_user()
     return redirect(url_for('index'))
 
+def get_backup_files() -> List[str]:
+    """Get list of available backup files"""
+    dev_backups = glob.glob('backup_dev_*.db')
+    prod_backups = glob.glob('backup_prod_*.sql')
+    return sorted(dev_backups + prod_backups, reverse=True)
+
 @app.route('/admin')
 @login_required
 @admin_required
 def admin_dashboard() -> str:
     """Render the admin dashboard."""
     articles = Article.query.order_by(Article.publication_date.desc()).all()
+    backups = get_backup_files()
     logger.info(f"Admin dashboard accessed by {current_user.email}")
-    return render_template('admin/dashboard.html', articles=articles)
+    return render_template('admin/dashboard.html', articles=articles, backups=backups)
+
+@app.route('/admin/backup', methods=['POST'])
+@login_required
+@admin_required
+def backup_database_route():
+    """Handle database backup creation"""
+    try:
+        backup_database()
+        flash('Database backup created successfully', 'success')
+    except Exception as e:
+        logger.error(f"Error creating backup: {str(e)}")
+        flash('Error creating backup', 'error')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/restore', methods=['POST'])
+@login_required
+@admin_required
+def restore_database_route():
+    """Handle database restore"""
+    backup_file = request.form.get('backup_file')
+    if not backup_file:
+        flash('No backup file selected', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        restore_database(backup_file)
+        flash('Database restored successfully', 'success')
+    except Exception as e:
+        logger.error(f"Error restoring backup: {str(e)}")
+        flash('Error restoring backup', 'error')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/article/new', methods=['GET', 'POST'])
 @login_required
