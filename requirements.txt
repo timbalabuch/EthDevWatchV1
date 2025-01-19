@@ -9,7 +9,7 @@ email-validator>=2.2.0
 apscheduler>=3.11.0
 pygithub>=2.5.0
 pytz
-replit-object-storage>=2024.2
+replit-object-storage>=1.0.2
 twilio>=9.4.1
 flask-login>=0.6.3
 oauthlib>=3.2.2
