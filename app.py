@@ -41,10 +41,21 @@ if is_production:
         logger.error("DATABASE_URL not set in production environment")
         raise ValueError("DATABASE_URL must be set in production environment")
     logger.info("Using production PostgreSQL database")
+
+    # Configure SQLAlchemy for PostgreSQL
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30
+    }
 else:
-    # Use SQLite for local development
+    # Use SQLite for local development only
     database_url = "sqlite:///development.db"
     logger.info("Using local SQLite database for development")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
 
 # Strict environment validation
 is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
@@ -64,19 +75,23 @@ if is_production:
         logger.error("DATABASE_URL not set in production environment")
         raise ValueError("DATABASE_URL must be set in production environment")
     logger.info("Using production PostgreSQL database")
+
+    # Configure SQLAlchemy for PostgreSQL
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30
+    }
 else:
-    # Use SQLite for local development
+    # Use SQLite for local development only
     database_url = "sqlite:///development.db"
     logger.info("Using local SQLite database for development")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
 
-# Configure SQLAlchemy
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_pre_ping": True,
-    "pool_size": 5,
-    "max_overflow": 10,
-    "pool_timeout": 30
-} if is_production else {}  # Only use connection pool in production
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize extensions
