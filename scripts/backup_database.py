@@ -5,11 +5,12 @@ import shutil
 from datetime import datetime
 import pytz
 import logging
+from replit import db as replit_db
+from replit.web import Object
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app, db
 
-# Setup logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -24,19 +25,26 @@ def backup_database():
             timestamp = datetime.now(pytz.UTC).strftime('%Y%m%d_%H%M%S')
             
             if is_production:
-                # For PostgreSQL, use pg_dump
                 database_url = os.environ.get("DATABASE_URL")
                 if not database_url:
                     raise ValueError("DATABASE_URL not set in production")
                 
                 backup_file = f'backup_prod_{timestamp}.sql'
-                backup_dir = 'instance/backups'
-                os.makedirs(backup_dir, exist_ok=True)
-                backup_path = os.path.join(backup_dir, backup_file)
-                os.system(f'pg_dump {database_url} > {backup_path}')
-                logger.info(f"Production database backed up to {backup_path}")
+                temp_path = f'/tmp/{backup_file}'
+                
+                # Create backup using pg_dump
+                os.system(f'pg_dump {database_url} > {temp_path}')
+                
+                # Store in Object Storage
+                with open(temp_path, 'rb') as f:
+                    backup_data = f.read()
+                    obj = Object()
+                    obj.write(backup_data, backup_file)
+                
+                # Cleanup temp file
+                os.remove(temp_path)
+                logger.info(f"Production database backed up to Object Storage: {backup_file}")
             else:
-                # For SQLite, just copy the file
                 src = "instance/development.db"
                 backup_file = f'backup_dev_{timestamp}.db'
                 if os.path.exists(src):
