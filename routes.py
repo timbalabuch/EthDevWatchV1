@@ -273,6 +273,65 @@ def restore_backup():
         flash('Error restoring backup', 'error')
     return redirect(url_for('backup_management'))
 
+@app.route('/admin/backup/download/<filename>')
+@login_required
+@admin_required
+def download_backup(filename):
+    """Download a backup file"""
+    try:
+        # Get environment-specific backup directory
+        backup_dir = os.path.join('instance', 'backups')
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+        file_path = os.path.join(env_dir, filename)
+
+        if os.path.exists(file_path):
+            return send_file(file_path, as_attachment=True)
+        else:
+            flash('Backup file not found', 'error')
+            return redirect(url_for('backup_management'))
+    except Exception as e:
+        logger.error(f"Error downloading backup {filename}: {str(e)}")
+        flash('Error downloading backup', 'error')
+        return redirect(url_for('backup_management'))
+
+@app.route('/admin/backup/upload', methods=['POST'])
+@login_required
+@admin_required
+def upload_backup():
+    """Upload a backup file"""
+    try:
+        if 'backup_file' not in request.files:
+            flash('No file uploaded', 'error')
+            return redirect(url_for('backup_management'))
+            
+        file = request.files['backup_file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(url_for('backup_management'))
+
+        # Get environment-specific backup directory
+        backup_dir = os.path.join('instance', 'backups')
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+        os.makedirs(env_dir, exist_ok=True)
+
+        timestamp = datetime.now(pytz.UTC).strftime('%Y%m%d_%H%M%S')
+        prefix = 'backup_prod_' if is_production else 'backup_dev_'
+        extension = '.sql' if is_production else '.db'
+        new_filename = f"{prefix}{timestamp}{extension}"
+        file_path = os.path.join(env_dir, new_filename)
+        
+        file.save(file_path)
+        flash('Backup uploaded successfully', 'success')
+        logger.info(f"Backup uploaded: {new_filename}")
+        
+    except Exception as e:
+        logger.error(f"Error uploading backup: {str(e)}")
+        flash('Error uploading backup', 'error')
+    
+    return redirect(url_for('backup_management'))
+
 @app.route('/admin/backup/delete', methods=['POST'])
 @login_required
 @admin_required

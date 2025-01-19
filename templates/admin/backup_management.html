@@ -8,13 +8,26 @@
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
 
-    <!-- Create Backup Section -->
+    <!-- Create and Upload Backup Section -->
     <div class="card mb-4">
         <div class="card-body">
-            <h3>Create Backup</h3>
-            <form action="{{ url_for('create_backup') }}" method="POST">
-                <button type="submit" class="btn btn-primary">Create New Backup</button>
-            </form>
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Create Backup</h3>
+                    <form action="{{ url_for('create_backup') }}" method="POST">
+                        <button type="submit" class="btn btn-primary">Create New Backup</button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h3>Upload Backup</h3>
+                    <form action="{{ url_for('upload_backup') }}" method="POST" enctype="multipart/form-data">
+                        <div class="input-group">
+                            <input type="file" class="form-control" name="backup_file" accept=".db,.sql">
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -39,6 +52,9 @@
                             <td>{{ 'Production' if 'prod' in backup.filename else 'Development' }}</td>
                             <td>{{ backup.created }}</td>
                             <td>
+                                <a href="{{ url_for('download_backup', filename=backup.filename) }}" class="btn btn-info btn-sm">
+                                    Download
+                                </a>
                                 <form action="{{ url_for('restore_backup') }}" method="POST" class="d-inline">
                                     <input type="hidden" name="backup_file" value="{{ backup.filename }}">
                                     <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Are you sure you want to restore this backup? Current data will be replaced.')">
