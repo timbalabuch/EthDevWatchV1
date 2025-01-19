@@ -141,31 +141,33 @@ def logout() -> Response:
 
 def get_backup_files() -> List[str]:
     """Get list of available backup files"""
-    # Create backup directories if they don't exist
-    backup_dir = os.path.join('instance', 'backups')
-    os.makedirs(backup_dir, exist_ok=True)
+    try:
+        # Create backup directories if they don't exist
+        backup_dir = os.path.join(os.getcwd(), 'instance', 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
 
-    # Create separate directories for dev and prod backups
-    dev_backup_dir = os.path.join(backup_dir, 'dev')
-    prod_backup_dir = os.path.join(backup_dir, 'prod')
-    os.makedirs(dev_backup_dir, exist_ok=True)
-    os.makedirs(prod_backup_dir, exist_ok=True)
+        # Create separate directories for dev and prod backups
+        dev_backup_dir = os.path.join(backup_dir, 'dev')
+        prod_backup_dir = os.path.join(backup_dir, 'prod')
+        os.makedirs(dev_backup_dir, exist_ok=True)
+        os.makedirs(prod_backup_dir, exist_ok=True)
 
-    # Get environment
-    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
-    current_dir = prod_backup_dir if is_production else dev_backup_dir
+        # Get environment and set appropriate directory
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        current_dir = prod_backup_dir if is_production else dev_backup_dir
 
-    # List backup files from the appropriate directory
-    dev_backups = glob.glob(os.path.join(dev_backup_dir, 'backup_dev_*.db'))
-    prod_backups = glob.glob(os.path.join(prod_backup_dir, 'backup_prod_*.sql'))
+        # List backup files with full paths
+        if is_production:
+            backups = glob.glob(os.path.join(prod_backup_dir, 'backup_prod_*.sql'))
+            logger.info(f"Found {len(backups)} production backups in {prod_backup_dir}")
+        else:
+            backups = glob.glob(os.path.join(dev_backup_dir, 'backup_dev_*.db'))
+            logger.info(f"Found {len(backups)} development backups in {dev_backup_dir}")
 
-    # Return only production backups in production, dev backups in development
-    if is_production:
-        logger.info(f"Found {len(prod_backups)} production backups")
-        return sorted(prod_backups, reverse=True)
-    else:
-        logger.info(f"Found {len(dev_backups)} development backups")
-        return sorted(dev_backups, reverse=True)
+        return sorted(backups, reverse=True)
+    except Exception as e:
+        logger.error(f"Error listing backup files: {str(e)}", exc_info=True)
+        return []
 
 @app.route('/admin')
 @login_required
@@ -182,29 +184,33 @@ def admin_dashboard() -> str:
 @admin_required
 def backup_management():
     """Render backup management page"""
-    backups = []
-    backup_dir = os.path.join('instance', 'backups')
-    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
-    env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+    try:
+        backups = []
+        backup_files = get_backup_files()
 
-    # Ensure backup directory exists
-    os.makedirs(env_dir, exist_ok=True)
+        for filename in backup_files:
+            try:
+                stat = os.stat(filename)
+                created = datetime.fromtimestamp(stat.st_ctime, pytz.UTC)
+                backups.append({
+                    'filename': os.path.basename(filename),
+                    'created': created.strftime('%Y-%m-%d %H:%M:%S UTC'),
+                    'size': f"{stat.st_size / 1024 / 1024:.2f} MB"
+                })
+            except OSError as e:
+                logger.error(f"Error accessing backup file {filename}: {str(e)}")
+                continue
 
-    for filename in get_backup_files():
-        try:
-            stat = os.stat(filename)
-            created = datetime.fromtimestamp(stat.st_ctime, pytz.UTC)
-            backups.append({
-                'filename': os.path.basename(filename),
-                'created': created.strftime('%Y-%m-%d %H:%M:%S UTC'),
-                'size': f"{stat.st_size / 1024 / 1024:.2f} MB"
-            })
-        except OSError as e:
-            logger.error(f"Error accessing backup file {filename}: {str(e)}")
-            continue
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_type = 'production' if is_production else 'development'
+        logger.info(f"Displaying {len(backups)} backups for {env_type}")
 
-    logger.info(f"Displaying {len(backups)} backups for {'production' if is_production else 'development'}")
-    return render_template('admin/backup_management.html', backups=backups)
+        return render_template('admin/backup_management.html', backups=backups)
+
+    except Exception as e:
+        logger.error(f"Error in backup management: {str(e)}", exc_info=True)
+        flash('Error loading backups', 'error')
+        return render_template('admin/backup_management.html', backups=[])
 
 @app.route('/admin/backup/create', methods=['POST'])
 @login_required
@@ -212,16 +218,27 @@ def backup_management():
 def create_backup():
     """Handle database backup creation"""
     try:
-        backup_dir = os.path.join('instance', 'backups')
+        # Get environment-specific backup directory
+        backup_dir = os.path.join(os.getcwd(), 'instance', 'backups')
         is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
         env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
 
         # Ensure backup directory exists
         os.makedirs(env_dir, exist_ok=True)
 
+        # Create backup
         backup_database()
-        flash('Database backup created successfully', 'success')
-        logger.info(f"Created new backup in {env_dir}")
+
+        # Log success and verify backup creation
+        backup_files = get_backup_files()
+        if backup_files:
+            latest_backup = os.path.basename(backup_files[0])
+            logger.info(f"Created new backup: {latest_backup} in {env_dir}")
+            flash('Database backup created successfully', 'success')
+        else:
+            logger.error("Backup file not found after creation")
+            flash('Backup created but file not found', 'warning')
+
     except Exception as e:
         logger.error(f"Error creating backup: {str(e)}", exc_info=True)
         flash('Error creating backup', 'error')
