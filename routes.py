@@ -141,11 +141,31 @@ def logout() -> Response:
 
 def get_backup_files() -> List[str]:
     """Get list of available backup files"""
-    backup_dir = 'instance/backups'
+    # Create backup directories if they don't exist
+    backup_dir = os.path.join('instance', 'backups')
     os.makedirs(backup_dir, exist_ok=True)
-    dev_backups = glob.glob('backup_dev_*.db')
-    prod_backups = glob.glob(os.path.join(backup_dir, 'backup_prod_*.sql'))
-    return sorted(dev_backups + prod_backups, reverse=True)
+
+    # Create separate directories for dev and prod backups
+    dev_backup_dir = os.path.join(backup_dir, 'dev')
+    prod_backup_dir = os.path.join(backup_dir, 'prod')
+    os.makedirs(dev_backup_dir, exist_ok=True)
+    os.makedirs(prod_backup_dir, exist_ok=True)
+
+    # Get environment
+    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+    current_dir = prod_backup_dir if is_production else dev_backup_dir
+
+    # List backup files from the appropriate directory
+    dev_backups = glob.glob(os.path.join(dev_backup_dir, 'backup_dev_*.db'))
+    prod_backups = glob.glob(os.path.join(prod_backup_dir, 'backup_prod_*.sql'))
+
+    # Return only production backups in production, dev backups in development
+    if is_production:
+        logger.info(f"Found {len(prod_backups)} production backups")
+        return sorted(prod_backups, reverse=True)
+    else:
+        logger.info(f"Found {len(dev_backups)} development backups")
+        return sorted(dev_backups, reverse=True)
 
 @app.route('/admin')
 @login_required
@@ -163,16 +183,27 @@ def admin_dashboard() -> str:
 def backup_management():
     """Render backup management page"""
     backups = []
+    backup_dir = os.path.join('instance', 'backups')
+    is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+    env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+
+    # Ensure backup directory exists
+    os.makedirs(env_dir, exist_ok=True)
+
     for filename in get_backup_files():
         try:
             stat = os.stat(filename)
             created = datetime.fromtimestamp(stat.st_ctime, pytz.UTC)
             backups.append({
-                'filename': filename,
-                'created': created.strftime('%Y-%m-%d %H:%M:%S UTC')
+                'filename': os.path.basename(filename),
+                'created': created.strftime('%Y-%m-%d %H:%M:%S UTC'),
+                'size': f"{stat.st_size / 1024 / 1024:.2f} MB"
             })
-        except OSError:
+        except OSError as e:
+            logger.error(f"Error accessing backup file {filename}: {str(e)}")
             continue
+
+    logger.info(f"Displaying {len(backups)} backups for {'production' if is_production else 'development'}")
     return render_template('admin/backup_management.html', backups=backups)
 
 @app.route('/admin/backup/create', methods=['POST'])
@@ -181,10 +212,18 @@ def backup_management():
 def create_backup():
     """Handle database backup creation"""
     try:
+        backup_dir = os.path.join('instance', 'backups')
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+
+        # Ensure backup directory exists
+        os.makedirs(env_dir, exist_ok=True)
+
         backup_database()
         flash('Database backup created successfully', 'success')
+        logger.info(f"Created new backup in {env_dir}")
     except Exception as e:
-        logger.error(f"Error creating backup: {str(e)}")
+        logger.error(f"Error creating backup: {str(e)}", exc_info=True)
         flash('Error creating backup', 'error')
     return redirect(url_for('backup_management'))
 
@@ -197,12 +236,23 @@ def restore_backup():
     if not backup_file:
         flash('No backup file selected', 'error')
         return redirect(url_for('backup_management'))
-    
+
     try:
-        restore_database(backup_file)
+        # Get the full path from the environment-specific backup directory
+        backup_dir = os.path.join('instance', 'backups')
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+        full_path = os.path.join(env_dir, backup_file)
+
+        if not os.path.exists(full_path):
+            flash('Backup file not found', 'error')
+            return redirect(url_for('backup_management'))
+
+        restore_database(full_path)
         flash('Database restored successfully', 'success')
+        logger.info(f"Restored backup from {full_path}")
     except Exception as e:
-        logger.error(f"Error restoring backup: {str(e)}")
+        logger.error(f"Error restoring backup: {str(e)}", exc_info=True)
         flash('Error restoring backup', 'error')
     return redirect(url_for('backup_management'))
 
@@ -215,12 +265,23 @@ def delete_backup():
     if not backup_file:
         flash('No backup file selected', 'error')
         return redirect(url_for('backup_management'))
-    
+
     try:
-        os.remove(backup_file)
+        # Get the full path from the environment-specific backup directory
+        backup_dir = os.path.join('instance', 'backups')
+        is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
+        env_dir = os.path.join(backup_dir, 'prod' if is_production else 'dev')
+        full_path = os.path.join(env_dir, backup_file)
+
+        if not os.path.exists(full_path):
+            flash('Backup file not found', 'error')
+            return redirect(url_for('backup_management'))
+
+        os.remove(full_path)
         flash('Backup deleted successfully', 'success')
+        logger.info(f"Deleted backup {full_path}")
     except Exception as e:
-        logger.error(f"Error deleting backup {backup_file}: {str(e)}")
+        logger.error(f"Error deleting backup {backup_file}: {str(e)}", exc_info=True)
         flash('Error deleting backup', 'error')
     return redirect(url_for('backup_management'))
 
