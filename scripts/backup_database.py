@@ -43,16 +43,20 @@ def backup_database():
                 os.remove(temp_path)
                 logger.info(f"Production database backed up to Object Storage: {backup_file}")
             else:
-                src = "instance/development.db"
-                backup_dir = os.path.join('instance', 'backups', 'dev')
+                src = os.path.join(os.getcwd(), "instance", "development.db")
+                backup_dir = os.path.join(os.getcwd(), "instance", "backups", "dev")
                 os.makedirs(backup_dir, exist_ok=True)
                 backup_file = f'backup_dev_{timestamp}.db'
                 backup_path = os.path.join(backup_dir, backup_file)
+                
                 if os.path.exists(src):
                     shutil.copy2(src, backup_path)
-                    logger.info(f"Development database backed up to {backup_path}")
+                    if os.path.exists(backup_path):
+                        logger.info(f"Development database backed up to {backup_path}")
+                    else:
+                        logger.error(f"Backup file not created at {backup_path}")
                 else:
-                    logger.warning("No development database found to backup")
+                    logger.warning(f"No development database found at {src}")
 
     except Exception as e:
         logger.error(f"Error backing up database: {str(e)}")
