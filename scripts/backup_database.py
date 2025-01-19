@@ -5,8 +5,7 @@ import shutil
 from datetime import datetime
 import pytz
 import logging
-from replit import db as replit_db
-from replit.web import Object
+from replit.object_storage import Client
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app, db
@@ -37,9 +36,8 @@ def backup_database():
                 
                 # Store in Object Storage
                 with open(temp_path, 'rb') as f:
-                    backup_data = f.read()
-                    obj = Object()
-                    obj.write(backup_data, backup_file)
+                    client = Client()
+                    client.upload_file(temp_path, backup_file)
                 
                 # Cleanup temp file
                 os.remove(temp_path)

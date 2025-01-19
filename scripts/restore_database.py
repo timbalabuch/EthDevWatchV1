@@ -3,8 +3,7 @@ import sys
 import os
 import shutil
 import logging
-from replit import db as replit_db
-from replit.web import Object
+from replit.object_storage import Client
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app
@@ -24,12 +23,9 @@ def restore_database(backup_file):
                     raise ValueError("DATABASE_URL not set in production")
                 
                 # Get from Object Storage
-                obj = Object()
+                client = Client()
                 temp_path = f'/tmp/{backup_file}'
-                
-                with open(temp_path, 'wb') as f:
-                    backup_data = obj.read(backup_file)
-                    f.write(backup_data)
+                client.download_file(backup_file, temp_path)
                 
                 # Restore from temp file
                 os.system(f'psql {database_url} < {temp_path}')
