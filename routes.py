@@ -6,7 +6,7 @@ import glob
 from scripts.backup_database import backup_database
 from scripts.restore_database import restore_database
 
-from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify
+from flask import render_template, abort, flash, redirect, url_for, request, Response, jsonify, send_file
 from flask_login import current_user, login_user, logout_user, login_required
 
 from app import app, db
