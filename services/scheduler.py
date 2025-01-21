@@ -48,7 +48,15 @@ def generate_weekly_article():
 
             if existing:
                 logger.info(f"Article already exists for week: {existing.title}")
-                return
+                if existing.status == 'published':
+                    logger.info("Article is already published, skipping generation")
+                    return
+                elif existing.status == 'generating':
+                    logger.info("Article is currently being generated, skipping")
+                    return
+                else:
+                    logger.info(f"Article exists but has status: {existing.status}")
+                    return
 
             # Initialize services
             github_service = GitHubService()
