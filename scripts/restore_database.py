@@ -17,6 +17,10 @@ def restore_database(backup_file):
         with app.app_context():
             is_production = os.environ.get('REPL_ENVIRONMENT') == 'production'
             
+            # Extra safeguard for production
+            if is_production and not backup_file.startswith('backup_prod_'):
+                raise ValueError("Cannot restore non-production backup to production environment")
+            
             if is_production:
                 database_url = os.environ.get("DATABASE_URL")
                 if not database_url:
