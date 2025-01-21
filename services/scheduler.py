@@ -84,13 +84,14 @@ def init_scheduler():
     """Initialize the scheduler with weekly article generation task"""
     scheduler = BackgroundScheduler()
 
-    # Schedule article generation every Monday at 9:00 UTC
+    # Schedule article generation only on Mondays at 9:00 UTC
     scheduler.add_job(
         generate_weekly_article,
         trigger=CronTrigger(day_of_week='mon', hour=9, minute=0),
         id='generate_weekly_article',
         name='Generate weekly Ethereum update',
-        replace_existing=True
+        replace_existing=True,
+        misfire_grace_time=3600  # Allow 1 hour grace time for misfires
     )
 
     scheduler.start()
